@@ -80,9 +80,18 @@
             Workers
             <input id="patheWorkers" class="run-max-input" type="number" min="1" max="16" value="8" title="Client threads; GPUs = Parallel GPU pods (Settings)" />
           </label>
+          <label class="run-max-label">
+            Queue order
+            <select id="patheClaimOrder" class="run-max-input" title="Which end of the pending queue to score first">
+              <option value="start">start (oldest)</option>
+              <option value="end">end (newest)</option>
+            </select>
+          </label>
+          <button class="btn ghost small" type="button" id="patheSaveSettingsBtn" title="Save queue order without starting scrape">Save</button>
           <button class="btn small" type="button" id="patheScrapeBtn">Start Pathé scrape</button>
           <button class="btn ghost small" type="button" id="patheClearBtn">Clear Pathé queue</button>
         </div>
+        <p class="hint" id="patheSettingsSaved" hidden>Settings saved.</p>
         <div id="patheScrapeProgress" class="job-status" hidden>
           <div class="job-bar"><span id="patheScrapeBar" style="width:0%"></span></div>
           <pre id="patheScrapeMsg" class="job-log"></pre>

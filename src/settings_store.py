@@ -61,6 +61,17 @@ SETTING_DEFS: dict[str, dict[str, Any]] = {
         "default": "1",
         "help": "1 = stop GPU pod after scrape (saves money)",
     },
+    "QUEUE_CLAIM_ORDER": {
+        "label": "Scrape queue order",
+        "type": "select",
+        "options": ["start", "end"],
+        "option_labels": {
+            "start": "start — oldest / front of queue (FIFO)",
+            "end": "end — newest / back of queue (LIFO)",
+        },
+        "default": "start",
+        "help": "Which end of the pending queue to score first. end = claim highest ids (latest discovers) first.",
+    },
     "SCORE_THRESHOLD": {
         "label": "Hit score threshold",
         "type": "number",

@@ -10,15 +10,16 @@ import cv2
 from PIL import Image
 from ultralytics import YOLO
 
-from shtetl_core.cues import (
-    DEFAULT_FPS,
-    DEFAULT_SCORE_THRESHOLD,
-    MIN_PERSON_AREA,
-    MIN_PERSON_ASPECT,
-    MIN_PERSON_HEIGHT,
-    YOLO_CONF,
-)
+import shtetl_core.cues as _cues
 from shtetl_core.scoring import CueScorer, FrameHit
+
+# getattr so a half-synced pod (new scan.py + old cues.py) still warms.
+DEFAULT_FPS = float(getattr(_cues, "DEFAULT_FPS", 1.5))
+DEFAULT_SCORE_THRESHOLD = float(getattr(_cues, "DEFAULT_SCORE_THRESHOLD", 0.04))
+MIN_PERSON_AREA = int(getattr(_cues, "MIN_PERSON_AREA", 40 * 80))
+MIN_PERSON_ASPECT = float(getattr(_cues, "MIN_PERSON_ASPECT", 1.15))
+MIN_PERSON_HEIGHT = int(getattr(_cues, "MIN_PERSON_HEIGHT", 100))
+YOLO_CONF = float(getattr(_cues, "YOLO_CONF", 0.32))
 
 ProgressCallback = Callable[[float, float, int], None]
 

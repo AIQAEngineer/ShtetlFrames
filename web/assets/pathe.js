@@ -189,8 +189,68 @@
     });
   });
 
+  async function syncPatheClaimOrder() {
+    const order = document.getElementById("patheClaimOrder")?.value || "start";
+    const res = await fetch("/api/settings", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ QUEUE_CLAIM_ORDER: order }),
+    });
+    const data = await res.json().catch(() => ({}));
+    if (!res.ok || data.ok === false) {
+      throw new Error(data.error || `save failed (${res.status})`);
+    }
+    return data;
+  }
+
+  async function loadPatheClaimOrder() {
+    const sel = document.getElementById("patheClaimOrder");
+    if (!sel) return;
+    try {
+      const data = await fetch("/api/settings").then((r) => r.json());
+      const fields = data?.fields || [];
+      const row = fields.find((f) => f.key === "QUEUE_CLAIM_ORDER");
+      const v = (row?.value || data?.values?.QUEUE_CLAIM_ORDER || "start")
+        .toString()
+        .toLowerCase();
+      sel.value = v === "end" ? "end" : "start";
+    } catch (_) {
+      /* keep default */
+    }
+  }
+
+  function flashPatheSettingsSaved(ok, msg) {
+    const el = document.getElementById("patheSettingsSaved");
+    if (!el) return;
+    el.hidden = false;
+    el.textContent = ok ? msg || "Settings saved." : msg || "Save failed.";
+    el.style.color = ok ? "" : "var(--danger, #b33)";
+    clearTimeout(window._patheSaveFlash);
+    window._patheSaveFlash = setTimeout(() => {
+      el.hidden = true;
+    }, 2500);
+  }
+
+  document.getElementById("patheSaveSettingsBtn")?.addEventListener("click", async () => {
+    const btn = document.getElementById("patheSaveSettingsBtn");
+    if (btn) btn.disabled = true;
+    try {
+      await syncPatheClaimOrder();
+      flashPatheSettingsSaved(true, "Queue order saved.");
+    } catch (e) {
+      flashPatheSettingsSaved(false, e?.message || "Save failed.");
+    } finally {
+      if (btn) btn.disabled = false;
+    }
+  });
+
   document.getElementById("patheScrapeBtn")?.addEventListener("click", async () => {
     const maxRaw = (document.getElementById("patheScrapeMax")?.value || "all").trim();
+    try {
+      await syncPatheClaimOrder();
+    } catch (_) {
+      /* scrape can still start with prior setting */
+    }
     const res = await fetch("/api/pathe/scrape", {
       method: "POST",
       headers: { "Content-Type": "application/json" },
@@ -244,6 +304,7 @@
   });
 
   if (document.getElementById("patheDiscoverForm") || document.getElementById("patheStats")) {
+    loadPatheClaimOrder();
     loadPathe();
     pathePollTimer = setInterval(loadPathe, 2000);
   }

@@ -336,23 +336,45 @@ def delete_queue_url(url: str) -> bool:
         return cur.rowcount > 0
 
 
+def queue_claim_from_end() -> bool:
+    """True when Settings/env QUEUE_CLAIM_ORDER=end (score newest queue rows first)."""
+    import os
+
+    raw = (os.environ.get("QUEUE_CLAIM_ORDER") or "").strip().lower()
+    if not raw:
+        try:
+            from settings_store import get_setting
+
+            raw = (get_setting("QUEUE_CLAIM_ORDER") or "start").strip().lower()
+        except Exception:
+            raw = "start"
+    return raw in ("end", "desc", "newest", "lifo", "tail", "back")
+
+
+def _queue_id_dir() -> str:
+    """SQL id direction: ASC = front/oldest, DESC = back/newest."""
+    return "DESC" if queue_claim_from_end() else "ASC"
+
+
 def take_pending(limit: int | None) -> list[dict]:
     """Fetch claimable downloadable rows; optionally cap. Marks them 'queued'.
 
     Reclaims stuck in-flight rows and previous errors so Start scrape retries them.
     British Pathé URLs are excluded — use the dedicated Pathé page scrape.
+    Order follows Settings ``QUEUE_CLAIM_ORDER`` (start=oldest id, end=newest id).
     """
     claim = (
         "status IN ('pending','queued','scanning','downloading','uploading','error') "
         "AND downloadable='yes' "
         "AND url NOT LIKE '%britishpathe.com%'"
     )
+    id_dir = _queue_id_dir()
     order = (
         "ORDER BY CASE status "
         "WHEN 'pending' THEN 0 "
         "WHEN 'queued' THEN 1 "
         "WHEN 'error' THEN 2 "
-        "ELSE 3 END, id"
+        f"ELSE 3 END, id {id_dir}"
     )
     with db(write=True) as conn:
         if limit is None:
@@ -383,10 +405,12 @@ def take_pending_pathe(limit: int | None, *, only_pending: bool = True) -> list[
     Use ``only_pending=False`` to also reclaim stuck in-flight / error rows
     (manual cold start). Continuous discover+scrape must keep ``only_pending=True``
     so in-flight work is never double-claimed.
+    Order follows Settings ``QUEUE_CLAIM_ORDER`` (start=oldest id, end=newest id).
     """
+    id_dir = _queue_id_dir()
     if only_pending:
         claim = f"status='pending' AND downloadable='yes' AND {_PATHE_URL_SQL}"
-        order = "ORDER BY id"
+        order = f"ORDER BY id {id_dir}"
     else:
         claim = (
             "status IN ('pending','queued','scanning','downloading','uploading','error') "
@@ -397,7 +421,7 @@ def take_pending_pathe(limit: int | None, *, only_pending: bool = True) -> list[
             "WHEN 'pending' THEN 0 "
             "WHEN 'queued' THEN 1 "
             "WHEN 'error' THEN 2 "
-            "ELSE 3 END, id"
+            f"ELSE 3 END, id {id_dir}"
         )
     with db(write=True) as conn:
         if limit is None:

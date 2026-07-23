@@ -3,6 +3,7 @@
 from __future__ import annotations
 
 import json
+import re
 import threading
 import time
 from concurrent.futures import ThreadPoolExecutor, as_completed
@@ -34,14 +35,36 @@ _PHASE_RANK = {
     "upload": 3,
     "scan": 4,
     "unknown": 5,
+    "warming": 6,
+    "broken": 98,
     "dead": 99,
 }
 
 _DEAD_PROXY_CODES = frozenset({404, 502, 503, 520, 521, 522, 523, 524})
+# Terminate + recreate only on hard proxy death (not transient 503 overload).
+_TERMINATE_PROXY_CODES = frozenset({404, 502, 520, 521, 522, 523, 524})
+_BROKEN_WARM_MARKERS = (
+    "importerror",
+    "attributeerror",
+    "cannot import",
+    "min_person_aspect",
+    "modulenotfounderror",
+    "syntaxerror",
+    "warmup failed",
+    "warm_failed",
+)
 
 # Pods that already received this checkout's handler via /sync_push (Catbox-less stills).
 _handler_pushed: set[str] = set()
 _handler_push_lock = threading.Lock()
+# Self-heal: strike counts + terminate cooldown (avoid replace storms).
+_pod_strikes: dict[str, int] = {}
+_warming_since: dict[str, float] = {}
+_terminate_at: dict[str, float] = {}
+_heal_lock = threading.Lock()
+_TERMINATE_COOLDOWN_SEC = 90.0
+_WARMING_REPLACE_SEC = 600.0
+_BROKEN_STRIKES = 2
 
 
 def _ensure_local_handler(base: str, *, on_status: OnStatus | None = None) -> bool:
@@ -147,13 +170,37 @@ def _is_dead_proxy_status(code: int) -> bool:
     return int(code or 0) in _DEAD_PROXY_CODES
 
 
+def pod_id_from_proxy_url(url: str | None) -> str | None:
+    """Extract RunPod id from ``https://{id}-8000.proxy.runpod.net``."""
+    u = (url or "").strip().rstrip("/")
+    if not u:
+        return None
+    m = re.match(r"https?://([a-z0-9]+)-\d+\.proxy\.runpod\.net/?$", u, re.I)
+    return m.group(1) if m else None
+
+
 def pool_size() -> int:
     with _pool_lock:
         return len(_POD_POOL)
 
 
-def drop_pod_url(url: str | None) -> None:
-    """Remove a dead proxy base from the pool so workers stop hammering it."""
+def _may_terminate(pod_id: str) -> bool:
+    now = time.time()
+    with _heal_lock:
+        last = float(_terminate_at.get(pod_id) or 0.0)
+        if now - last < _TERMINATE_COOLDOWN_SEC:
+            return False
+        _terminate_at[pod_id] = now
+        return True
+
+
+def drop_pod_url(
+    url: str | None,
+    *,
+    terminate: bool = False,
+    reason: str = "",
+) -> None:
+    """Remove a dead proxy from the pool; optionally terminate the RunPod GPU."""
     global _POD_BASE_URL, _rr
     u = (url or "").rstrip("/")
     if not u:
@@ -164,6 +211,26 @@ def drop_pod_url(url: str | None) -> None:
         if _POD_BASE_URL and _POD_BASE_URL.rstrip("/") == u:
             _POD_BASE_URL = _POD_POOL[0] if _POD_POOL else None
         _rr = 0
+    with _handler_push_lock:
+        _handler_pushed.discard(u)
+    with _heal_lock:
+        _pod_strikes.pop(u, None)
+        _warming_since.pop(u, None)
+    if not terminate:
+        return
+    pid = pod_id_from_proxy_url(u)
+    if not pid or not _may_terminate(pid):
+        return
+    try:
+        from runpod_provision import terminate_pod
+
+        terminate_pod(pid)
+        print(
+            f"[shtetl] self-heal terminate {pid[:12]}… ({reason or 'dead'})",
+            flush=True,
+        )
+    except Exception as e:
+        print(f"[shtetl] self-heal terminate failed {pid[:12]}: {e}"[:160], flush=True)
 
 
 def set_pod_base_url(url: str | None) -> None:
@@ -526,6 +593,8 @@ def refresh_pod_pool(
                 if bases:
                     set_pod_pool(bases)
                     _refresh_mono = time.monotonic()
+                    # New/reused pods may be on stale GitHub code — pin local handler.
+                    _push_handlers_best_effort(bases)
                     return bases
                 last_err = RuntimeError("ensure_pods returned no proxies")
             except Exception as e:
@@ -538,56 +607,171 @@ def refresh_pod_pool(
         ) from last_err
 
 
+def _classify_pod(base: str) -> str:
+    """Return idle|done|queued|download|upload|scan|warming|broken|unknown|dead."""
+    root = (base or "").rstrip("/")
+    if not root:
+        return "dead"
+    try:
+        r = requests.get(f"{root}/health", timeout=2.5)
+    except requests.RequestException:
+        return "dead"
+    if int(r.status_code or 0) in _TERMINATE_PROXY_CODES:
+        return "dead"
+    if r.status_code == 503:
+        # Overloaded or models_not_ready — not always a kill, but not pickable idle.
+        try:
+            data = r.json() if r.content else {}
+        except Exception:
+            data = {}
+        err = str((data or {}).get("error") or (data or {}).get("warm_error") or "").lower()
+        if any(m in err for m in _BROKEN_WARM_MARKERS):
+            return "broken"
+        if "models_not_ready" in err or (isinstance(data, dict) and data.get("models_ready") is False):
+            return "warming"
+        return "unknown"
+    if r.status_code != 200:
+        return "unknown"
+    try:
+        data = r.json() if r.content else {}
+    except Exception:
+        data = {}
+    if not isinstance(data, dict):
+        return "unknown"
+    warm_err = str(data.get("warm_error") or "").lower()
+    if any(m in warm_err for m in _BROKEN_WARM_MARKERS):
+        return "broken"
+    if data.get("models_ready") is False or data.get("ok") is False:
+        return "warming"
+    try:
+        r2 = requests.get(f"{root}/progress", timeout=2.5)
+    except requests.RequestException:
+        return "dead"
+    if int(r2.status_code or 0) in _TERMINATE_PROXY_CODES:
+        return "dead"
+    if r2.status_code != 200:
+        return "unknown"
+    try:
+        prog = r2.json() if r2.content else {}
+    except Exception:
+        return "unknown"
+    if not isinstance(prog, dict):
+        return "unknown"
+    phase = str(prog.get("phase") or "").strip().lower()
+    if phase in _PHASE_RANK:
+        return phase
+    return phase or "idle"
+
+
+def _probe_pod_phase(base: str) -> str:
+    """Return current pod phase (idle/download/scan/…), 'dead' if proxy is gone."""
+    kind = _classify_pod(base)
+    if kind == "broken":
+        return "dead"  # pick/rank treats as unusable
+    if kind == "warming":
+        return "unknown"
+    return kind
+
+
 def maintain_pod_pool(
     *,
     target: int = 1,
     on_status: OnStatus | None = None,
 ) -> list[str]:
-    """Health-check the pool; absorb orphan healthy pods; replace dead proxies."""
+    """Health-check pool; terminate broken/dead GPUs; refill + push local handler."""
     from runpod_provision import MAX_PARALLEL_PODS, find_shtetl_pods, pod_proxy_url
 
     want = max(1, min(int(target or 1), MAX_PARALLEL_PODS))
     with _pool_lock:
         pool = list(_POD_POOL)
     if not pool:
-        return refresh_pod_pool(count=want, on_status=on_status, force=True)
-    alive: list[str] = []
-    for u in pool:
-        if _probe_pod_phase(u) == "dead":
-            drop_pod_url(u)
-        else:
-            alive.append(u.rstrip("/"))
-    if not alive:
-        return refresh_pod_pool(count=want, on_status=on_status, force=True)
+        bases = refresh_pod_pool(count=want, on_status=on_status, force=True)
+        _push_handlers_best_effort(bases)
+        return bases
 
-    # Pull in healthy shtetl pods missing from the pool (e.g. MAX_INFLIGHT was
-    # raised, or ensure_pods previously returned a truncated list).
+    alive: list[str] = []
+    replaced = 0
+    now = time.time()
+    for raw in pool:
+        u = raw.rstrip("/")
+        kind = _classify_pod(u)
+        if kind == "dead":
+            drop_pod_url(u, terminate=True, reason="proxy_dead")
+            replaced += 1
+            continue
+        if kind == "broken":
+            with _heal_lock:
+                strikes = int(_pod_strikes.get(u) or 0) + 1
+                _pod_strikes[u] = strikes
+            if strikes >= _BROKEN_STRIKES:
+                drop_pod_url(u, terminate=True, reason="warm_broken")
+                replaced += 1
+            continue
+        if kind == "warming":
+            with _heal_lock:
+                started = float(_warming_since.get(u) or 0.0)
+                if started <= 0:
+                    _warming_since[u] = now
+                    started = now
+            # Cold boot OK for a while; replace only if stuck forever.
+            if now - started >= _WARMING_REPLACE_SEC:
+                drop_pod_url(u, terminate=True, reason="warm_stuck")
+                replaced += 1
+            else:
+                # Keep in pool so we don't over-create while it's booting.
+                alive.append(u)
+            continue
+        with _heal_lock:
+            _pod_strikes.pop(u, None)
+            _warming_since.pop(u, None)
+        alive.append(u)
+
+    # GraphQL orphans: RUNNING but broken/dead — kill so ensure_pods can refill.
     known = set(alive)
     try:
         for p in find_shtetl_pods():
-            if len(alive) >= MAX_PARALLEL_PODS:
-                break
             pid = p.get("id")
             if not pid:
                 continue
             base = pod_proxy_url(pid).rstrip("/")
             if not base or base in known:
                 continue
-            if _probe_pod_phase(base) == "dead":
+            kind = _classify_pod(base)
+            if kind in ("dead", "broken"):
+                drop_pod_url(base, terminate=True, reason=f"orphan_{kind}")
+                replaced += 1
                 continue
-            alive.append(base)
-            known.add(base)
+            if kind == "warming":
+                continue
+            if len(alive) < MAX_PARALLEL_PODS:
+                alive.append(base)
+                known.add(base)
     except Exception:
         pass
 
     if {u.rstrip("/") for u in alive} != {u.rstrip("/") for u in pool}:
         set_pod_pool(alive)
-    if len(alive) < want:
+
+    if len(alive) < want or replaced:
         try:
-            return refresh_pod_pool(count=want, on_status=on_status, force=False)
+            if on_status and replaced:
+                on_status(f"self-heal: replaced {replaced} dead GPU(s)…")
+            alive = refresh_pod_pool(
+                count=want, on_status=on_status, force=bool(replaced) or len(alive) < want
+            )
         except Exception:
-            return alive
+            pass
+    _push_handlers_best_effort(alive)
     return alive
+
+
+def _push_handlers_best_effort(urls: list[str]) -> None:
+    """Push local still-handler to pods that have not received it yet."""
+    for u in urls or []:
+        try:
+            _ensure_local_handler(u.rstrip("/"), on_status=None)
+        except Exception:
+            pass
 
 
 def _agent_log(hypothesis_id: str, location: str, message: str, data: dict[str, Any]) -> None:
@@ -617,32 +801,6 @@ def _agent_log(hypothesis_id: str, location: str, message: str, data: dict[str, 
     except Exception:
         pass
     # #endregion
-
-
-def _probe_pod_phase(base: str) -> str:
-    """Return current pod phase (idle/download/scan/…), 'dead' if proxy is gone."""
-    try:
-        r = requests.get(f"{base.rstrip('/')}/health", timeout=2.5)
-        if _is_dead_proxy_status(r.status_code):
-            return "dead"
-        if r.status_code == 200 and r.content:
-            try:
-                data = r.json()
-                if isinstance(data, dict) and data.get("models_ready") is False:
-                    return "unknown"
-            except Exception:
-                pass
-        r2 = requests.get(f"{base.rstrip('/')}/progress", timeout=2.5)
-        if _is_dead_proxy_status(r2.status_code):
-            return "dead"
-        if r2.status_code != 200:
-            return "unknown"
-        data = r2.json() if r2.content else {}
-        return str((data.get("phase") if isinstance(data, dict) else None) or "idle").strip().lower()
-    except requests.RequestException:
-        return "dead"
-    except Exception:
-        return "unknown"
 
 
 def _pick_pod(
@@ -1207,11 +1365,12 @@ def _process_video_remote_attempts(
             except requests.Timeout as e:
                 raise TimeoutError(f"pod_scan_timeout after {int(time.time() - t0)}s") from e
             except requests.RequestException as e:
-                drop_pod_url(base)
+                drop_pod_url(base, terminate=True, reason="scan_http")
                 raise RuntimeError(f"pod_scan_http: {e}") from e
 
             if _is_dead_proxy_status(r.status_code):
-                drop_pod_url(base)
+                kill = int(r.status_code or 0) in _TERMINATE_PROXY_CODES
+                drop_pod_url(base, terminate=kill, reason=f"http_{r.status_code}")
                 raise RuntimeError(f"http_{r.status_code}")
 
             try:
@@ -1222,7 +1381,7 @@ def _process_video_remote_attempts(
                 raise RuntimeError(f"pod_bad_json: {r.status_code}")
 
             if r.status_code == 524 or "524" in (r.text or "")[:80]:
-                drop_pod_url(base)
+                drop_pod_url(base, terminate=True, reason="http_524")
                 raise RuntimeError("http_524 gateway timeout on /scan accept")
 
             async_mode = bool(out.get("accepted") and out.get("async")) or r.status_code == 202
@@ -1237,7 +1396,7 @@ def _process_video_remote_attempts(
                 consecutive_dead = 0
                 while time.time() < deadline:
                     if proxy_dead["v"]:
-                        drop_pod_url(base)
+                        drop_pod_url(base, terminate=True, reason="proxy_dead_poll")
                         raise RuntimeError("http_404")
                     try:
                         pr = requests.get(
@@ -1248,7 +1407,12 @@ def _process_video_remote_attempts(
                         if _is_dead_proxy_status(pr.status_code):
                             consecutive_dead += 1
                             if consecutive_dead >= 2:
-                                drop_pod_url(base)
+                                kill = int(pr.status_code or 0) in _TERMINATE_PROXY_CODES
+                                drop_pod_url(
+                                    base,
+                                    terminate=kill,
+                                    reason=f"http_{pr.status_code}",
+                                )
                                 raise RuntimeError(f"http_{pr.status_code}")
                         elif pr.status_code == 200 and pr.content:
                             consecutive_dead = 0
@@ -1263,7 +1427,7 @@ def _process_video_remote_attempts(
                     except (requests.RequestException, ValueError):
                         consecutive_dead += 1
                         if consecutive_dead >= 3:
-                            drop_pod_url(base)
+                            drop_pod_url(base, terminate=True, reason="result_unreachable")
                             raise RuntimeError("http_404")
                     time.sleep(2.0)
                 if out is None:
@@ -1271,7 +1435,12 @@ def _process_video_remote_attempts(
             elif r.status_code >= 400 or not out.get("ok", True):
                 err = out.get("error") or f"http_{r.status_code}"
                 if _is_dead_proxy_status(r.status_code):
-                    drop_pod_url(base)
+                    kill = int(r.status_code or 0) in _TERMINATE_PROXY_CODES
+                    # models_not_ready / import break often arrives as 503 with warm_error.
+                    err_l = str(err).lower()
+                    if any(m in err_l for m in _BROKEN_WARM_MARKERS) or "models_not_ready" in err_l:
+                        kill = True
+                    drop_pod_url(base, terminate=kill, reason=str(err)[:80])
                 raise RuntimeError(str(err))
 
             if not out.get("ok", True):
@@ -1383,17 +1552,30 @@ def _process_video_remote_attempts(
                         payload["cookies_text"] = refreshed
                 except Exception:
                     pass
-            # Dead / empty / overloaded pod pool — refresh quietly, then retry.
+            # Dead worker / broken warm — terminate that GPU then refill.
+            err_l = err_s.lower()
+            if (
+                "pod_worker_died" in err_l
+                or "worker_died" in err_l
+                or "models_not_ready" in err_l
+                or any(m in err_l for m in _BROKEN_WARM_MARKERS)
+            ):
+                drop_pod_url(base, terminate=True, reason=err_s[:80])
+
+            # Dead / empty / overloaded pod pool — self-heal + refresh, then retry.
             if is_infra_error(err_s):
                 try:
                     if on_status:
-                        on_status("GPU busy — waiting for a free pod…")
-                    # Don't pipe ensure_pods chatter into this video's live row.
+                        on_status("GPU busy — self-healing pod pool…")
                     want = max(1, int(getattr(app_config, "RUNPOD_MAX_INFLIGHT", 1) or 1))
-                    refresh_pod_pool(count=want, on_status=None, force=True)
+                    maintain_pod_pool(target=want, on_status=None)
                 except Exception as refresh_err:
                     if on_status:
-                        on_status(f"pod refresh failed: {refresh_err}"[:160])
+                        on_status(f"pod heal failed: {refresh_err}"[:160])
+                    try:
+                        refresh_pod_pool(count=want, on_status=None, force=True)
+                    except Exception:
+                        pass
                 # Always burn another attempt on infra — never give up early in-loop.
                 if attempt < total_attempts:
                     if on_status:

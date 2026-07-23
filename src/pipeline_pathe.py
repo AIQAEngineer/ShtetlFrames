@@ -520,12 +520,16 @@ def start_pathe_scrape(
             )
             return {"ok": False, "error": "queue_empty", "job": get_job("pathe_scrape")}
 
+        from db import queue_claim_from_end
+
+        order_label = "end→newest" if queue_claim_from_end() else "start→oldest"
         set_job(
             "pathe_scrape",
             status="running",
             phase="scraping",
             message=(
-                f"Pathé scrape · continuous · backend={backend} · workers={workers}"
+                f"Pathé scrape · continuous · backend={backend} · workers={workers} · "
+                f"queue={order_label}"
                 + (
                     " · waiting for discover…"
                     if pending <= 0
@@ -771,11 +775,19 @@ def _pathe_scrape_job(workers: int, backend: str, limit: int | None) -> None:
                             1,
                             min(n_pods * stack_ceil, MAX_PARALLEL_PODS * stack_ceil),
                         )
-                        # Pod health / absorb orphans on a slower cadence.
+                        # Self-heal dead/broken GPUs every few seconds.
                         if time.monotonic() - last_pool_sync >= 3.0:
                             last_pool_sync = time.monotonic()
+
+                            def _heal_status(msg: str) -> None:
+                                if "self-heal" in (msg or "").lower():
+                                    status(msg, job="pathe_scrape", persist=True)
+
                             more = (
-                                maintain_pod_pool(target=n_pods, on_status=None) or []
+                                maintain_pod_pool(
+                                    target=n_pods, on_status=_heal_status
+                                )
+                                or []
                             )
                             if not more:
                                 more = get_pod_pool()

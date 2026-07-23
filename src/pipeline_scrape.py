@@ -387,17 +387,24 @@ def start_scrape(max_videos: str | int = "all", workers: int = DEFAULT_WORKERS) 
         )
         return {"ok": False, "error": "queue_empty", "job": get_job("scrape")}
 
-    # Manual "next" / priority rows first, then normal claim order.
+    # Manual "next" / priority rows first, then Settings QUEUE_CLAIM_ORDER.
+    from db import queue_claim_from_end
+
+    id_sign = -1 if queue_claim_from_end() else 1
     items = sorted(
         items,
         key=lambda r: (
             0 if (r.get("detail") or "") == "next" else 1,
-            int(r.get("id") or 0),
+            id_sign * int(r.get("id") or 0),
         ),
     )
 
     n_retry = sum(1 for r in items if (r.get("status") or "") == "error")
-    start_msg = f"Starting scrape of {len(items)} video(s) · backend={backend} · workers={workers}"
+    order_label = "end→newest" if queue_claim_from_end() else "start→oldest"
+    start_msg = (
+        f"Starting scrape of {len(items)} video(s) · backend={backend} · "
+        f"workers={workers} · queue={order_label}"
+    )
     if n_retry:
         start_msg += f" · retrying {n_retry} earlier error(s)"
 
@@ -540,10 +547,10 @@ def _scrape_job(items: list[dict], workers: int, backend: str = "local") -> None
                 return
             from runpod_client import maintain_pod_pool, pool_size
 
-            while not watchdog_stop.wait(45.0):
+            while not watchdog_stop.wait(12.0):
                 try:
                     if pool_size() < 1:
-                        status("Watchdog: GPU pool empty — refreshing…", job="scrape")
+                        status("Watchdog: GPU pool empty — self-healing…", job="scrape")
                     maintain_pod_pool(
                         target=max(
                             1,
@@ -555,7 +562,7 @@ def _scrape_job(items: list[dict], workers: int, backend: str = "local") -> None
                         on_status=lambda m: status(m, job="scrape"),
                     )
                 except Exception as e:
-                    status(f"Watchdog pod maintain: {e}"[:160], job="scrape")
+                    status(f"Watchdog pod heal: {e}"[:160], job="scrape")
 
         if backend == "runpod":
             threading.Thread(
