@@ -1,4 +1,4 @@
-"""Parallel scrape/scan with cloud stills only."""
+"""Parallel scrape/scan — Review stills saved locally under contact_sheets/."""
 
 from __future__ import annotations
 
@@ -14,7 +14,6 @@ from pathlib import Path
 
 from ultralytics import YOLO
 
-from cloud_images import upload_image
 from config import (
     CROPS_DIR,
     DEFAULT_FPS,
@@ -1013,7 +1012,7 @@ def _process_one(row: dict, backend: str = "local") -> int:
         )
         segs = aggregate_segments(hits, source_path="", sheet_dir=None)
 
-        _set_worker_phase(row, "uploading", f"{len(segs)} segments · uploading stills")
+        _set_worker_phase(row, "uploading", f"{len(segs)} segments · saving stills")
         from openai_verify import (
             format_verdict_notes,
             openai_verify_enabled,
@@ -1026,7 +1025,6 @@ def _process_one(row: dict, backend: str = "local") -> int:
         dropped_openai = 0
         for i, s in enumerate(segs, 1):
             d = asdict(s) if hasattr(s, "__dataclass_fields__") else dict(s)
-            image_url = None
             notes = ""
             seg_hits = [
                 h
@@ -1063,8 +1061,7 @@ def _process_one(row: dict, backend: str = "local") -> int:
                         notes = format_verdict_notes(verdict)
                         if not verdict_is_keep(verdict):
                             dropped_openai += 1
-                    image_url = upload_image(wrote)
-                    # Keep bytes until SQLite insert copies into contact_sheets/
+                    # Local-only still — no Catbox / cloud upload.
                     local_still = wrote
                 elif use_openai:
                     dropped_openai += 1
@@ -1094,7 +1091,7 @@ def _process_one(row: dict, backend: str = "local") -> int:
                 "hit_count": d["hit_count"],
                 "best_cue": d["best_cue"],
                 "source_url": source_url,
-                "image_url": image_url,
+                "image_url": None,
                 "notes": notes,
             }
             if local_still:

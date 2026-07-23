@@ -443,7 +443,14 @@ def clear_queue_pathe() -> int:
     """Delete only British Pathé rows from the queue. Returns rows deleted."""
     with db(write=True) as conn:
         cur = conn.execute(f"DELETE FROM queue_items WHERE {_PATHE_URL_SQL}")
-        return int(cur.rowcount or 0)
+        n = int(cur.rowcount or 0)
+    try:
+        from britishpathe import clear_discover_cursor
+
+        clear_discover_cursor()
+    except Exception:
+        pass
+    return n
 
 
 def list_youtube_pathe_titles(*, limit: int = 5000) -> list[str]:
@@ -656,12 +663,29 @@ def insert_candidates(rows: list[dict]) -> int:
                     b64=r.get("still_b64") or r.get("image_b64"),
                     image_url=r.get("image_url"),
                 )
+                # Pods on stale GitHub often verify but never send still_b64 — pull a
+                # frame from the source URL before Review shows a blank sheet.
+                if saved is None and (r.get("source_url") or "").strip():
+                    try:
+                        from still_ensure import ensure_candidate_still
+
+                        saved = ensure_candidate_still(
+                            cid,
+                            source_url=str(r.get("source_url") or ""),
+                            video_id=str(r.get("video_id") or ""),
+                            start_sec=float(r.get("start_sec") or 0),
+                            end_sec=r.get("end_sec"),
+                            image_url=r.get("image_url"),
+                            download_video=True,
+                        )
+                    except Exception:
+                        saved = None
                 if saved is None:
                     note = (r.get("notes") or "").strip()
                     if "no_still_bytes" not in note:
                         conn.execute(
                             "UPDATE candidates SET notes=? WHERE id=?",
-                            ((f"{note} no_still_bytes".strip())[:1000], cid),
+                            ((f"no_still_bytes {note}".strip())[:1000], cid),
                         )
                     # Permanent recovery: extract from source video in background.
                     enqueue_ensure_still(
@@ -714,11 +738,14 @@ def list_candidates(limit: int = 2000) -> list[dict]:
         d = dict(r)
         d["rank"] = i
         d["key"] = f"{d['id']}"
-        # Prefer durable local still over cloud hosts that expire (litter.catbox).
+        # Prefer durable local still; ignore Catbox / other cloud hosts.
         local = local_still_url(d["id"])
         cloud = (d.get("image_url") or "").strip()
-        if not local and cloud and "litter.catbox.moe" not in cloud.lower():
-            # Hydrate on read — pull cloud bytes into contact_sheets/ once.
+        if cloud and "catbox" in cloud.lower():
+            cloud = ""
+            d["image_url"] = ""
+        if not local and cloud.startswith(("http://", "https://")):
+            # Rare legacy non-catbox URL — hydrate into contact_sheets/ once.
             try:
                 if save_candidate_still(int(d["id"]), image_url=cloud):
                     local = local_still_url(d["id"])
@@ -728,11 +755,8 @@ def list_candidates(limit: int = 2000) -> list[dict]:
             enqueue_ensure_still(d)
         if local:
             d["contact_url"] = local
-        elif cloud and "litter.catbox.moe" in cloud.lower():
-            # Temporary Litterbox links expire; don't send a known-dead URL to Review.
-            d["contact_url"] = None
         else:
-            d["contact_url"] = cloud or None
+            d["contact_url"] = None
         d["strip_url"] = local_strip_url(d["id"])
         d["crop_url"] = local_crop_url(d["id"])
         if crop_status_fn is not None:

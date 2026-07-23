@@ -10,7 +10,14 @@ import cv2
 from PIL import Image
 from ultralytics import YOLO
 
-from shtetl_core.cues import DEFAULT_FPS, DEFAULT_SCORE_THRESHOLD, MIN_PERSON_AREA, YOLO_CONF
+from shtetl_core.cues import (
+    DEFAULT_FPS,
+    DEFAULT_SCORE_THRESHOLD,
+    MIN_PERSON_AREA,
+    MIN_PERSON_ASPECT,
+    MIN_PERSON_HEIGHT,
+    YOLO_CONF,
+)
 from shtetl_core.scoring import CueScorer, FrameHit
 
 ProgressCallback = Callable[[float, float, int], None]
@@ -89,15 +96,27 @@ def scan_video(
             xyxy = box.xyxy[0].cpu().numpy()
             x1, y1, x2, y2 = map(int, xyxy)
             width, height = x2 - x1, y2 - y1
+            if width <= 0 or height <= 0:
+                continue
             if width * height < MIN_PERSON_AREA:
                 continue
-            # Prefer upper body for clothing / hat / payot cues.
-            y2b = y1 + max(height // 2, min(height, int(height * 0.75)))
+            # Reject face-square / tiny head boxes — need a taller person shape.
+            if height < MIN_PERSON_HEIGHT:
+                continue
+            if (height / float(width)) < MIN_PERSON_ASPECT:
+                continue
+            # Prefer upper body for clothing / hat / payot cues (not face-only).
+            # Keep at least ~60% of box height so shoulders/chest stay in frame.
+            y2b = y1 + max(int(height * 0.60), min(height, int(height * 0.80)))
             crop = frame[
                 max(0, y1) : min(frame.shape[0], y2b),
                 max(0, x1) : min(frame.shape[1], x2),
             ]
             if crop.size == 0:
+                continue
+            # Crop itself must still look like upper body, not a postage-stamp face.
+            ch, cw = crop.shape[:2]
+            if ch < MIN_PERSON_HEIGHT or (ch / float(max(cw, 1))) < 0.95:
                 continue
             rgb = cv2.cvtColor(crop, cv2.COLOR_BGR2RGB)
             pil = Image.fromarray(rgb)

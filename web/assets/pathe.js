@@ -157,7 +157,8 @@
 
   async function postDiscover(body) {
     const payload = {
-      auto_scrape: true,
+      // Discover must not start scrape / spin a GPU fleet.
+      auto_scrape: false,
       workers: Number(document.getElementById("patheWorkers")?.value || 8),
       ...body,
     };

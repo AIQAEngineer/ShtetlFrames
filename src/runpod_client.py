@@ -39,6 +39,53 @@ _PHASE_RANK = {
 
 _DEAD_PROXY_CODES = frozenset({404, 502, 503, 520, 521, 522, 523, 524})
 
+# Pods that already received this checkout's handler via /sync_push (Catbox-less stills).
+_handler_pushed: set[str] = set()
+_handler_push_lock = threading.Lock()
+
+
+def _ensure_local_handler(base: str, *, on_status: OnStatus | None = None) -> bool:
+    """Push local worker files so Review stills use still_b64 + GET /still (not Catbox).
+
+    GitHub main may lag this checkout; without a push, pods keep ``upload_failed``
+    and Review gets no contact sheet.
+    """
+    root = (base or "").rstrip("/")
+    if not root:
+        return False
+    with _handler_push_lock:
+        if root in _handler_pushed:
+            return True
+    files = _local_worker_files_for_push()
+    if not files:
+        return False
+    try:
+        if on_status:
+            on_status("pushing local still-handler to pod…")
+        r = requests.post(
+            f"{root}/sync_push",
+            json={"files": files},
+            timeout=120,
+        )
+        ok = r.status_code == 200
+        body: dict[str, Any] = {}
+        try:
+            body = r.json() if r.content else {}
+        except Exception:
+            body = {}
+        if ok and isinstance(body, dict) and body.get("ok"):
+            with _handler_push_lock:
+                _handler_pushed.add(root)
+            if on_status:
+                on_status("pod still-handler pinned (local sync)")
+            return True
+        # Older pods without /sync_push — fall through; PC hydrate/ensure will try.
+        if r.status_code == 404:
+            return False
+    except requests.RequestException:
+        return False
+    return False
+
 # Serialize / debounce ensure_pods so N workers don't stampede RunPod.
 _refresh_lock = threading.Lock()
 _refresh_mono = 0.0
@@ -324,7 +371,12 @@ def reserve_pathe_discover_pod(
     on_status: OnStatus | None = None,
     scrape_pods: int | None = None,
 ) -> str:
-    """Ensure a healthy pod reserved for Pathé listing discover (not used for /scan)."""
+    """Reserve at most one healthy pod for Pathé listing (never a scrape fleet).
+
+    Reuses an existing ready pod. Does not call ``ensure_pods`` with count>1
+    and does not background-fill — scrape start owns multi-GPU creates.
+    """
+    del scrape_pods  # discover must never size a scrape pool
     global _DISCOVER_POD_URL
     load_env()
     with _discover_lock:
@@ -336,47 +388,32 @@ def reserve_pathe_discover_pod(
         set_pod_pool(pool)
         return cur.rstrip("/")
 
-    from runpod_provision import MAX_PARALLEL_PODS, ensure_pods, shtetl_account_cap
+    from runpod_provision import find_shtetl_pods, pod_proxy_url
 
-    want_scrape = max(
-        1,
-        min(
-            int(
-                scrape_pods
-                if scrape_pods is not None
-                else (app_config.RUNPOD_MAX_INFLIGHT or 8)
-            ),
-            MAX_PARALLEL_PODS,
-        ),
-    )
-    # scrape + 1 discover; hard account cap is shtetl_account_cap() (≤9).
-    want_total = min(shtetl_account_cap(), want_scrape + 1)
-    if on_status:
-        on_status(
-            f"Reserving Pathé discover pod "
-            f"(pool target {want_total}: {want_scrape} scrape + 1 discover)…"
-        )
-    bases = ensure_pods(
-        count=want_total,
-        on_status=on_status,
-        min_ready=1,
-        extra_fill_sec=0,
-    )
-    if not bases:
-        raise RuntimeError("no RunPod available for Pathé discover")
-    cleaned = [u.rstrip("/") for u in bases if u]
-    # Use the last healthy proxy as discover; rest for scrape.
-    disc = cleaned[-1]
-    scrape = cleaned[:-1] if len(cleaned) > 1 else list(cleaned)
-    with _discover_lock:
-        _DISCOVER_POD_URL = disc
-    set_pod_pool(scrape)
-    if on_status:
-        on_status(
-            f"Pathé discover pod ready · scrape pool={len(scrape)} · "
-            f"discover={disc.split('//')[-1][:28]}"
-        )
-    return disc
+    # Fast path: use any already-healthy pod — do not block on cold boots.
+    for p in find_shtetl_pods():
+        pid = p.get("id")
+        if not pid:
+            continue
+        base = pod_proxy_url(pid).rstrip("/")
+        phase = _probe_pod_phase(base)
+        if phase == "dead":
+            continue
+        with _discover_lock:
+            _DISCOVER_POD_URL = base
+        with _pool_lock:
+            pool = [u for u in list(_POD_POOL) if u.rstrip("/") != base]
+        set_pod_pool(pool)
+        if on_status:
+            on_status(
+                f"Pathé discover using ready pod · "
+                f"{base.split('//')[-1][:28]}"
+            )
+        return base
+
+    # No healthy pod — do NOT spin a fleet. Caller falls back to local Scrapfly.
+    # (Creating even 1 GPU here is reserved for Start scrape / explicit ensure.)
+    raise RuntimeError("no_ready_discover_pod")
 
 
 def release_pathe_discover_pod() -> None:
@@ -1091,6 +1128,8 @@ def _process_video_remote_attempts(
         if is_pathe_job:
             use_idle_only = pathe_stack_limit() <= 1
         base = _pick_pod(idle_only=use_idle_only, reserve_sec=reserve_sec)
+        # Critical: GitHub main may still ship Catbox upload → upload_failed + no still.
+        _ensure_local_handler(base, on_status=on_status)
         if on_status:
             bits = []
             if cookies:
@@ -1242,6 +1281,7 @@ def _process_video_remote_attempts(
             out = dict(out)
             out["job_id"] = f"pod-{queue_id or 'x'}"
             _hydrate_segment_stills(base, out)
+            _materialize_segment_stills(out)
             if is_pathe_job:
                 note_pathe_stack_outcome(ok=True)
             if on_status:
@@ -1376,8 +1416,9 @@ def _process_video_remote_attempts(
 
 
 def _hydrate_segment_stills(base: str, out: dict[str, Any]) -> None:
-    """Fill missing still_b64 from pod GET /still, then Catbox URL if needed."""
+    """Fill missing still_b64 from pod GET /still (local-only; no Catbox)."""
     import base64
+    import time as _time
 
     segs = out.get("segments")
     if not isinstance(segs, list) or not segs:
@@ -1402,61 +1443,90 @@ def _hydrate_segment_stills(base: str, out: dict[str, Any]) -> None:
                 qids.append(int(qid))
             qids.append(str(qid))
             seen: set[str] = set()
-            for qtry in qids:
-                key = str(qtry)
-                if key in seen:
-                    continue
-                seen.add(key)
-                try:
-                    r = requests.get(
-                        f"{root}/still",
-                        params={"queue_id": qtry, "index": idx_i},
-                        timeout=60,
+            for attempt in range(3):
+                if got:
+                    break
+                if attempt:
+                    _time.sleep(0.4 * attempt)
+                for qtry in qids:
+                    key = str(qtry)
+                    if key in seen and attempt == 0:
+                        continue
+                    seen.add(key)
+                    try:
+                        r = requests.get(
+                            f"{root}/still",
+                            params={"queue_id": qtry, "index": idx_i},
+                            timeout=60,
+                        )
+                    except requests.RequestException:
+                        continue
+                    if r.status_code != 200 or len(r.content) < 200:
+                        continue
+                    ctype = (r.headers.get("content-type") or "").lower()
+                    body = r.content
+                    looks_img = (
+                        body[:3] == b"\xff\xd8\xff"
+                        or body[:8] == b"\x89PNG\r\n\x1a\n"
+                        or "image/jpeg" in ctype
+                        or "image/jpg" in ctype
+                        or "image/png" in ctype
                     )
-                except requests.RequestException:
-                    continue
-                if r.status_code != 200 or len(r.content) < 200:
-                    continue
-                ctype = (r.headers.get("content-type") or "").lower()
-                body = r.content
-                looks_img = (
-                    body[:3] == b"\xff\xd8\xff"
-                    or body[:8] == b"\x89PNG\r\n\x1a\n"
-                    or "image/jpeg" in ctype
-                    or "image/jpg" in ctype
-                    or "image/png" in ctype
-                )
-                if not looks_img:
-                    continue
-                seg["still_b64"] = base64.standard_b64encode(body).decode("ascii")
-                got = True
-                break
-        if not got:
-            # Last resort before insert: pull Catbox while the link is still warm.
-            img_url = str(seg.get("image_url") or "").strip()
-            if img_url.startswith(("http://", "https://")) and "litter.catbox" not in img_url.lower():
-                try:
-                    r = requests.get(
-                        img_url,
-                        timeout=45,
-                        headers={"User-Agent": "ShtetlFrames/1.0"},
-                        allow_redirects=True,
-                    )
-                    body = r.content if r.status_code == 200 else b""
-                    if len(body) >= 200 and body[:3] == b"\xff\xd8\xff":
-                        seg["still_b64"] = base64.standard_b64encode(body).decode("ascii")
-                        got = True
-                except requests.RequestException:
-                    pass
+                    if not looks_img:
+                        continue
+                    seg["still_b64"] = base64.standard_b64encode(body).decode("ascii")
+                    # Drop stale cloud URLs — Review uses local contact_sheets only.
+                    seg["image_url"] = None
+                    got = True
+                    break
+                seen.clear()
         if not got:
             note = str(seg.get("notes") or "")
             if "still_hydrate_miss" not in note:
-                seg["notes"] = (f"{note} still_hydrate_miss".strip())[:500]
+                # Prefix so long OpenAI reasons cannot truncate the flag away.
+                seg["notes"] = (f"still_hydrate_miss {note}".strip())[:500]
+            # Never keep catbox URLs as the Review image source.
+            url = str(seg.get("image_url") or "").lower()
+            if "catbox" in url:
+                seg["image_url"] = None
+
+
+def _materialize_segment_stills(out: dict[str, Any]) -> None:
+    """Decode still_b64 to temp JPEGs so insert never loses bytes after JSON round-trips."""
+    import base64
+    import tempfile
+
+    segs = out.get("segments")
+    if not isinstance(segs, list):
+        return
+    for seg in segs:
+        if not isinstance(seg, dict):
+            continue
+        if seg.get("_local_still"):
+            continue
+        b64 = seg.get("still_b64") or seg.get("image_b64")
+        if not b64:
+            continue
+        try:
+            raw = base64.standard_b64decode(str(b64).encode("ascii"), validate=False)
+        except Exception:
+            continue
+        if not raw or len(raw) < 200 or raw[:3] != b"\xff\xd8\xff":
+            continue
+        try:
+            with tempfile.NamedTemporaryFile(suffix=".jpg", delete=False) as tmp:
+                tmp.write(raw)
+                seg["_local_still"] = tmp.name
+        except OSError:
+            pass
 
 
 def segments_to_candidate_rows(out: dict[str, Any], source_url: str = "") -> list[dict]:
     rows = []
     for s in out.get("segments") or []:
+        img = s.get("image_url")
+        if img and "catbox" in str(img).lower():
+            img = None
         row = {
             "video_id": s.get("video_id") or out.get("video_id") or "unknown",
             "start_sec": s.get("start_sec"),
@@ -1467,13 +1537,16 @@ def segments_to_candidate_rows(out: dict[str, Any], source_url: str = "") -> lis
             "hit_count": s.get("hit_count"),
             "best_cue": s.get("best_cue"),
             "source_url": s.get("source_url") or source_url,
-            "image_url": s.get("image_url"),
+            "image_url": img,
             "notes": s.get("notes") or "",
         }
-        # Optional inline still (legacy); stripped before SQLite insert.
+        # Inline still — saved to contact_sheets/ on insert.
         b64 = s.get("still_b64") or s.get("image_b64")
         if b64:
             row["still_b64"] = b64
+        local = s.get("_local_still") or s.get("local_still")
+        if local:
+            row["_local_still"] = str(local)
         rows.append(row)
     return rows
 

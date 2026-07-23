@@ -302,6 +302,8 @@ def sync_push(payload: dict) -> dict:
     if not changed:
         return {"ok": False, "error": "no_valid_files"}
     worker_sync.set_inflight_checker(_inflight_count)
+    # Prefer PC-pushed scoring over stale GitHub main until the repo catches up.
+    os.environ["SHTETL_PIN_LOCAL_SYNC"] = "1"
     reloaded = worker_sync._reload_modules(changed)
     pending = "entry.py" in changed
     return {
@@ -310,6 +312,7 @@ def sync_push(payload: dict) -> dict:
         "reloaded": reloaded,
         "pending_soft_recycle": pending
         or bool((worker_sync.sync_status() or {}).get("pending_soft_recycle")),
+        "pinned_local_sync": True,
     }
 
 
@@ -728,6 +731,8 @@ def cues_config() -> dict:
             "DEFAULT_SCORE_THRESHOLD": float(c.DEFAULT_SCORE_THRESHOLD),
             "MIN_POS_SCORE": float(c.MIN_POS_SCORE),
             "MIN_HEADCOVER_SCORE": float(c.MIN_HEADCOVER_SCORE),
+            "MIN_MALE_SCORE": float(c.MIN_MALE_SCORE),
+            "MIN_BODY_SCORE": float(c.MIN_BODY_SCORE),
             "MAX_NEG_TO_POS_RATIO": float(c.MAX_NEG_TO_POS_RATIO),
             "NEG_SCORE_WEIGHT": float(c.NEG_SCORE_WEIGHT),
             "TOP_K_NEGS": int(c.TOP_K_NEGS),

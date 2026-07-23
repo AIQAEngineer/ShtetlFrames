@@ -7,7 +7,9 @@ from shtetl_core.cues import (
     DEFAULT_SCORE_THRESHOLD,
     HEADCOVER_PROMPTS,
     MAX_GAP_SEC,
+    MIN_BODY_SCORE,
     MIN_HEADCOVER_SCORE,
+    MIN_MALE_SCORE,
     MIN_PERSON_AREA,
     MIN_POS_SCORE,
     MIN_SEGMENT_SEC,
@@ -17,7 +19,14 @@ from shtetl_core.cues import (
     YOLO_CONF,
     YOLO_WEIGHTS,
 )
-from shtetl_core.scoring import CueScorer, FrameHit, clamp_weak_score, clamp_without_headcover
+from shtetl_core.scoring import (
+    CueScorer,
+    FrameHit,
+    clamp_face_only,
+    clamp_not_male,
+    clamp_weak_score,
+    clamp_without_headcover,
+)
 from shtetl_core.segments import (
     CandidateSegment,
     aggregate_segments,
@@ -35,7 +44,9 @@ __all__ = [
     "DEFAULT_SCORE_THRESHOLD",
     "HEADCOVER_PROMPTS",
     "MAX_GAP_SEC",
+    "MIN_BODY_SCORE",
     "MIN_HEADCOVER_SCORE",
+    "MIN_MALE_SCORE",
     "MIN_PERSON_AREA",
     "MIN_POS_SCORE",
     "MIN_SEGMENT_SEC",
@@ -49,6 +60,8 @@ __all__ = [
     "FrameHit",
     "aggregate_segments",
     "aggregate_segments_dicts",
+    "clamp_face_only",
+    "clamp_not_male",
     "clamp_weak_score",
     "clamp_without_headcover",
     "sample_frame_indices",

@@ -48,9 +48,13 @@ def handle_post_discover(handler: BaseHTTPRequestHandler, body: dict) -> None:
         query = ""
         ys = None
         ye = None
-    auto_scrape = body.get("auto_scrape", True)
+    # Default off: auto-scrape was recreating full GPU pools during discover.
+    auto_scrape = body.get("auto_scrape", False)
     if isinstance(auto_scrape, str):
-        auto_scrape = auto_scrape.strip().lower() not in ("0", "false", "no")
+        auto_scrape = auto_scrape.strip().lower() not in ("0", "false", "no", "")
+    resume = body.get("resume", True)
+    if isinstance(resume, str):
+        resume = resume.strip().lower() not in ("0", "false", "no", "")
     result = start_pathe_discover(
         query=query,
         year_start=ys,
@@ -58,6 +62,7 @@ def handle_post_discover(handler: BaseHTTPRequestHandler, body: dict) -> None:
         max_items=max_items,
         auto_scrape=bool(auto_scrape),
         workers=body.get("workers"),
+        resume=bool(resume),
     )
     code = 200 if result.get("ok") else 409
     json_response(handler, code, result)
@@ -73,6 +78,22 @@ def handle_post_scrape(handler: BaseHTTPRequestHandler, body: dict) -> None:
     )
     code = 200 if result.get("ok") else 409
     json_response(handler, code, result)
+
+
+def handle_post_scrape_stop(handler: BaseHTTPRequestHandler, body: dict) -> None:
+    from pipeline_pathe import stop_pathe_scrape
+    from runpod_provision import set_pod_creates_blocked
+
+    body = body if isinstance(body, dict) else {}
+    block = body.get("block_pod_creates", True)
+    if isinstance(block, str):
+        block = block.strip().lower() not in ("0", "false", "no")
+    if block:
+        set_pod_creates_blocked(True)
+    result = stop_pathe_scrape(
+        message=str(body.get("message") or "Pathé scrape stopped — pod creates blocked")
+    )
+    json_response(handler, 200, {**result, "pod_creates_blocked": bool(block)})
 
 
 def handle_post_queue_clear(handler: BaseHTTPRequestHandler, body: dict) -> None:

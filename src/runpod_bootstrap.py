@@ -79,21 +79,6 @@ $PY -m pip install -q -U yt-dlp
 $PY -m pip install -q --force-reinstall {PIP_NUMPY}
 $PY -c "import numpy; import torch; torch.from_numpy(numpy.zeros(1)); print('numpy_torch_ok', numpy.__version__, torch.__version__)"
 
-echo "[shtetl] install Ollama (GPU VLM verify)…"
-export OLLAMA_HOST=127.0.0.1:11434
-curl -fsSL https://ollama.com/install.sh | sh || true
-if command -v ollama >/dev/null 2>&1; then
-  nohup ollama serve >/tmp/ollama-serve.log 2>&1 &
-  for i in $(seq 1 45); do
-    curl -fsS "http://127.0.0.1:11434/api/tags" >/dev/null 2>&1 && break
-    sleep 1
-  done
-  # Pull in background so uvicorn can start; entry warm waits / finishes pull.
-  nohup ollama pull qwen2.5vl:3b >/tmp/ollama-pull.log 2>&1 &
-else
-  echo "[shtetl] ollama binary missing — entry warm will retry"
-fi
-
 echo "[shtetl] fetch worker + shtetl_core from GitHub..."
 curl -fsSL "{WORKER_RAW_BASE}/entry.py" -o entry.py
 curl -fsSL "{WORKER_RAW_BASE}/handler.py" -o handler.py
@@ -105,12 +90,14 @@ curl -fsSL "{_RAW}/src/label_feedback.py" -o label_feedback.py
 ls -la entry.py handler.py worker_sync.py ollama_pod.py openai_verify.py label_feedback.py shtetl_core
 $PY -c "import entry; print('entry_import_ok', entry.app)"
 
-echo "[shtetl] starting HTTP :8000"
+echo "[shtetl] starting HTTP :8000 (Ollama installs later only if VERIFY_BACKEND needs it)"
 export PYTHONPATH=/workspace/shtetl
 export SHTETL_POD=1
 export OPEN_VLM_BASE_URL=http://127.0.0.1:11434/v1
 export OPEN_VLM_MODEL=qwen2.5vl:3b
 export VERIFY_BACKEND=openai
+# Bring HTTP up first — blocking on Ollama install left ports=0 for 8–15 min
+# and Pathé discover looked stuck. entry.py warms Ollama when backend needs it.
 exec $PY -m uvicorn entry:app --host 0.0.0.0 --port 8000
 """
 

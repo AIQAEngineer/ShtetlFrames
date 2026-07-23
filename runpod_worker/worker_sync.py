@@ -68,6 +68,8 @@ def cues_snapshot() -> dict[str, Any]:
             "DEFAULT_SCORE_THRESHOLD": float(c.DEFAULT_SCORE_THRESHOLD),
             "MIN_POS_SCORE": float(c.MIN_POS_SCORE),
             "MIN_HEADCOVER_SCORE": float(c.MIN_HEADCOVER_SCORE),
+            "MIN_MALE_SCORE": float(c.MIN_MALE_SCORE),
+            "MIN_BODY_SCORE": float(c.MIN_BODY_SCORE),
             "MAX_NEG_TO_POS_RATIO": float(c.MAX_NEG_TO_POS_RATIO),
             "NEG_SCORE_WEIGHT": float(c.NEG_SCORE_WEIGHT),
             "TOP_K_NEGS": int(c.TOP_K_NEGS),
@@ -189,6 +191,14 @@ def sync_from_github(*, force: bool = False) -> dict[str, Any]:
     """Download changed files from GitHub main; hot-reload modules."""
     with _lock:
         _state["last_check"] = time.time()
+    # PC sync_push can be ahead of GitHub main — don't clobber local scoring.
+    if not force and (os.environ.get("SHTETL_PIN_LOCAL_SYNC") or "").strip() in (
+        "1",
+        "true",
+        "yes",
+        "on",
+    ):
+        return {"ok": True, "changed": [], "reloaded": [], "pinned": True}
     changed: list[str] = []
     try:
         for rel, url in _SYNC_FILES:

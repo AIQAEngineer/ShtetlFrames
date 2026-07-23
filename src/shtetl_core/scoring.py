@@ -9,12 +9,18 @@ import torch
 from PIL import Image
 
 from shtetl_core.cues import (
+    BODY_PROMPTS,
     CLIP_MODEL,
     CLIP_PRETRAINED,
     DEFAULT_SCORE_THRESHOLD,
+    FACE_ONLY_PROMPTS,
+    FEMALE_PROMPTS,
     HEADCOVER_PROMPTS,
+    MALE_PROMPTS,
     MAX_NEG_TO_POS_RATIO,
+    MIN_BODY_SCORE,
     MIN_HEADCOVER_SCORE,
+    MIN_MALE_SCORE,
     MIN_POS_SCORE,
     NEGATIVE_PROMPTS,
     NEG_SCORE_WEIGHT,
@@ -63,6 +69,34 @@ def clamp_without_headcover(
     return score
 
 
+def clamp_not_male(
+    score: float,
+    male_score: float,
+    female_score: float,
+    *,
+    min_male_score: float = MIN_MALE_SCORE,
+    score_threshold: float = DEFAULT_SCORE_THRESHOLD,
+) -> float:
+    """Reject women / non-male crops (male cue must clear gate and beat female)."""
+    if male_score < min_male_score or female_score >= male_score:
+        return min(score, score_threshold - 0.05)
+    return score
+
+
+def clamp_face_only(
+    score: float,
+    body_score: float,
+    face_score: float,
+    *,
+    min_body_score: float = MIN_BODY_SCORE,
+    score_threshold: float = DEFAULT_SCORE_THRESHOLD,
+) -> float:
+    """Reject tight face crops — need shoulders/torso person shape."""
+    if body_score < min_body_score or face_score >= body_score:
+        return min(score, score_threshold - 0.05)
+    return score
+
+
 def clamp_strong_negative(
     score: float,
     pos_score: float,
@@ -93,12 +127,26 @@ class CueScorer:
             pos_tok = self.tokenizer(POSITIVE_PROMPTS).to(self.device)
             neg_tok = self.tokenizer(NEGATIVE_PROMPTS).to(self.device)
             head_tok = self.tokenizer(HEADCOVER_PROMPTS).to(self.device)
+            male_tok = self.tokenizer(MALE_PROMPTS).to(self.device)
+            female_tok = self.tokenizer(FEMALE_PROMPTS).to(self.device)
+            body_tok = self.tokenizer(BODY_PROMPTS).to(self.device)
+            face_tok = self.tokenizer(FACE_ONLY_PROMPTS).to(self.device)
             self.pos_feat = self.model.encode_text(pos_tok)
             self.neg_feat = self.model.encode_text(neg_tok)
             self.head_feat = self.model.encode_text(head_tok)
+            self.male_feat = self.model.encode_text(male_tok)
+            self.female_feat = self.model.encode_text(female_tok)
+            self.body_feat = self.model.encode_text(body_tok)
+            self.face_feat = self.model.encode_text(face_tok)
             self.pos_feat = self.pos_feat / self.pos_feat.norm(dim=-1, keepdim=True)
             self.neg_feat = self.neg_feat / self.neg_feat.norm(dim=-1, keepdim=True)
             self.head_feat = self.head_feat / self.head_feat.norm(dim=-1, keepdim=True)
+            self.male_feat = self.male_feat / self.male_feat.norm(dim=-1, keepdim=True)
+            self.female_feat = self.female_feat / self.female_feat.norm(
+                dim=-1, keepdim=True
+            )
+            self.body_feat = self.body_feat / self.body_feat.norm(dim=-1, keepdim=True)
+            self.face_feat = self.face_feat / self.face_feat.norm(dim=-1, keepdim=True)
 
     @torch.no_grad()
     def score_image(self, pil_img: Image.Image) -> tuple[float, float, float, str]:
@@ -108,6 +156,10 @@ class CueScorer:
         pos_sims = (img_feat @ self.pos_feat.T).squeeze(0)
         neg_sims = (img_feat @ self.neg_feat.T).squeeze(0)
         head_sims = (img_feat @ self.head_feat.T).squeeze(0)
+        male_sims = (img_feat @ self.male_feat.T).squeeze(0)
+        female_sims = (img_feat @ self.female_feat.T).squeeze(0)
+        body_sims = (img_feat @ self.body_feat.T).squeeze(0)
+        face_sims = (img_feat @ self.face_feat.T).squeeze(0)
         # Best positive vs strongest negatives (stricter than mean-of-many).
         k_pos = min(max(1, TOP_K_CUES), pos_sims.numel())
         top_pos, top_idx = torch.topk(pos_sims, k_pos)
@@ -115,10 +167,16 @@ class CueScorer:
         k_neg = min(max(1, TOP_K_NEGS), neg_sims.numel())
         neg_score = float(torch.topk(neg_sims, k_neg).values.mean().item())
         headcover_score = float(head_sims.max().item())
+        male_score = float(male_sims.max().item())
+        female_score = float(female_sims.max().item())
+        body_score = float(body_sims.max().item())
+        face_score = float(face_sims.max().item())
         # Soften negative pull so OpenAI sees more borderline crops.
         score = pos_score - float(NEG_SCORE_WEIGHT) * neg_score
         best_cue = POSITIVE_PROMPTS[int(top_idx[0].item())]
         score = clamp_weak_score(score, pos_score)
+        score = clamp_not_male(score, male_score, female_score)
+        score = clamp_face_only(score, body_score, face_score)
         score = clamp_without_headcover(score, headcover_score)
         score = clamp_strong_negative(score, pos_score, neg_score)
         return score, pos_score, neg_score, best_cue

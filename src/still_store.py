@@ -1,4 +1,4 @@
-"""Persist Review stills on disk so Catbox expiry does not blank the UI."""
+"""Persist Review stills on disk (local /media/sheet only — no Catbox)."""
 
 from __future__ import annotations
 

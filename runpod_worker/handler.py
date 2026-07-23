@@ -1,6 +1,7 @@
-"""ShtetlFrames RunPod worker — download, GPU scan, upload stills.
+"""ShtetlFrames RunPod worker — download, GPU scan, save local Review stills.
 
 Vision scoring lives in `shtetl_core` (same package as the local app).
+Catbox / cloud hosts are not used — stills go on disk + inline still_b64.
 """
 
 from __future__ import annotations
@@ -28,7 +29,6 @@ from shtetl_core import (
     aggregate_segments_dicts,
     scan_video as core_scan_video,
     slugify,
-    upload_image,
     write_sheet_from_crops,
 )
 
@@ -172,7 +172,7 @@ def clear_job_stills(queue_id: Any = None) -> None:
 
 
 def _encode_review_still(src: Path) -> tuple[bytes | None, str | None]:
-    """Compact JPEG bytes + base64 for the PC. Prefer small payloads (proxy limits)."""
+    """Compact JPEG bytes + base64 for the PC (local Review; no cloud upload)."""
     try:
         import base64
         import io
@@ -181,27 +181,39 @@ def _encode_review_still(src: Path) -> tuple[bytes | None, str | None]:
 
         with Image.open(src) as im:
             rgb = im.convert("RGB")
-            # Must fit inline in /result JSON — Catbox often fails and /still is flaky.
-            # Target <~120KB raw so base64 stays under the client inline cap.
-            for max_side, quality in ((720, 72), (640, 65), (512, 58), (420, 50), (360, 42)):
+            # Keep small so /result JSON always carries still_b64 (GET /still is backup).
+            raw = b""
+            for max_side, quality in (
+                (720, 72),
+                (640, 65),
+                (512, 58),
+                (420, 50),
+                (360, 42),
+                (320, 38),
+            ):
                 work = rgb.copy()
                 work.thumbnail((max_side, max_side))
                 buf = io.BytesIO()
                 work.save(buf, format="JPEG", quality=quality, optimize=True)
                 raw = buf.getvalue()
-                if len(raw) <= 100_000:
+                if len(raw) <= 90_000:
                     return raw, base64.standard_b64encode(raw).decode("ascii")
-            return raw, base64.standard_b64encode(raw).decode("ascii")
+            if raw:
+                return raw, base64.standard_b64encode(raw).decode("ascii")
     except Exception:
-        try:
-            import base64
+        pass
+    try:
+        import base64
 
-            raw = Path(src).read_bytes()
-            if len(raw) > 500_000:
-                return None, None
-            return raw, base64.standard_b64encode(raw).decode("ascii")
-        except Exception:
+        raw = Path(src).read_bytes()
+        if not raw:
             return None, None
+        # Last resort: send original if modest; else skip (disk /still still works).
+        if len(raw) > 400_000:
+            return None, None
+        return raw, base64.standard_b64encode(raw).decode("ascii")
+    except Exception:
+        return None, None
 
 
 def reset_models() -> None:
@@ -877,7 +889,7 @@ def process_job(inp: dict) -> dict:
                     group = seg.pop("_hits")
                     set_progress(
                         "upload",
-                        f"uploading stills {i}/{n_segs}" if n_segs else "no segments",
+                        f"saving stills {i}/{n_segs}" if n_segs else "no segments",
                         pct=(100.0 * i / n_segs) if n_segs else 100,
                         detail=f"{len(hits)} frame hits → segments",
                         queue_id=queue_id,
@@ -890,7 +902,7 @@ def process_job(inp: dict) -> dict:
                         tmp_path = Path(tmp.name)
                     wrote = write_sheet_from_crops(group, tmp_path)
                     if wrote:
-                        # Vision verify on the pod with the local JPEG — Catbox URLs often 0-byte / blocked.
+                        # Vision verify on the pod with the local JPEG.
                         backend_raw = (
                             str(inp.get("verify_backend") or os.environ.get("VERIFY_BACKEND") or "openai")
                             .strip()
@@ -993,11 +1005,11 @@ def process_job(inp: dict) -> dict:
                                 dest.write_bytes(still_raw)
                             else:
                                 shutil.copyfile(wrote, dest)
+                                # Re-encode from disk copy if PIL path failed earlier.
+                                if not still_b64:
+                                    still_raw, still_b64 = _encode_review_still(dest)
                         except OSError:
                             still_flags.append("still_disk_fail")
-                        image_url = upload_image(wrote, user_agent=USER_AGENT)
-                        if not image_url:
-                            still_flags.append("upload_failed")
                         if not still_b64:
                             still_flags.append("still_b64_missing")
                     try:
@@ -1019,18 +1031,13 @@ def process_job(inp: dict) -> dict:
                         "hit_count": seg["hit_count"],
                         "best_cue": seg["best_cue"],
                         "source_url": source_url,
-                        "image_url": image_url,
+                        "image_url": None,
                         "notes": notes,
                         "still_index": i,
                     }
-                    # Always inline when possible — Catbox expires; /still is backup.
-                    # Cap raised: PC hydrate also GETs /still if this is omitted.
-                    if still_b64 and len(still_b64) <= 550_000:
+                    # Always inline when possible — PC saves to contact_sheets/.
+                    if still_b64:
                         seg_out["still_b64"] = still_b64
-                    elif still_b64:
-                        seg_out["notes"] = (
-                            f"still_b64_too_large {seg_out.get('notes') or ''}".strip()
-                        )[:500]
                     segments.append(seg_out)
                 set_progress(
                     "done",

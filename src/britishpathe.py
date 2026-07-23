@@ -66,10 +66,97 @@ DEFAULT_PAGE_LIMIT = 48
 
 _CACHE_PATH = DATA_DIR / "pathe_resolve_cache.json"
 _CATALOG_PATH = DATA_DIR / "pathe_catalog.jsonl"
+_DISCOVER_CURSOR_PATH = DATA_DIR / "pathe_discover_cursor.json"
 _cache_lock = threading.Lock()
 _cache: dict[str, Any] | None = None
+_cursor_lock = threading.Lock()
 
 OnStatus = Callable[[str], None]
+
+_PAGES_IN_MSG_RE = re.compile(
+    r"pages\s+(\d+)\s*[–\-]\s*(\d+).*?([\d,]+)\s*/\s*([\d,]+)\s*urls",
+    re.I,
+)
+
+
+def load_discover_cursor(query: str = "") -> dict[str, Any] | None:
+    """Return saved listing-page cursor for this query, or None."""
+    q = (query or "").strip()
+    with _cursor_lock:
+        if not _DISCOVER_CURSOR_PATH.is_file():
+            return None
+        try:
+            data = json.loads(_DISCOVER_CURSOR_PATH.read_text(encoding="utf-8"))
+        except Exception:
+            return None
+    if not isinstance(data, dict):
+        return None
+    if (data.get("query") or "").strip() != q:
+        return None
+    try:
+        page = max(1, int(data.get("next_page") or 1))
+        found = max(0, int(data.get("n_found") or 0))
+    except (TypeError, ValueError):
+        return None
+    return {"query": q, "next_page": page, "n_found": found}
+
+
+def save_discover_cursor(
+    *,
+    query: str = "",
+    next_page: int,
+    n_found: int = 0,
+) -> None:
+    q = (query or "").strip()
+    payload = {
+        "query": q,
+        "next_page": max(1, int(next_page)),
+        "n_found": max(0, int(n_found)),
+        "updated_at": time.time(),
+    }
+    with _cursor_lock:
+        DATA_DIR.mkdir(parents=True, exist_ok=True)
+        _DISCOVER_CURSOR_PATH.write_text(
+            json.dumps(payload, ensure_ascii=False, indent=2) + "\n",
+            encoding="utf-8",
+        )
+
+
+def clear_discover_cursor(query: str | None = None) -> None:
+    """Drop saved cursor. If query is set, only clear when it matches."""
+    with _cursor_lock:
+        if not _DISCOVER_CURSOR_PATH.is_file():
+            return
+        if query is not None:
+            try:
+                data = json.loads(_DISCOVER_CURSOR_PATH.read_text(encoding="utf-8"))
+            except Exception:
+                data = None
+            if isinstance(data, dict) and (data.get("query") or "").strip() != (
+                query or ""
+            ).strip():
+                return
+        try:
+            _DISCOVER_CURSOR_PATH.unlink()
+        except OSError:
+            pass
+
+
+def cursor_from_discover_message(message: str, *, query: str = "") -> dict[str, Any] | None:
+    """Parse ``pages A–B · N/M urls`` from a job status line (crash recovery)."""
+    m = _PAGES_IN_MSG_RE.search(message or "")
+    if not m:
+        return None
+    try:
+        end = int(m.group(2))
+        found = int(m.group(3).replace(",", ""))
+    except ValueError:
+        return None
+    return {
+        "query": (query or "").strip(),
+        "next_page": max(1, end + 1),
+        "n_found": max(0, found),
+    }
 
 
 def is_britishpathe_url(url: str) -> bool:
@@ -704,6 +791,9 @@ def discover_catalog(
     on_batch: Callable[[list[dict[str, str]]], None] | None = None,
     on_window: Callable[[dict[str, Any]], bool | None] | None = None,
     remote_base: str | None = None,
+    start_page: int | None = None,
+    start_found: int | None = None,
+    resume: bool = True,
 ) -> dict[str, Any]:
     """Discover Pathé assets by paginating the site search listing.
 
@@ -716,6 +806,7 @@ def discover_catalog(
     ``on_batch`` is called with newly found entries as pages complete.
     ``on_window`` may return ``False`` to stop early (e.g. all-dupe windows).
     When ``remote_base`` is set, listing pages are fetched on that RunPod.
+    With ``resume=True`` (default), continues from the saved listing page.
     """
     del year_start, year_end  # full listing URL does not use year facets
     max_items = max(1, min(int(max_items), 1_000_000))
@@ -744,11 +835,41 @@ def discover_catalog(
     pages_fetched = 0
     errors: list[str] = []
     empty_windows = 0
-    page = 1
     stopped_early = False
+    page = 1
+    prior_found = 0
+    if resume:
+        cur = load_discover_cursor(q)
+        if cur:
+            page = int(cur["next_page"])
+            prior_found = int(cur["n_found"])
+    if start_page is not None:
+        try:
+            page = max(1, int(start_page))
+        except (TypeError, ValueError):
+            pass
+    if start_found is not None:
+        try:
+            prior_found = max(0, int(start_found))
+        except (TypeError, ValueError):
+            pass
+    if not resume and start_page is None:
+        clear_discover_cursor(q)
+        page = 1
+        prior_found = 0
+    resumed_from_page = page if page > 1 else None
+
+    def total_found() -> int:
+        return prior_found + len(found)
+
     label = f"q:{q[:40]}" if q else "all"
     where = "pod" if remote else "local"
     note(f"Pathé discover via {where}" + (f" · {remote.split('//')[-1][:32]}" if remote else ""))
+    if page > 1 or prior_found > 0:
+        note(
+            f"Pathé discover · resuming at page {page:,}"
+            f" · {prior_found:,} urls already seen…"
+        )
 
     def _fetch_page(p: int) -> tuple[int, list[dict[str, str]] | None, str | None]:
         url = search_url(q, page=p)
@@ -757,11 +878,11 @@ def discover_catalog(
         except Exception as e:
             return p, None, str(e)[:160]
 
-    while len(found) < max_items and empty_windows < 3 and page <= 50_000:
+    while total_found() < max_items and empty_windows < 3 and page <= 50_000:
         window = list(range(page, min(page + concurrency, 50_001)))
         note(
             f"Pathé discover · {label} · pages {window[0]}–{window[-1]} "
-            f"×{concurrency} · {len(found):,}/{max_items:,} urls…"
+            f"×{concurrency} · {total_found():,}/{max_items:,} urls…"
         )
         results: list[tuple[int, list[dict[str, str]] | None, str | None]] = []
         with ThreadPoolExecutor(max_workers=len(window)) as pool:
@@ -772,7 +893,7 @@ def discover_catalog(
 
         new_in_window = 0
         for p, batch, err in results:
-            if len(found) >= max_items:
+            if total_found() >= max_items:
                 break
             if err is not None:
                 errors.append(f"p{p}: {err}")
@@ -786,11 +907,19 @@ def discover_catalog(
                     continue
                 found[aid] = e
                 fresh.append(e)
-                if len(found) >= max_items:
+                if total_found() >= max_items:
                     break
             if fresh:
                 new_in_window += len(fresh)
                 emit_batch(fresh)
+
+        next_page = page + len(window)
+        try:
+            save_discover_cursor(
+                query=q, next_page=next_page, n_found=total_found()
+            )
+        except Exception:
+            pass
 
         if new_in_window == 0:
             empty_windows += 1
@@ -810,7 +939,8 @@ def discover_catalog(
                         "page": window[0],
                         "pages": window,
                         "new_in_window": new_in_window,
-                        "found": len(found),
+                        "found": total_found(),
+                        "next_page": next_page,
                     }
                 )
             except Exception:
@@ -823,22 +953,31 @@ def discover_catalog(
                 )
                 break
 
-        page += len(window)
+        page = next_page
 
-    entries = list(found.values())[:max_items]
+    entries = list(found.values())
+    # Cap this-run entries; prior_found already counted toward max_items.
+    remain = max(0, max_items - prior_found)
+    entries = entries[:remain]
     err_note = f" · {len(errors)} page error(s)" if errors else ""
     if stopped_early:
         err_note += " · paused (dupe windows)"
-    note(f"Pathé discover done · {len(entries):,} unique asset URLs{err_note}")
+    hit_cap = total_found() >= max_items and not stopped_early
+    note(
+        f"Pathé discover done · {prior_found + len(entries):,} unique asset URLs"
+        f" (+{len(entries):,} this run){err_note}"
+    )
     return {
         "ok": True,
         "entries": entries,
         "n": len(entries),
+        "n_total": prior_found + len(entries),
         "pages_fetched": pages_fetched,
         "years": "all",
         "query": q,
         "errors": errors[:12],
-        "truncated": len(entries) >= max_items,
+        "truncated": hit_cap,
         "concurrency": concurrency,
         "stopped_early": stopped_early,
+        "resumed_from_page": resumed_from_page,
     }

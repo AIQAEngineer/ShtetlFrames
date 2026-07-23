@@ -22,6 +22,8 @@ from settings_store import apply_settings_to_environ  # noqa: E402
 from shtetl_core.cues import (  # noqa: E402
     DEFAULT_SCORE_THRESHOLD,
     MIN_PERSON_AREA,
+    MIN_PERSON_ASPECT,
+    MIN_PERSON_HEIGHT,
     YOLO_CONF,
 )
 from shtetl_core.scoring import CueScorer  # noqa: E402
@@ -116,14 +118,19 @@ def main() -> int:
             xyxy = box.xyxy[0].cpu().numpy()
             x1, y1, x2, y2 = map(int, xyxy)
             w, h = x2 - x1, y2 - y1
-            if w * h < MIN_PERSON_AREA:
+            if w <= 0 or h <= 0 or w * h < MIN_PERSON_AREA:
                 continue
-            y2b = y1 + max(h // 2, min(h, int(h * 0.75)))
+            if h < MIN_PERSON_HEIGHT or (h / float(w)) < MIN_PERSON_ASPECT:
+                continue
+            y2b = y1 + max(int(h * 0.60), min(h, int(h * 0.80)))
             crop = frame[
                 max(0, y1) : min(frame.shape[0], y2b),
                 max(0, x1) : min(frame.shape[1], x2),
             ]
             if crop.size == 0:
+                continue
+            ch, cw = crop.shape[:2]
+            if ch < MIN_PERSON_HEIGHT or (ch / float(max(cw, 1))) < 0.95:
                 continue
             pil = Image.fromarray(cv2.cvtColor(crop, cv2.COLOR_BGR2RGB))
             score, pos_s, neg_s, cue = scorer.score_image(pil)
@@ -247,6 +254,30 @@ def main() -> int:
     keeps = [i for i, r in enumerate(rows, 1) if notes_openai_approved(r.get("notes"))]
     drops = [i for i, r in enumerate(rows, 1) if notes_openai_dropped(r.get("notes"))]
     print("---", flush=True)
+    for i, r in enumerate(rows, 1):
+        tag = (
+            "KEEP"
+            if notes_openai_approved(r.get("notes"))
+            else ("DROP" if notes_openai_dropped(r.get("notes")) else "OTHER")
+        )
+        print(
+            f"#{i} [{tag}] {r.get('start_sec')}-{r.get('end_sec')}s "
+            f"peak={r.get('peak_score')} cue={(r.get('best_cue') or '')[:70]}",
+            flush=True,
+        )
+        print(f"    {(r.get('notes') or '')[:240]}", flush=True)
+
+    from db import init_db, insert_candidates
+
+    init_db()
+    keep_rows = [r for r in rows if notes_openai_approved(r.get("notes"))]
+    if keep_rows:
+        # Persist local stills into contact_sheets via insert_candidates.
+        n = insert_candidates(keep_rows)
+        print(f"inserted keeps into Review DB: {n}", flush=True)
+    else:
+        print("no keeps to insert", flush=True)
+
     print(f"OpenAI keeps: {keeps}", flush=True)
     print(f"OpenAI drops: {drops}", flush=True)
     print(f"WOULD_ENTER_REVIEW_POSITIVE={bool(keeps)}", flush=True)

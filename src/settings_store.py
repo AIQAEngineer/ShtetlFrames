@@ -39,6 +39,13 @@ SETTING_DEFS: dict[str, dict[str, Any]] = {
         "max": 8,
         "help": "Scrape GPU pods (1–8). Pathé may add +1 dedicated discover pod (hard cap 9).",
     },
+    "POD_CREATES_BLOCKED": {
+        "label": "Block new GPU pods",
+        "type": "select",
+        "options": ["0", "1"],
+        "default": "0",
+        "help": "1 = do not create new RunPod GPUs (reuse healthy pods only). Use while discovery-only.",
+    },
     "PATHE_STACK_MAX": {
         "label": "Pathé jobs per GPU",
         "type": "number",

@@ -101,9 +101,12 @@ def ensure_candidate_still(
     if existing.is_file() and existing.stat().st_size > 200:
         return existing
 
-    # Fast: re-download Catbox / files.catbox if still live.
+    # Optional legacy HTTP still (never Catbox — that host is disabled).
     url = (image_url or "").strip()
-    if url.startswith(("http://", "https://")) and "litter.catbox" not in url.lower():
+    if (
+        url.startswith(("http://", "https://"))
+        and "catbox" not in url.lower()
+    ):
         saved = save_candidate_still(cid, image_url=url)
         if saved:
             return saved

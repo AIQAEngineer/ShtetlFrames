@@ -28,6 +28,66 @@ _bg_fill_active = False
 # Names reserved by in-flight creates (GraphQL list lags → duplicate names otherwise).
 _claimed_names: set[str] = set()
 _claimed_names_lock = threading.Lock()
+# When True, ensure_pods / create_pod will not spin up new machines (discover-only).
+_pod_creates_blocked = False
+_pod_creates_lock = threading.Lock()
+# Soft cap on live shtetl pods while discover runs (scrape clears this).
+# None = normal account cap (MAX_INFLIGHT + discover spare).
+_pod_create_ceiling: int | None = None
+
+
+def set_pod_creates_blocked(blocked: bool = True) -> None:
+    """Block (or allow) creating new ShtetlFrames RunPod GPUs (persisted)."""
+    import os
+
+    global _pod_creates_blocked
+    flag = bool(blocked)
+    with _pod_creates_lock:
+        _pod_creates_blocked = flag
+    os.environ["POD_CREATES_BLOCKED"] = "1" if flag else "0"
+    try:
+        from settings_store import set_settings
+
+        set_settings({"POD_CREATES_BLOCKED": "1" if flag else "0"})
+    except Exception:
+        pass
+
+
+def pod_creates_blocked() -> bool:
+    import os
+
+    with _pod_creates_lock:
+        if _pod_creates_blocked:
+            return True
+    raw = (os.environ.get("POD_CREATES_BLOCKED") or "").strip().lower()
+    if raw in ("1", "true", "yes", "on"):
+        return True
+    try:
+        from settings_store import get_setting
+
+        raw = (get_setting("POD_CREATES_BLOCKED") or "").strip().lower()
+        return raw in ("1", "true", "yes", "on")
+    except Exception:
+        return False
+
+
+def set_pod_create_ceiling(n: int | None) -> None:
+    """Limit how many shtetl pods may exist (creates + trim keep).
+
+    Discover sets this to ``1`` so listing cannot grow a scrape fleet.
+    Pathé / YouTube scrape clears it (``None``) before ``ensure_pods``.
+    """
+    global _pod_create_ceiling
+    with _pod_creates_lock:
+        if n is None:
+            _pod_create_ceiling = None
+        else:
+            _pod_create_ceiling = max(1, int(n))
+
+
+def pod_create_ceiling() -> int | None:
+    with _pod_creates_lock:
+        return _pod_create_ceiling
 
 # Prefer cheaper capable GPUs first; fall back when a pool is full.
 GPU_FALLBACKS = [
@@ -147,7 +207,11 @@ def shtetl_account_cap() -> int:
         1,
         min(int(getattr(app_config, "RUNPOD_MAX_INFLIGHT", None) or 8), MAX_PARALLEL_PODS),
     )
-    return min(MAX_SHTETL_PODS, scrape + MAX_DISCOVER_EXTRA)
+    cap = min(MAX_SHTETL_PODS, scrape + MAX_DISCOVER_EXTRA)
+    ceiling = pod_create_ceiling()
+    if ceiling is not None:
+        return max(1, min(cap, int(ceiling)))
+    return cap
 
 
 def find_shtetl_pod() -> dict | None:
@@ -305,6 +369,8 @@ def create_pod(
     Deploy on-demand GPU pod. Retries across images / GPU types / lighter resource asks
     when RunPod reports capacity misses or a bad image tag.
     """
+    if pod_creates_blocked():
+        raise RuntimeError("pod_creates_blocked — not creating new GPUs")
     from runpod_bootstrap import IMAGE_CANDIDATES
 
     skip = {s.strip() for s in (skip_images or set()) if s and s.strip()}
@@ -586,6 +652,9 @@ def ensure_pods(
     preferred = (app_config.RUNPOD_DOCKER_IMAGE or "").strip() or DEFAULT_BASE_IMAGE
     gpu = (app_config.RUNPOD_GPU_TYPE or "NVIDIA GeForce RTX 3090").strip()
     args = docker_start_args()
+    creates_blocked = pod_creates_blocked()
+    if creates_blocked and on_status:
+        on_status("Pod creates blocked — reusing healthy pods only")
 
     # Prefer the image already proven healthy on this account (matches live pods).
     proven_images: list[str] = []
@@ -662,8 +731,9 @@ def ensure_pods(
         if len(ready) >= scrape_pool_cap:
             continue
         try:
-            # Quick probe: warm pods answer immediately; booting ones 404/502.
-            wait_healthy(base, pod_id=pid, on_status=on_status, timeout_sec=45)
+            # Quick probe: warm pods answer immediately. Cold boots 404/ports=0 —
+            # keep this short so Pathé discover is not stuck 45s×N on zombies.
+            wait_healthy(base, pod_id=pid, on_status=on_status, timeout_sec=8)
             ready.append((pid, base))
             if on_status:
                 on_status(f"pod ready · {name} · {len(ready)}/{max(n, len(ready))}")
@@ -952,8 +1022,22 @@ def ensure_pods(
             target=_bg_fill, daemon=True, name="runpod-ensure-fill"
         ).start()
 
+    if creates_blocked:
+        # Discover-only / manual freeze — never create or bg-fill.
+        if not ready:
+            raise RuntimeError("pod_creates_blocked and no healthy pods")
+        _persist_pod_id(ready[0][0])
+        return [base for _, base in ready]
+
     if return_early and ready:
         _start_bg_fill(list(ready), list(booting))
+        _persist_pod_id(ready[0][0])
+        return [base for _, base in ready]
+
+    # Already have enough healthy pods — do not block on cold boots.
+    if len(ready) >= max(min_ready, 1) and len(ready) >= n:
+        if booting:
+            _start_bg_fill(list(ready), list(booting))
         _persist_pod_id(ready[0][0])
         return [base for _, base in ready]
 

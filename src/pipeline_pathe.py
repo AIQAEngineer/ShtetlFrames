@@ -35,6 +35,24 @@ from db import (
 from pipeline_state import _active, _lock
 
 _pathe_live: dict[int, dict] = {}
+_scrape_stop = threading.Event()
+
+
+def stop_pathe_scrape(*, message: str = "Pathé scrape stopped") -> dict:
+    """Signal the running Pathé scrape loop to exit and mark the job idle."""
+    _scrape_stop.set()
+    with _lock:
+        was = bool(_active.get("pathe_scrape"))
+        _active["pathe_scrape"] = False
+    set_job(
+        "pathe_scrape",
+        status="idle",
+        phase="",
+        message=message[:240],
+        progress=0,
+        error="",
+    )
+    return {"ok": True, "was_running": was, "job": get_job("pathe_scrape")}
 
 
 def _pathe_stack_ceiling() -> int:
@@ -63,8 +81,9 @@ def start_pathe_discover(
     year_start: int | None = None,
     year_end: int | None = None,
     max_items: int | None = None,
-    auto_scrape: bool = True,
+    auto_scrape: bool = False,
     workers: int | None = None,
+    resume: bool = True,
 ) -> dict:
     init_db()
     try:
@@ -77,6 +96,37 @@ def start_pathe_discover(
         if _active.get("pathe_discover"):
             return {"ok": False, "error": "busy", "job": get_job("pathe_discover")}
         _active["pathe_discover"] = True
+
+    # Capture page progress before we overwrite the job row (crash recovery).
+    if resume:
+        try:
+            from britishpathe import (
+                cursor_from_discover_message,
+                load_discover_cursor,
+                save_discover_cursor,
+            )
+
+            q = (query or "").strip()
+            if not load_discover_cursor(q):
+                prev = get_job("pathe_discover") or {}
+                parsed = cursor_from_discover_message(
+                    str(prev.get("message") or ""), query=q
+                )
+                if parsed and int(parsed.get("next_page") or 1) > 1:
+                    save_discover_cursor(
+                        query=q,
+                        next_page=int(parsed["next_page"]),
+                        n_found=int(parsed["n_found"]),
+                    )
+        except Exception:
+            pass
+    else:
+        try:
+            from britishpathe import clear_discover_cursor
+
+            clear_discover_cursor((query or "").strip())
+        except Exception:
+            pass
 
     set_job(
         "pathe_discover",
@@ -93,7 +143,7 @@ def start_pathe_discover(
     scrape_workers = workers if workers is not None else DEFAULT_WORKERS
     t = threading.Thread(
         target=_pathe_discover_job,
-        args=(query, year_start, year_end, cap, auto_scrape, scrape_workers),
+        args=(query, year_start, year_end, cap, auto_scrape, scrape_workers, resume),
         daemon=True,
     )
     t.start()
@@ -107,30 +157,75 @@ def _pathe_discover_job(
     cap: int,
     auto_scrape: bool = True,
     scrape_workers: int = DEFAULT_WORKERS,
+    resume: bool = True,
 ) -> None:
-    from britishpathe import discover_catalog
+    from britishpathe import (
+        clear_discover_cursor,
+        discover_catalog,
+        load_discover_cursor,
+    )
     from logutil import status
 
     discover_pod: str | None = None
     try:
+        # Discover may reuse one GPU for listing — never grow a scrape fleet.
+        try:
+            from runpod_provision import set_pod_create_ceiling
+
+            set_pod_create_ceiling(1)
+        except Exception:
+            pass
+
         def report(msg: str, **kw) -> None:
             status(msg, job="pathe_discover", persist=False)
             set_job("pathe_discover", message=msg, **kw)
 
-        report("Pathé catalog discover started…", progress=8)
+        start_page = None
+        start_found = None
+        if resume:
+            cur = load_discover_cursor((query or "").strip())
+            if cur:
+                start_page = int(cur["next_page"])
+                start_found = int(cur["n_found"])
+            if start_page and start_page > 1:
+                report(
+                    f"Resuming Pathé discover at page {start_page:,} "
+                    f"({start_found or 0:,} urls already seen)…",
+                    progress=8,
+                )
+            else:
+                report("Pathé catalog discover started…", progress=8)
+        else:
+            clear_discover_cursor((query or "").strip())
+            report("Pathé catalog discover started (from page 1)…", progress=8)
         counters = {"added": 0, "skipped": 0}
         scrape_started = {"v": False}
 
-        # Prefer a dedicated RunPod for listing Scrapfly so scrape resolve on the
-        # PC is not starved. Falls back to local Scrapfly if no pod.
+        # Prefer a ready RunPod for listing Scrapfly so scrape resolve on the
+        # PC is not starved. Never block discover on cold pod boots — fall back
+        # to local Scrapfly within a few seconds.
         if effective_scan_backend() == "runpod":
             try:
+                from concurrent.futures import ThreadPoolExecutor, TimeoutError as FutTimeout
                 from runpod_client import reserve_pathe_discover_pod
 
-                discover_pod = reserve_pathe_discover_pod(
-                    on_status=lambda m: report(m, progress=10),
-                    scrape_pods=scrape_workers,
-                )
+                report("Finding ready Pathé discover pod (max 1)…", progress=10)
+
+                def _reserve() -> str:
+                    return reserve_pathe_discover_pod(
+                        on_status=lambda m: report(m, progress=10),
+                    )
+
+                with ThreadPoolExecutor(max_workers=1) as pool:
+                    fut = pool.submit(_reserve)
+                    try:
+                        discover_pod = fut.result(timeout=15.0)
+                    except FutTimeout:
+                        report(
+                            "Discover pod slow — using local Scrapfly…",
+                            progress=10,
+                        )
+                        discover_pod = None
             except Exception as e:
                 report(
                     f"Discover pod unavailable ({e}) — using local Scrapfly…",
@@ -147,6 +242,7 @@ def _pathe_discover_job(
             counters["skipped"] += int(merged.get("n_skipped") or 0)
             # Start scrape only after first URLs land — avoids Scrapfly contention
             # that was returning blank listing pages.
+            # Auto-scrape spins RunPod GPUs via ensure_pods — off unless explicitly enabled.
             if auto_scrape and not scrape_started["v"] and counters["added"] > 0:
                 scrape_started["v"] = True
                 start_pathe_scrape(
@@ -202,6 +298,9 @@ def _pathe_discover_job(
             on_batch=on_batch,
             on_window=on_window,
             remote_base=discover_pod,
+            start_page=start_page,
+            start_found=start_found,
+            resume=resume,
         )
         entries = result.get("entries") or []
         source_note = ""
@@ -305,6 +404,15 @@ def _pathe_discover_job(
                 pass
         with _lock:
             _active["pathe_discover"] = False
+            scraping = bool(_active.get("pathe_scrape"))
+        # Restore normal pod cap unless scrape already owns the fleet.
+        if not scraping:
+            try:
+                from runpod_provision import set_pod_create_ceiling
+
+                set_pod_create_ceiling(None)
+            except Exception:
+                pass
 
 
 def start_pathe_scrape(
@@ -331,10 +439,15 @@ def start_pathe_scrape(
                 "backend": backend,
             }
         _active["pathe_scrape"] = True
+        _scrape_stop.clear()
 
     try:
         if backend == "runpod":
-            from runpod_provision import MAX_PARALLEL_PODS
+            from runpod_provision import MAX_PARALLEL_PODS, set_pod_create_ceiling
+
+            # Scrape may use the full MAX_INFLIGHT pool, but never silently
+            # clear POD_CREATES_BLOCKED — that flag is a hard user freeze.
+            set_pod_create_ceiling(None)
 
             max_inflight = max(
                 1, min(int(app_config.RUNPOD_MAX_INFLIGHT or 4), MAX_PARALLEL_PODS)
@@ -609,6 +722,9 @@ def _pathe_scrape_job(workers: int, backend: str, limit: int | None) -> None:
             futs: dict = {}
             last_pool_sync = 0.0
             while True:
+                if _scrape_stop.is_set():
+                    status("Pathé scrape stop requested", job="pathe_scrape")
+                    break
                 # Re-read stack ceiling every loop so Settings raises apply live.
                 if backend == "runpod":
                     try:

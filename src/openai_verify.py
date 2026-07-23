@@ -54,9 +54,11 @@ _SYSTEM = (
     "COUNT AS NO: bare heads; military/naval caps; turbans; keffiyeh; biretta; mitre; "
     "bowler/top hat on secular dress; hair/payot alone. A long coat alone is NEVER enough. "
     "KEEP only when looks_jewish=true AND head_covered=true. "
+    "Also require an adult MALE (not a woman/girl) and enough of the person visible "
+    "(shoulders/chest/coat — reject tight face-only crops with no body). "
     "HARD REJECT Pathé-style false keeps: sports crowds, royal parades, military, other "
     "faiths' clergy, generic bearded Western men without Orthodox cues, costume caricature, "
-    "empty/unclear frames. "
+    "empty/unclear frames, women, face-only close-ups. "
     "If the only doubt is whether a fur hat is a shtreimel but the man otherwise looks "
     "Hasidic, PREFER keep with head_covered=true. "
     "Do not claim anyone is a rabbi. When human KEEP/PASS examples are provided, match "
@@ -238,14 +240,23 @@ def open_vlm_url_is_local(url: str | None = None) -> bool:
 
 
 def _notes_tag_match(notes: str | None, tag: str) -> bool:
-    """True if any line starts with openai:{tag} or vlm:{tag}."""
+    """True if notes contain openai:{tag} or vlm:{tag} (prefix flags allowed)."""
+    low = (notes or "").strip().lower()
+    if not low:
+        return False
     want = f":{tag}"
-    for line in (notes or "").splitlines():
-        low = line.strip().lower()
-        if low.startswith("openai" + want) or low.startswith("vlm" + want):
+    # Exact line starts (preferred) or token anywhere — pods may prefix
+    # still_flags like ``upload_failed openai:keep …``.
+    for line in low.splitlines():
+        s = line.strip()
+        if s.startswith("openai" + want) or s.startswith("vlm" + want):
             return True
-    low0 = (notes or "").strip().lower()
-    return low0.startswith("openai" + want) or low0.startswith("vlm" + want)
+    return (
+        f"openai{want}" in low
+        or f"vlm{want}" in low
+        or low.startswith("openai" + want)
+        or low.startswith("vlm" + want)
+    )
 
 
 def _parse_verdict(content: str) -> dict[str, Any]:

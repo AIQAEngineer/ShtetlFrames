@@ -24,11 +24,42 @@ HEADCOVER_PROMPTS = [
     "Hasidic man in a wide brim black hat covering his head",
 ]
 
+# Must look male (adult man). Compared against FEMALE_PROMPTS so women are rejected.
+MALE_PROMPTS = [
+    "adult man male person",
+    "grown man with male face and male clothing",
+    "photograph of a man not a woman",
+    "male person upper body",
+]
+
+FEMALE_PROMPTS = [
+    "adult woman female person",
+    "grown woman with female face",
+    "photograph of a woman not a man",
+    "girl or young woman",
+]
+
+# Must show enough person / upper-body shape — not a tight face-only crop.
+BODY_PROMPTS = [
+    "upper body of a person showing shoulders and chest",
+    "person from the chest up with torso and shoulders visible",
+    "man wearing a coat with shoulders and upper body in frame",
+    "full upper-body portrait including head shoulders and chest",
+]
+
+FACE_ONLY_PROMPTS = [
+    "extreme close-up of a face only filling the frame",
+    "tight headshot face crop with no shoulders visible",
+    "face portrait cropped above the neck only",
+    "close-up facial photo with no torso or coat visible",
+]
+
 # Hard negatives for common false positives in newsreels / Pathé / docs.
 NEGATIVE_PROMPTS = [
     "modern business suit and necktie",
     "military uniform and helmet",
     "woman in modern dress",
+    "adult woman or girl",
     "blurry crowd of anonymous people",
     "child only no adult man",
     "bare headed clean shaven modern man",
@@ -51,6 +82,8 @@ NEGATIVE_PROMPTS = [
     "cowboy hat western clothing",
     "bald or short hair man without beard",
     "film actor or celebrity portrait",
+    "close-up face only no body or shoulders",
+    "tight headshot with no torso visible",
     "secular european crowd in dark coats at a ceremony",
 ]
 
@@ -64,6 +97,8 @@ YOLO_WEIGHTS = "yolov8s.pt"
 DEFAULT_SCORE_THRESHOLD = 0.04
 MIN_POS_SCORE = 0.20
 MIN_HEADCOVER_SCORE = 0.16
+MIN_MALE_SCORE = 0.18
+MIN_BODY_SCORE = 0.16
 MAX_NEG_TO_POS_RATIO = 0.95
 NEG_SCORE_WEIGHT = 0.85
 DEFAULT_FPS = 1.5
@@ -72,6 +107,10 @@ MAX_GAP_SEC = 2.0
 # Hard cap per video after CLIP grouping — stops 20× OpenAI verifies on one reel.
 MAX_SEGMENTS_PER_VIDEO = 3
 MIN_PERSON_AREA = 40 * 80
+# Person box must be taller than wide (rejects face-square / head-only boxes).
+MIN_PERSON_ASPECT = 1.15
+# Absolute min bbox height in px — tiny face crops fail even if area clears.
+MIN_PERSON_HEIGHT = 100
 YOLO_CONF = 0.32
 TOP_K_CUES = 1
 TOP_K_NEGS = 3

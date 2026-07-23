@@ -278,6 +278,14 @@ class Handler(BaseHTTPRequestHandler):
             api_pathe.handle_post_scrape(self, body)
             return
 
+        if path == "/api/pathe/scrape/stop":
+            import api_pathe
+
+            api_pathe.handle_post_scrape_stop(
+                self, body if isinstance(body, dict) else {}
+            )
+            return
+
         if path == "/api/console/refresh":
             try:
                 from console_dash import draw, is_enabled, refresh_from_jobs
