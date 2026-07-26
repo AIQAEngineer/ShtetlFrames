@@ -112,8 +112,6 @@ NEG_SCORE_WEIGHT = 0.90
 DEFAULT_FPS = 1.5
 MIN_SEGMENT_SEC = 3.0
 MAX_GAP_SEC = 2.0
-# Hard cap per video after CLIP grouping — stops 20× OpenAI verifies on one reel.
-MAX_SEGMENTS_PER_VIDEO = 3
 MIN_PERSON_AREA = 40 * 80
 # Person box must be taller than wide (rejects face-square / head-only boxes).
 MIN_PERSON_ASPECT = 1.15
@@ -122,3 +120,7 @@ MIN_PERSON_HEIGHT = 100
 YOLO_CONF = 0.32
 TOP_K_CUES = 1
 TOP_K_NEGS = 3
+# Compat for older pod handlers that still import this. Current segments.py
+# ignores the cap when aggregation is uncapped; keep a high ceiling so a
+# partial sync_push cannot break warm-up (ImportError).
+MAX_SEGMENTS_PER_VIDEO = 10_000

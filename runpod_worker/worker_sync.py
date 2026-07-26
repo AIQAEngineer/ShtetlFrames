@@ -73,7 +73,6 @@ def cues_snapshot() -> dict[str, Any]:
             "MAX_NEG_TO_POS_RATIO": float(c.MAX_NEG_TO_POS_RATIO),
             "NEG_SCORE_WEIGHT": float(c.NEG_SCORE_WEIGHT),
             "TOP_K_NEGS": int(c.TOP_K_NEGS),
-            "MAX_SEGMENTS_PER_VIDEO": int(getattr(c, "MAX_SEGMENTS_PER_VIDEO", -1)),
             "YOLO_CONF": float(c.YOLO_CONF),
         }
     except Exception as e:
@@ -145,6 +144,23 @@ def _reload_modules(changed: list[str]) -> list[str]:
             want.add("handler")
         elif rel == "worker_sync.py":
             want.add("worker_sync")
+
+    alive = 0
+    if _inflight_fn:
+        try:
+            alive = int(_inflight_fn())
+        except Exception:
+            alive = 0
+    # Reloading handler mid-scan wipes in-memory _job_results / progress while the
+    # old thread still writes into the discarded module — client then sees pending forever.
+    if alive > 0 and ("handler" in want or any(x.startswith("shtetl_core") for x in want)):
+        print(
+            f"[shtetl] defer module reload — {alive} scan(s) in flight",
+            flush=True,
+        )
+        with _lock:
+            _state["pending_soft_recycle"] = True
+        return []
 
     for name in order:
         if name not in want:

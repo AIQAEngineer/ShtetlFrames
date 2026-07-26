@@ -8,7 +8,7 @@ from pathlib import Path
 import cv2
 import numpy as np
 
-from shtetl_core.cues import MAX_GAP_SEC, MAX_SEGMENTS_PER_VIDEO, MIN_SEGMENT_SEC
+from shtetl_core.cues import MAX_GAP_SEC, MIN_SEGMENT_SEC
 from shtetl_core.scoring import FrameHit
 
 
@@ -138,13 +138,10 @@ def aggregate_segments(
     min_seg: float = MIN_SEGMENT_SEC,
     max_gap: float = MAX_GAP_SEC,
     sheet_dir: Path | None = None,
-    max_segments: int = MAX_SEGMENTS_PER_VIDEO,
 ) -> list[CandidateSegment]:
     """Local pipeline shape: CandidateSegment (+ optional contact sheet)."""
     segs: list[CandidateSegment] = []
     packed = _group_hits(hits, min_seg=min_seg, max_gap=max_gap)
-    if max_segments and max_segments > 0:
-        packed = packed[: int(max_segments)]
     for group, stats in packed:
         contact = None
         if sheet_dir is not None:
@@ -186,13 +183,10 @@ def aggregate_segments_dicts(
     video_id: str,
     min_seg: float = MIN_SEGMENT_SEC,
     max_gap: float = MAX_GAP_SEC,
-    max_segments: int = MAX_SEGMENTS_PER_VIDEO,
 ) -> list[dict]:
     """Worker shape: dict segments with `_hits` for still upload."""
     out: list[dict] = []
     packed = _group_hits(hits, min_seg=min_seg, max_gap=max_gap)
-    if max_segments and max_segments > 0:
-        packed = packed[: int(max_segments)]
     for group, stats in packed:
         row = dict(stats)
         row["video_id"] = video_id

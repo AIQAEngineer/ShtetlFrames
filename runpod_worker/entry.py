@@ -463,8 +463,10 @@ def result(queue_id: str = Query(...)) -> dict:
             alive = t is not None and t.is_alive()
         prog = get_progress(qid)
         phase = str(prog.get("phase") or "")
-        # Thread vanished without storing a result (OOM / kill) — fail fast for client retry.
-        if not alive and phase not in ("", "idle"):
+        # Thread vanished without storing a result (OOM / kill / soft-reload).
+        # Idle progress must NOT keep the client pending forever — that happens when
+        # in-memory state is wiped and get_progress falls back to _IDLE_PROGRESS.
+        if not alive:
             clear_progress(qid)
             return {
                 "ok": False,
@@ -472,6 +474,7 @@ def result(queue_id: str = Query(...)) -> dict:
                 "queue_id": qid,
                 "error": "worker_died",
                 "segments": [],
+                "detail": f"no_thread phase={phase or 'idle'}",
             }
         return {"ok": True, "pending": True, "queue_id": qid, **prog}
     # Consume so memory does not grow; clear live progress.
@@ -736,7 +739,6 @@ def cues_config() -> dict:
             "MAX_NEG_TO_POS_RATIO": float(c.MAX_NEG_TO_POS_RATIO),
             "NEG_SCORE_WEIGHT": float(c.NEG_SCORE_WEIGHT),
             "TOP_K_NEGS": int(c.TOP_K_NEGS),
-            "MAX_SEGMENTS_PER_VIDEO": int(getattr(c, "MAX_SEGMENTS_PER_VIDEO", -1)),
             "YOLO_CONF": float(c.YOLO_CONF),
         }
     except Exception as e:
