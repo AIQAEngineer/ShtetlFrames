@@ -2,6 +2,7 @@
 
 from __future__ import annotations
 
+import re
 import sqlite3
 import threading
 import time
@@ -66,6 +67,21 @@ CREATE TABLE IF NOT EXISTS candidates (
 
 CREATE INDEX IF NOT EXISTS idx_cand_rank ON candidates(rank_score DESC);
 CREATE INDEX IF NOT EXISTS idx_queue_status ON queue_items(status);
+
+CREATE TABLE IF NOT EXISTS train_clips (
+  id INTEGER PRIMARY KEY AUTOINCREMENT,
+  asset_id TEXT NOT NULL,
+  url TEXT NOT NULL UNIQUE,
+  title TEXT DEFAULT '',
+  year TEXT DEFAULT '',
+  query TEXT NOT NULL DEFAULT 'rabbi',
+  thumb_url TEXT DEFAULT '',
+  decision TEXT DEFAULT '',
+  notes TEXT DEFAULT '',
+  created_at REAL,
+  labeled_at REAL
+);
+CREATE INDEX IF NOT EXISTS idx_train_query_decision ON train_clips(query, decision);
 """
 
 
@@ -107,11 +123,37 @@ def init_db() -> None:
             conn.execute("ALTER TABLE queue_items ADD COLUMN error TEXT DEFAULT ''")
         if "detail" not in cols:
             conn.execute("ALTER TABLE queue_items ADD COLUMN detail TEXT DEFAULT ''")
-        for jid in ("discover", "scrape", "pathe_discover", "pathe_scrape"):
+        for jid in (
+            "discover",
+            "scrape",
+            "pathe_discover",
+            "pathe_scrape",
+            "train_seed",
+        ):
             conn.execute(
                 "INSERT OR IGNORE INTO jobs (id, status, phase, updated_at) VALUES (?, 'idle', 'idle', ?)",
                 (jid, time.time()),
             )
+        # Older DBs created before train_clips existed.
+        conn.execute(
+            """CREATE TABLE IF NOT EXISTS train_clips (
+              id INTEGER PRIMARY KEY AUTOINCREMENT,
+              asset_id TEXT NOT NULL,
+              url TEXT NOT NULL UNIQUE,
+              title TEXT DEFAULT '',
+              year TEXT DEFAULT '',
+              query TEXT NOT NULL DEFAULT 'rabbi',
+              thumb_url TEXT DEFAULT '',
+              decision TEXT DEFAULT '',
+              notes TEXT DEFAULT '',
+              created_at REAL,
+              labeled_at REAL
+            )"""
+        )
+        conn.execute(
+            "CREATE INDEX IF NOT EXISTS idx_train_query_decision "
+            "ON train_clips(query, decision)"
+        )
 
 
 def set_job(job_id: str, **kwargs: Any) -> dict:
@@ -847,3 +889,198 @@ def update_review(cand_id: int, decision: str, notes: str) -> None:
 def clear_candidates() -> None:
     with db(write=True) as conn:
         conn.execute("DELETE FROM candidates")
+
+
+def clear_train_clips(*, query: str | None = None) -> int:
+    """Delete training clips. Pass query to clear one search; omit to wipe all."""
+    with db(write=True) as conn:
+        if query is None or not str(query).strip():
+            cur = conn.execute("DELETE FROM train_clips")
+        else:
+            cur = conn.execute(
+                "DELETE FROM train_clips WHERE query=?",
+                (str(query).strip(),),
+            )
+        return int(cur.rowcount or 0)
+
+
+def upsert_train_clips(items: list[dict], *, query: str = "rabbi") -> dict:
+    """Insert Pathé training clips; skip duplicates. Returns n_added / n_skipped."""
+    q = (query or "rabbi").strip() or "rabbi"
+    added = 0
+    skipped = 0
+    now = time.time()
+    with db(write=True) as conn:
+        for it in items or []:
+            url = (it.get("url") or "").strip()
+            if not url:
+                skipped += 1
+                continue
+            asset_id = (it.get("identifier") or it.get("asset_id") or "").strip()
+            if not asset_id:
+                m = re.search(r"/asset/(\d+)", url)
+                asset_id = m.group(1) if m else url
+            title = (it.get("title") or "").strip()
+            year = (it.get("year") or "").strip()
+            thumb = (it.get("thumb_url") or it.get("image_url") or "").strip()
+            cur = conn.execute(
+                """INSERT OR IGNORE INTO train_clips
+                   (asset_id, url, title, year, query, thumb_url, decision, notes, created_at, labeled_at)
+                   VALUES (?, ?, ?, ?, ?, ?, '', '', ?, NULL)""",
+                (asset_id, url, title, year, q, thumb, now),
+            )
+            if cur.rowcount:
+                added += 1
+                if thumb:
+                    conn.execute(
+                        "UPDATE train_clips SET thumb_url=? WHERE url=? AND (thumb_url IS NULL OR thumb_url='')",
+                        (thumb, url),
+                    )
+            else:
+                skipped += 1
+                if thumb:
+                    conn.execute(
+                        "UPDATE train_clips SET thumb_url=? WHERE url=? AND (thumb_url IS NULL OR thumb_url='')",
+                        (thumb, url),
+                    )
+                if title:
+                    conn.execute(
+                        "UPDATE train_clips SET title=? WHERE url=? AND (title IS NULL OR title='' OR title LIKE 'Asset %')",
+                        (title, url),
+                    )
+    return {"n_added": added, "n_skipped": skipped}
+
+
+def update_train_thumbs(items: list[dict]) -> int:
+    """Fill missing thumb_url values from parsed listing rows. Returns n_updated."""
+    updated = 0
+    with db(write=True) as conn:
+        for it in items or []:
+            thumb = (it.get("thumb_url") or it.get("image_url") or "").strip()
+            if not thumb:
+                continue
+            url = (it.get("url") or "").strip()
+            asset_id = (it.get("identifier") or it.get("asset_id") or "").strip()
+            if url:
+                cur = conn.execute(
+                    "UPDATE train_clips SET thumb_url=? "
+                    "WHERE url=? AND (thumb_url IS NULL OR thumb_url='')",
+                    (thumb, url),
+                )
+            elif asset_id:
+                cur = conn.execute(
+                    "UPDATE train_clips SET thumb_url=? "
+                    "WHERE asset_id=? AND (thumb_url IS NULL OR thumb_url='')",
+                    (thumb, asset_id),
+                )
+            else:
+                continue
+            updated += int(cur.rowcount or 0)
+    return updated
+
+
+def list_train_clips(
+    *,
+    query: str = "rabbi",
+    status: str = "",
+    q: str = "",
+    limit: int = 2000,
+    offset: int = 0,
+) -> dict:
+    """List training clips for a Pathé search query."""
+    query_s = (query or "rabbi").strip() or "rabbi"
+    status_s = (status or "").strip().lower()
+    search = (q or "").strip().lower()
+    limit = max(1, min(int(limit or 2000), 5000))
+    offset = max(0, int(offset or 0))
+    where = ["query=?"]
+    args: list[Any] = [query_s]
+    if status_s in ("pending", "unlabeled", ""):
+        if status_s in ("pending", "unlabeled"):
+            where.append("(decision IS NULL OR decision='')")
+    elif status_s in ("yes", "orthodox", "accept"):
+        where.append("decision='yes'")
+    elif status_s in ("no", "reject", "not"):
+        where.append("decision='no'")
+    if search:
+        where.append("(LOWER(title) LIKE ? OR LOWER(url) LIKE ? OR asset_id LIKE ?)")
+        like = f"%{search}%"
+        args.extend([like, like, like])
+    clause = " AND ".join(where)
+    with db() as conn:
+        total = conn.execute(
+            f"SELECT COUNT(*) AS n FROM train_clips WHERE {clause}", args
+        ).fetchone()["n"]
+        rows = conn.execute(
+            f"""SELECT * FROM train_clips WHERE {clause}
+                ORDER BY
+                  CASE WHEN decision IS NULL OR decision='' THEN 0 ELSE 1 END,
+                  id ASC
+                LIMIT ? OFFSET ?""",
+            (*args, limit, offset),
+        ).fetchall()
+        stats = conn.execute(
+            """SELECT
+                 COUNT(*) AS n_total,
+                 SUM(CASE WHEN decision IS NULL OR decision='' THEN 1 ELSE 0 END) AS n_pending,
+                 SUM(CASE WHEN decision='yes' THEN 1 ELSE 0 END) AS n_yes,
+                 SUM(CASE WHEN decision='no' THEN 1 ELSE 0 END) AS n_no
+               FROM train_clips WHERE query=?""",
+            (query_s,),
+        ).fetchone()
+    return {
+        "clips": [dict(r) for r in rows],
+        "total": int(total or 0),
+        "offset": offset,
+        "limit": limit,
+        "stats": {
+            "n_total": int(stats["n_total"] or 0),
+            "n_pending": int(stats["n_pending"] or 0),
+            "n_yes": int(stats["n_yes"] or 0),
+            "n_no": int(stats["n_no"] or 0),
+        },
+    }
+
+
+def update_train_label(
+    *,
+    clip_id: int | None = None,
+    url: str = "",
+    decision: str,
+    notes: str = "",
+) -> dict:
+    """Set Orthodox-Jew training label: yes / no / '' (clear)."""
+    dec = (decision or "").strip().lower()
+    if dec in ("accept", "orthodox", "keep", "true", "1"):
+        dec = "yes"
+    elif dec in ("reject", "not", "pass", "false", "0"):
+        dec = "no"
+    elif dec in ("clear", "undo", "skip"):
+        dec = ""
+    elif dec not in ("yes", "no", ""):
+        raise ValueError("decision must be yes, no, or clear")
+    notes_s = notes or ""
+    labeled_at = time.time() if dec else None
+    with db(write=True) as conn:
+        if clip_id is not None:
+            conn.execute(
+                "UPDATE train_clips SET decision=?, notes=?, labeled_at=? WHERE id=?",
+                (dec, notes_s, labeled_at, int(clip_id)),
+            )
+            row = conn.execute(
+                "SELECT * FROM train_clips WHERE id=?", (int(clip_id),)
+            ).fetchone()
+        else:
+            u = (url or "").strip()
+            if not u:
+                raise ValueError("missing clip id or url")
+            conn.execute(
+                "UPDATE train_clips SET decision=?, notes=?, labeled_at=? WHERE url=?",
+                (dec, notes_s, labeled_at, u),
+            )
+            row = conn.execute(
+                "SELECT * FROM train_clips WHERE url=?", (u,)
+            ).fetchone()
+    if not row:
+        raise KeyError("train clip not found")
+    return dict(row)

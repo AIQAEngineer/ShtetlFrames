@@ -22,7 +22,8 @@ from config import DATA_DIR, load_env
 
 BP_ORIGIN = "https://www.britishpathe.com"
 # Discover + many scrape workers share Scrapfly — cap concurrent asset HTML fetches.
-_RESOLVE_SLOTS = threading.Semaphore(4)
+# Keep pace with multi-GPU scrape (was 4 — GPUs sat idle waiting on Scrapfly resolve).
+_RESOLVE_SLOTS = threading.Semaphore(12)
 _RESOLVE_MAX_ATTEMPTS = 3
 ASSET_RE = re.compile(r"britishpathe\.com/asset/(\d+)", re.I)
 M3U8_RE = re.compile(r"https://[^\s\"'<>]+\.m3u8", re.I)
@@ -43,6 +44,22 @@ CARD_ARIA_TITLE_RE = re.compile(
 CARD_ARIA_TITLE_RE_ALT = re.compile(
     r'aria-label=["\']([^"\']{2,160})["\'][^>]*?href=["\'][^"\']*?/asset/(\d+)/?',
     re.I | re.S,
+)
+# Listing card thumbnails near /asset/{id} (src or data-src).
+THUMB_BEFORE_ASSET_RE = re.compile(
+    r'(?:src|data-src)=["\'](https?://[^"\']+\.(?:jpg|jpeg|png|webp)[^"\']*)["\']'
+    r'.{0,400}?/asset/(\d+)/?',
+    re.I | re.S,
+)
+THUMB_AFTER_ASSET_RE = re.compile(
+    r'/asset/(\d+)/?.{0,400}?(?:src|data-src)=["\']'
+    r'(https?://[^"\']+\.(?:jpg|jpeg|png|webp)[^"\']*)["\']',
+    re.I | re.S,
+)
+# Pathé search embeds absolute fe-cdn stills (not always in <img src>).
+THUMB_FE_CDN_RE = re.compile(
+    r'(https://www\.britishpathe\.com/fe-cdn/britishpathe/thumbs/\d+/(\d+)/\d+/[a-f0-9]+/\d+\.jpg)',
+    re.I,
 )
 OG_TITLE_RE = re.compile(
     r'property=["\']og:title["\']\s+content=["\']([^"\']+)["\']',
@@ -407,6 +424,17 @@ def parse_assets_from_html(html: str, *, year: str = "") -> list[dict[str, str]]
             seen.add(aid)
             ids.append(aid)
 
+    thumbs: dict[str, str] = {}
+    for full, aid in THUMB_FE_CDN_RE.findall(html):
+        if aid not in thumbs and full:
+            thumbs[aid] = full.strip()
+    for src, aid in THUMB_BEFORE_ASSET_RE.findall(html):
+        if aid not in thumbs and src and "placeholder" not in src.lower():
+            thumbs[aid] = src.strip()
+    for aid, src in THUMB_AFTER_ASSET_RE.findall(html):
+        if aid not in thumbs and src and "placeholder" not in src.lower():
+            thumbs[aid] = src.strip()
+
     out: list[dict[str, str]] = []
     for aid in ids:
         out.append(
@@ -417,6 +445,7 @@ def parse_assets_from_html(html: str, *, year: str = "") -> list[dict[str, str]]
                 "identifier": aid,
                 "source": "British Pathé",
                 "downloadable": "yes",
+                "thumb_url": thumbs.get(aid) or "",
             }
         )
     return out

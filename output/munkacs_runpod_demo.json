@@ -1,0 +1,110 @@
+{
+  "ok": true,
+  "phase": "dense",
+  "duration": 87.0,
+  "n_hits": 8,
+  "n_segments": 8,
+  "peak_score": 0.1433,
+  "flagged": true,
+  "error": null,
+  "elapsed_sec": 330.5,
+  "worker_commit": "94e4267aa02cf49b0804932975830fab926738ac",
+  "segments": [
+    {
+      "video_id": "jewish_life_in_munkatch_march_1933_complete",
+      "start_sec": 29.36,
+      "end_sec": 36.7,
+      "peak_score": 0.1208,
+      "mean_score": 0.098,
+      "rank_score": 0.4507,
+      "hit_count": 10,
+      "best_cue": "Hasidic rebbe with white beard sidelocks and shtreimel fur hat",
+      "source_url": "https://www.youtube.com/watch?v=tdkNbcpCTc0",
+      "image_url": "https://litter.catbox.moe/58ujuw.jpg"
+    },
+    {
+      "video_id": "jewish_life_in_munkatch_march_1933_complete",
+      "start_sec": 60.06,
+      "end_sec": 64.06,
+      "peak_score": 0.1433,
+      "mean_score": 0.1209,
+      "rank_score": 0.2177,
+      "hit_count": 5,
+      "best_cue": "Hasidic rebbe with white beard sidelocks and shtreimel fur hat",
+      "source_url": "https://www.youtube.com/watch?v=tdkNbcpCTc0",
+      "image_url": "https://litter.catbox.moe/h3xkgh.jpg"
+    },
+    {
+      "video_id": "jewish_life_in_munkatch_march_1933_complete",
+      "start_sec": 39.37,
+      "end_sec": 43.38,
+      "peak_score": 0.1205,
+      "mean_score": 0.1051,
+      "rank_score": 0.2038,
+      "hit_count": 7,
+      "best_cue": "Hasidic rebbe with white beard sidelocks and shtreimel fur hat",
+      "source_url": "https://www.youtube.com/watch?v=tdkNbcpCTc0",
+      "image_url": "https://litter.catbox.moe/8joyab.jpg"
+    },
+    {
+      "video_id": "jewish_life_in_munkatch_march_1933_complete",
+      "start_sec": 18.69,
+      "end_sec": 23.36,
+      "peak_score": 0.1044,
+      "mean_score": 0.0912,
+      "rank_score": 0.1926,
+      "hit_count": 6,
+      "best_cue": "Orthodox Jewish man with beard sidelocks black hat and kapote coat",
+      "source_url": "https://www.youtube.com/watch?v=tdkNbcpCTc0",
+      "image_url": "https://litter.catbox.moe/fqfteb.jpg"
+    },
+    {
+      "video_id": "jewish_life_in_munkatch_march_1933_complete",
+      "start_sec": 66.23,
+      "end_sec": 69.23,
+      "peak_score": 0.1072,
+      "mean_score": 0.107,
+      "rank_score": 0.0977,
+      "hit_count": 2,
+      "best_cue": "Hasidic rebbe with white beard sidelocks and shtreimel fur hat",
+      "source_url": "https://www.youtube.com/watch?v=tdkNbcpCTc0",
+      "image_url": "https://litter.catbox.moe/mvgl8k.jpg"
+    },
+    {
+      "video_id": "jewish_life_in_munkatch_march_1933_complete",
+      "start_sec": 24.53,
+      "end_sec": 27.53,
+      "peak_score": 0.0881,
+      "mean_score": 0.0881,
+      "rank_score": 0.0738,
+      "hit_count": 1,
+      "best_cue": "elderly Orthodox Jewish rabbi with long white beard and black hat",
+      "source_url": "https://www.youtube.com/watch?v=tdkNbcpCTc0",
+      "image_url": "https://litter.catbox.moe/lba7oq.jpg"
+    },
+    {
+      "video_id": "jewish_life_in_munkatch_march_1933_complete",
+      "start_sec": 12.85,
+      "end_sec": 15.85,
+      "peak_score": 0.1347,
+      "mean_score": 0.1211,
+      "rank_score": 0.065,
+      "hit_count": 2,
+      "best_cue": "Hasidic rebbe with white beard sidelocks and shtreimel fur hat",
+      "source_url": "https://www.youtube.com/watch?v=tdkNbcpCTc0",
+      "image_url": "https://files.catbox.moe/n362km.jpg"
+    },
+    {
+      "video_id": "jewish_life_in_munkatch_march_1933_complete",
+      "start_sec": 7.18,
+      "end_sec": 10.18,
+      "peak_score": 0.1057,
+      "mean_score": 0.1057,
+      "rank_score": 0.0446,
+      "hit_count": 1,
+      "best_cue": "Hasidic rebbe with white beard sidelocks and shtreimel fur hat",
+      "source_url": "https://www.youtube.com/watch?v=tdkNbcpCTc0",
+      "image_url": "https://files.catbox.moe/82pvjb.jpg"
+    }
+  ]
+}

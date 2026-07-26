@@ -41,8 +41,14 @@ _PHASE_RANK = {
 }
 
 _DEAD_PROXY_CODES = frozenset({404, 502, 503, 520, 521, 522, 523, 524})
-# Terminate + recreate only on hard proxy death (not transient 503 overload).
-_TERMINATE_PROXY_CODES = frozenset({404, 502, 520, 521, 522, 523, 524})
+# Hard deaths worth terminating for. Transient 502/52x during long YouTube scans
+# used to kill healthy GPUs mid-job (train debug H6) — those need grace, not kill.
+_TERMINATE_PROXY_CODES = frozenset({404})
+_TRANSIENT_PROXY_CODES = frozenset({502, 503, 520, 521, 522, 523, 524})
+# Progress/result blips before declaring the proxy dead during an active scan.
+_PROGRESS_DEAD_STRIKES = 8  # ~16s of /progress failures
+_RESULT_TRANSIENT_STRIKES = 20  # ~40s of 502/52x before rotate
+_RESULT_HARD_STRIKES = 3  # hard 404s
 _BROKEN_WARM_MARKERS = (
     "importerror",
     "attributeerror",
@@ -116,6 +122,37 @@ def _ensure_local_handler(base: str, *, on_status: OnStatus | None = None) -> bo
 _refresh_lock = threading.Lock()
 _refresh_mono = 0.0
 _REFRESH_DEBOUNCE_SEC = 8.0
+# Single-flight async pool expansion (alive < want).
+_async_fill_lock = threading.Lock()
+_async_fill_running = False
+_async_heal_lock = threading.Lock()
+_async_heal_running = False
+
+
+def kick_async_pool_heal(want: int) -> None:
+    """Background maintain/refill — never block scrape/workers on GraphQL/probes."""
+    global _async_heal_running
+    target = max(1, int(want or 1))
+    with _async_heal_lock:
+        if _async_heal_running:
+            return
+        _async_heal_running = True
+
+    def _run() -> None:
+        global _async_heal_running
+        try:
+            maintain_pod_pool(target=target, on_status=None)
+        except Exception as e:
+            print(f"[shtetl] async heal failed: {e}"[:160], flush=True)
+        finally:
+            with _async_heal_lock:
+                _async_heal_running = False
+
+    threading.Thread(target=_run, daemon=True, name="pod-pool-async-heal").start()
+
+
+# Back-compat alias
+_kick_async_pool_heal = kick_async_pool_heal
 
 # Dedicated pod for Pathé catalog discover (Scrapfly listing pages).
 # Kept out of the scrape round-robin pool so discover doesn't steal GPU scan slots.
@@ -152,6 +189,7 @@ _INFRA_MARKERS = (
     "http_503",
     "http_524",
     "pod_worker_died",
+    "pod_result_orphaned",
     "pod_scan_http",
     "pod_scan_timeout",
     "pod_bad_json",
@@ -186,6 +224,21 @@ def pod_id_from_proxy_url(url: str | None) -> str | None:
 def pool_size() -> int:
     with _pool_lock:
         return len(_POD_POOL)
+
+
+def usable_pod_count() -> int:
+    """How many pool proxies look ready for work (not warming/broken/dead)."""
+    with _pool_lock:
+        urls = list(_POD_POOL)
+    if not urls:
+        return 0
+    n = 0
+    for u in urls:
+        kind = _classify_pod(u)
+        if kind in ("warming", "broken", "dead", "unknown"):
+            continue
+        n += 1
+    return n
 
 
 def _may_terminate(pod_id: str) -> bool:
@@ -225,6 +278,14 @@ def drop_pod_url(
     pid = pod_id_from_proxy_url(u)
     if not pid or not _may_terminate(pid):
         return
+    # #region agent log
+    _agent_log(
+        "H6",
+        "runpod_client.py:drop_pod_url",
+        "terminate",
+        {"pod_tail": pid[:12], "reason": (reason or "")[:120], "url_tail": u[-28:]},
+    )
+    # #endregion
     try:
         from runpod_provision import terminate_pod
 
@@ -248,7 +309,7 @@ def set_pod_base_url(url: str | None) -> None:
 
 
 def set_pod_pool(urls: list[str]) -> None:
-    """Set round-robin pool of healthy pod proxy bases."""
+    """Replace round-robin pool of pod proxy bases (ready + booting)."""
     global _POD_BASE_URL, _POD_POOL, _rr
     cleaned = [u.rstrip("/") for u in urls if (u or "").strip()]
     # Stable order, de-dupe (preserve first occurrence).
@@ -273,6 +334,21 @@ def set_pod_pool(urls: list[str]) -> None:
             if u not in cleaned:
                 _pick_counts.pop(u, None)
     _POD_BASE_URL = cleaned[0] if cleaned else None
+
+
+def merge_pod_pool(urls: list[str]) -> list[str]:
+    """Add proxy bases to the pool without dropping existing ones.
+
+    Soft ``ensure_pods`` returns only currently-ready URLs; replacing the pool
+    with that short list was wiping booting GPUs and pinning scrape at 1 pod.
+    """
+    add = [u.rstrip("/") for u in (urls or []) if (u or "").strip()]
+    if not add:
+        return get_pod_pool()
+    with _pool_lock:
+        prev = list(_POD_POOL)
+    set_pod_pool(prev + add)
+    return get_pod_pool()
 
 
 def get_pod_pool() -> list[str]:
@@ -580,7 +656,14 @@ def refresh_pod_pool(
         now = time.monotonic()
         with _pool_lock:
             have = list(_POD_POOL)
-        if not force and have and (now - _refresh_mono) < _REFRESH_DEBOUNCE_SEC:
+        # Only debounce when we already have enough URLs — under-provisioned
+        # pools must keep calling ensure_pods so background fill can create.
+        if (
+            not force
+            and have
+            and len(have) >= n
+            and (now - _refresh_mono) < _REFRESH_DEBOUNCE_SEC
+        ):
             return have
         if on_status:
             on_status(f"GPU pool refresh — ensuring {n} pod(s)…")
@@ -595,11 +678,19 @@ def refresh_pod_pool(
                     extra_fill_sec=0,
                 )
                 if bases:
-                    set_pod_pool(bases)
+                    # Soft-return often lists fewer URLs than the live account
+                    # (ready-only). Never shrink the in-memory pool on refresh.
+                    with _pool_lock:
+                        prev_n = len(_POD_POOL)
+                    if prev_n > len(bases):
+                        merged = merge_pod_pool(bases)
+                    else:
+                        set_pod_pool(bases)
+                        merged = bases
                     _refresh_mono = time.monotonic()
                     # New/reused pods may be on stale GitHub code — pin local handler.
-                    _push_handlers_best_effort(bases)
-                    return bases
+                    _push_handlers_best_effort(merged)
+                    return merged
                 last_err = RuntimeError("ensure_pods returned no proxies")
             except Exception as e:
                 last_err = e
@@ -612,16 +703,26 @@ def refresh_pod_pool(
 
 
 def _classify_pod(base: str) -> str:
-    """Return idle|done|queued|download|upload|scan|warming|broken|unknown|dead."""
+    """Return idle|done|queued|download|upload|scan|warming|broken|unknown|dead.
+
+    Fresh RunPod proxies often 404 / connection-refuse for several minutes while
+    the container boots. Treat those as ``warming`` (grace + replace later), not
+    ``dead`` — otherwise self-heal terminates every new GPU and the pool sticks at 1.
+    """
     root = (base or "").rstrip("/")
     if not root:
         return "dead"
     try:
         r = requests.get(f"{root}/health", timeout=2.5)
     except requests.RequestException:
-        return "dead"
-    if int(r.status_code or 0) in _TERMINATE_PROXY_CODES:
-        return "dead"
+        # Booting pods commonly refuse connections before the proxy is mapped.
+        return "warming"
+    code = int(r.status_code or 0)
+    # 404 = proxy not mapped yet (boot). Hard CDN deaths still use warming grace
+    # then _WARMING_REPLACE_SEC kills stuck ones.
+    if code == 404 or code in _TRANSIENT_PROXY_CODES:
+        # 404/502/52x during cold start or long scans — grace as warming, not instant kill.
+        return "warming"
     if r.status_code == 503:
         # Overloaded or models_not_ready — not always a kill, but not pickable idle.
         try:
@@ -650,8 +751,11 @@ def _classify_pod(base: str) -> str:
     try:
         r2 = requests.get(f"{root}/progress", timeout=2.5)
     except requests.RequestException:
-        return "dead"
-    if int(r2.status_code or 0) in _TERMINATE_PROXY_CODES:
+        return "warming"
+    code2 = int(r2.status_code or 0)
+    if code2 == 404 or code2 in (502, 520, 521, 522, 523, 524):
+        return "warming"
+    if code2 in _TERMINATE_PROXY_CODES:
         return "dead"
     if r2.status_code != 200:
         return "unknown"
@@ -758,11 +862,30 @@ def maintain_pod_pool(
             if not base or base in known:
                 continue
             kind = _classify_pod(base)
-            if kind in ("dead", "broken"):
+            if kind == "broken":
+                drop_pod_url(base, terminate=True, reason=f"orphan_{kind}")
+                replaced += 1
+                continue
+            if kind == "dead":
+                # Confirm via GraphQL before killing — proxy 404 during boot
+                # is no longer classified dead, but keep this guard.
                 drop_pod_url(base, terminate=True, reason=f"orphan_{kind}")
                 replaced += 1
                 continue
             if kind == "warming":
+                # Track booting GPUs in the pool so we don't under-count and
+                # stampede creates; replace only after _WARMING_REPLACE_SEC.
+                with _heal_lock:
+                    started = float(_warming_since.get(base) or 0.0)
+                    if started <= 0:
+                        _warming_since[base] = now
+                        started = now
+                if now - started >= _WARMING_REPLACE_SEC:
+                    drop_pod_url(base, terminate=True, reason="orphan_warm_stuck")
+                    replaced += 1
+                elif len(alive) < MAX_PARALLEL_PODS and base not in known:
+                    alive.append(base)
+                    known.add(base)
                 continue
             if len(alive) < MAX_PARALLEL_PODS:
                 alive.append(base)
@@ -795,27 +918,46 @@ def maintain_pod_pool(
         except Exception:
             pass
     elif len(alive) < want:
+        global _async_fill_running
+        started = False
+        with _async_fill_lock:
+            if not _async_fill_running:
+                _async_fill_running = True
+                started = True
         # #region agent log
         _agent_log(
             "F",
             "runpod_client.py:maintain_pod_pool",
             "async_fill_skip_block",
-            {"want": want, "alive": len(alive), "replaced": replaced},
+            {
+                "want": want,
+                "alive": len(alive),
+                "replaced": replaced,
+                "started": started,
+            },
         )
         # #endregion
 
-        def _bg_refill() -> None:
-            try:
-                more = refresh_pod_pool(count=want, on_status=None, force=False)
-                if more:
-                    set_pod_pool(more)
-                    _push_handlers_best_effort(more)
-            except Exception:
-                pass
+        if started:
 
-        threading.Thread(
-            target=_bg_refill, daemon=True, name="pod-pool-async-fill"
-        ).start()
+            def _bg_refill() -> None:
+                global _async_fill_running
+                try:
+                    # force=True bypasses debounce; ensure_pods return_early kicks
+                    # _start_bg_fill to create the missing GPUs.
+                    more = refresh_pod_pool(count=want, on_status=None, force=True)
+                    if more:
+                        # refresh_pod_pool already merged; push handlers only.
+                        _push_handlers_best_effort(more)
+                except Exception as e:
+                    print(f"[shtetl] async pool fill failed: {e}"[:160], flush=True)
+                finally:
+                    with _async_fill_lock:
+                        _async_fill_running = False
+
+            threading.Thread(
+                target=_bg_refill, daemon=True, name="pod-pool-async-fill"
+            ).start()
     _push_handlers_best_effort(alive)
     return alive
 
@@ -1149,6 +1291,8 @@ def process_video_remote(
     max_attempts: int = 3,
     cookies_text: str | None = None,
     local_fallback: bool = False,
+    force_proxy: bool | None = None,
+    attach_verify: bool = True,
 ) -> dict[str, Any]:
     """POST /scan on a pod (download+scan on GPU). Never downloads video on this PC.
 
@@ -1172,7 +1316,10 @@ def process_video_remote(
     proxy = residential_proxy_url() if proxy_configured() else None
     provider = proxy_provider_name()
     # Without cookies, residential proxy is the only reliable path — skip doomed guest tries.
-    force_proxy = bool(proxy and not cookies)
+    if force_proxy is None:
+        force_proxy = bool(proxy and not cookies)
+    else:
+        force_proxy = bool(force_proxy) and bool(proxy)
     payload: dict[str, Any] = {
         "url": url,
         "title": title or url,
@@ -1192,7 +1339,12 @@ def process_video_remote(
     # never burns Scrapfly quota falling through after a cookie miss.
     if proxy and force_proxy:
         payload["proxy_url"] = proxy
-    _attach_vision_verify_payload(payload)
+    if attach_verify:
+        _attach_vision_verify_payload(payload)
+    else:
+        # Train / bulk keep-all: skip on-pod VLM so every CLIP segment returns.
+        payload["verify_backend"] = "off"
+        payload["openai_api_key"] = ""
     # #region agent log
     _agent_log(
         "H5",
@@ -1206,6 +1358,8 @@ def process_video_remote(
             "force_proxy": force_proxy,
             "proxy_attached": bool(payload.get("proxy_url")),
             "local_fallback": False,
+            "attach_verify": bool(attach_verify),
+            "score_threshold": float(score_threshold),
         },
     )
     # #endregion
@@ -1383,17 +1537,24 @@ def _process_video_remote_attempts(
         stop = threading.Event()
         last_line = {"v": ""}
 
-        proxy_dead = {"v": False}
+        proxy_dead = {"v": False, "strikes": 0, "code": 0}
 
         def _poll() -> None:
+            # Single 502 / connection blip must NOT kill a GPU mid-YouTube scan (H6).
             while not stop.wait(2.0):
                 try:
                     q = f"?queue_id={queue_id}" if queue_id is not None else ""
                     r = requests.get(f"{base}/progress{q}", timeout=8)
-                    if _is_dead_proxy_status(r.status_code):
-                        proxy_dead["v"] = True
-                        return
-                    if r.status_code != 200:
+                    code = int(r.status_code or 0)
+                    if _is_dead_proxy_status(code):
+                        proxy_dead["strikes"] = int(proxy_dead.get("strikes") or 0) + 1
+                        proxy_dead["code"] = code
+                        if int(proxy_dead["strikes"]) >= _PROGRESS_DEAD_STRIKES:
+                            proxy_dead["v"] = True
+                            return
+                        continue
+                    proxy_dead["strikes"] = 0
+                    if code != 200:
                         continue
                     data = r.json() if r.content else {}
                     line = _format_progress(data if isinstance(data, dict) else {}, queue_id)
@@ -1401,8 +1562,11 @@ def _process_video_remote_attempts(
                         last_line["v"] = line
                         on_status(line)
                 except requests.RequestException:
-                    proxy_dead["v"] = True
-                    return
+                    proxy_dead["strikes"] = int(proxy_dead.get("strikes") or 0) + 1
+                    proxy_dead["code"] = -1
+                    if int(proxy_dead["strikes"]) >= _PROGRESS_DEAD_STRIKES:
+                        proxy_dead["v"] = True
+                        return
                 except Exception:
                     pass
 
@@ -1420,13 +1584,16 @@ def _process_video_remote_attempts(
             except requests.Timeout as e:
                 raise TimeoutError(f"pod_scan_timeout after {int(time.time() - t0)}s") from e
             except requests.RequestException as e:
-                drop_pod_url(base, terminate=True, reason="scan_http")
+                # Drop from pool for retry, but do not terminate — brief gateway blips
+                # during accept are common; killing the GPU mid-train was H6.
+                drop_pod_url(base, terminate=False, reason="scan_http")
                 raise RuntimeError(f"pod_scan_http: {e}") from e
 
             if _is_dead_proxy_status(r.status_code):
-                kill = int(r.status_code or 0) in _TERMINATE_PROXY_CODES
-                drop_pod_url(base, terminate=kill, reason=f"http_{r.status_code}")
-                raise RuntimeError(f"http_{r.status_code}")
+                code = int(r.status_code or 0)
+                kill = code in _TERMINATE_PROXY_CODES
+                drop_pod_url(base, terminate=kill, reason=f"http_{code}")
+                raise RuntimeError(f"http_{code}")
 
             try:
                 out = r.json() if r.content else {}
@@ -1436,10 +1603,27 @@ def _process_video_remote_attempts(
                 raise RuntimeError(f"pod_bad_json: {r.status_code}")
 
             if r.status_code == 524 or "524" in (r.text or "")[:80]:
-                drop_pod_url(base, terminate=True, reason="http_524")
+                # Gateway timeout on accept — rotate pool slot, keep GPU for retry.
+                drop_pod_url(base, terminate=False, reason="http_524")
                 raise RuntimeError("http_524 gateway timeout on /scan accept")
 
             async_mode = bool(out.get("accepted") and out.get("async")) or r.status_code == 202
+            # #region agent log
+            _agent_log(
+                "H9",
+                "runpod_client.py:process_video_remote",
+                "scan_accept",
+                {
+                    "queue_id": queue_id,
+                    "http": int(r.status_code or 0),
+                    "async_mode": async_mode,
+                    "accepted": bool(out.get("accepted")),
+                    "ok": out.get("ok"),
+                    "error": str(out.get("error") or "")[:160],
+                    "elapsed_s": round(time.time() - t0, 1),
+                },
+            )
+            # #endregion
             if async_mode:
                 result_qid = out.get("queue_id") if out.get("queue_id") is not None else queue_id
                 if result_qid is None:
@@ -1449,43 +1633,161 @@ def _process_video_remote_attempts(
                 deadline = t0 + timeout
                 out = None
                 consecutive_dead = 0
+                orphan_idle = 0
+                poll_i = 0
                 while time.time() < deadline:
                     if proxy_dead["v"]:
-                        drop_pod_url(base, terminate=True, reason="proxy_dead_poll")
-                        raise RuntimeError("http_404")
+                        code = int(proxy_dead.get("code") or 0)
+                        kill = code in _TERMINATE_PROXY_CODES
+                        # #region agent log
+                        _agent_log(
+                            "H6",
+                            "runpod_client.py:process_video_remote",
+                            "proxy_dead_poll",
+                            {
+                                "queue_id": queue_id,
+                                "code": code,
+                                "strikes": proxy_dead.get("strikes"),
+                                "kill": kill,
+                            },
+                        )
+                        # #endregion
+                        drop_pod_url(base, terminate=kill, reason="proxy_dead_poll")
+                        raise RuntimeError(f"http_{code or 404}")
                     try:
                         pr = requests.get(
                             f"{base}/result",
                             params={"queue_id": result_qid},
                             timeout=45,
                         )
-                        if _is_dead_proxy_status(pr.status_code):
+                        code = int(pr.status_code or 0)
+                        poll_i += 1
+                        if poll_i == 1 or poll_i % 15 == 0:
+                            # #region agent log
+                            pending = None
+                            err_s = ""
+                            try:
+                                peek = pr.json() if pr.content else {}
+                                if isinstance(peek, dict):
+                                    pending = peek.get("pending")
+                                    err_s = str(peek.get("error") or "")[:120]
+                            except Exception:
+                                pass
+                            _agent_log(
+                                "H9",
+                                "runpod_client.py:process_video_remote",
+                                "result_poll",
+                                {
+                                    "queue_id": queue_id,
+                                    "poll_i": poll_i,
+                                    "http": code,
+                                    "pending": pending,
+                                    "error": err_s,
+                                    "elapsed_s": round(time.time() - t0, 1),
+                                },
+                            )
+                            # #endregion
+                        if _is_dead_proxy_status(code):
                             consecutive_dead += 1
-                            if consecutive_dead >= 2:
-                                kill = int(pr.status_code or 0) in _TERMINATE_PROXY_CODES
+                            need = (
+                                _RESULT_HARD_STRIKES
+                                if code in _TERMINATE_PROXY_CODES
+                                else _RESULT_TRANSIENT_STRIKES
+                            )
+                            if consecutive_dead >= need:
+                                kill = code in _TERMINATE_PROXY_CODES
+                                # #region agent log
+                                _agent_log(
+                                    "H6",
+                                    "runpod_client.py:process_video_remote",
+                                    "result_dead",
+                                    {
+                                        "queue_id": queue_id,
+                                        "code": code,
+                                        "consecutive": consecutive_dead,
+                                        "kill": kill,
+                                    },
+                                )
+                                # #endregion
                                 drop_pod_url(
                                     base,
                                     terminate=kill,
-                                    reason=f"http_{pr.status_code}",
+                                    reason=f"http_{code}",
                                 )
-                                raise RuntimeError(f"http_{pr.status_code}")
+                                raise RuntimeError(f"http_{code}")
                         elif pr.status_code == 200 and pr.content:
                             consecutive_dead = 0
                             data = pr.json()
                             if isinstance(data, dict) and not data.get("pending", True):
                                 if data.get("error") == "worker_died":
                                     raise RuntimeError("pod_worker_died")
+                                # #region agent log
+                                _agent_log(
+                                    "H9",
+                                    "runpod_client.py:process_video_remote",
+                                    "result_ready",
+                                    {
+                                        "queue_id": queue_id,
+                                        "poll_i": poll_i,
+                                        "n_seg": len(data.get("segments") or []),
+                                        "n_hits": data.get("n_hits"),
+                                        "error": str(data.get("error") or "")[:160],
+                                        "elapsed_s": round(time.time() - t0, 1),
+                                    },
+                                )
+                                # #endregion
                                 out = data
                                 break
+                            # H10: pod state wiped mid-job → /result stays pending+idle forever.
+                            if isinstance(data, dict) and data.get("pending", True):
+                                phase = str(data.get("phase") or "")
+                                rq = data.get("queue_id")
+                                idle_orphan = phase in ("", "idle") and (
+                                    rq is None or str(rq) in ("", "None")
+                                )
+                                if idle_orphan:
+                                    orphan_idle += 1
+                                    if orphan_idle >= 8:
+                                        # #region agent log
+                                        _agent_log(
+                                            "H10",
+                                            "runpod_client.py:process_video_remote",
+                                            "orphan_idle_result",
+                                            {
+                                                "queue_id": queue_id,
+                                                "poll_i": poll_i,
+                                                "orphan_idle": orphan_idle,
+                                                "elapsed_s": round(time.time() - t0, 1),
+                                            },
+                                        )
+                                        # #endregion
+                                        # Do NOT hard-kill the GPU: orphan idle often
+                                        # means progress-key mismatch or mid-download
+                                        # state wipe, not a dead machine.
+                                        raise RuntimeError("pod_result_orphaned")
+                                else:
+                                    orphan_idle = 0
                     except RuntimeError:
                         raise
                     except (requests.RequestException, ValueError):
                         consecutive_dead += 1
-                        if consecutive_dead >= 3:
-                            drop_pod_url(base, terminate=True, reason="result_unreachable")
+                        if consecutive_dead >= _RESULT_TRANSIENT_STRIKES:
+                            drop_pod_url(base, terminate=False, reason="result_unreachable")
                             raise RuntimeError("http_404")
                     time.sleep(2.0)
                 if out is None:
+                    # #region agent log
+                    _agent_log(
+                        "H9",
+                        "runpod_client.py:process_video_remote",
+                        "result_timeout",
+                        {
+                            "queue_id": queue_id,
+                            "poll_i": poll_i,
+                            "elapsed_s": round(time.time() - t0, 1),
+                        },
+                    )
+                    # #endregion
                     raise TimeoutError(f"pod_scan_timeout after {int(time.time() - t0)}s")
             elif r.status_code >= 400 or not out.get("ok", True):
                 err = out.get("error") or f"http_{r.status_code}"
@@ -1609,33 +1911,46 @@ def _process_video_remote_attempts(
                     pass
             # Dead worker / broken warm — terminate that GPU then refill.
             err_l = err_s.lower()
-            if (
+            hard_kill = (
                 "pod_worker_died" in err_l
                 or "worker_died" in err_l
                 or "models_not_ready" in err_l
                 or any(m in err_l for m in _BROKEN_WARM_MARKERS)
-            ):
+            )
+            transient_gateway = any(
+                m in err_l
+                for m in (
+                    "http_502",
+                    "http_503",
+                    "http_524",
+                    "http_520",
+                    "http_521",
+                    "http_522",
+                    "http_523",
+                    "gateway time-out",
+                    "gateway timeout",
+                    "pod_saturated",
+                )
+            )
+            if hard_kill:
                 drop_pod_url(base, terminate=True, reason=err_s[:80])
+            elif transient_gateway:
+                # Rotate off this proxy without killing a healthy GPU (502 during
+                # cold proxy / overload is common). Other idle pods must get work.
+                drop_pod_url(base, terminate=False, reason=err_s[:80])
 
-            # Dead / empty / overloaded pod pool — self-heal + refresh, then retry.
+            # Dead / empty / overloaded — heal in background; retry ASAP on another GPU.
             if is_infra_error(err_s):
-                try:
-                    if on_status:
-                        on_status("GPU busy — self-healing pod pool…")
-                    want = max(1, int(getattr(app_config, "RUNPOD_MAX_INFLIGHT", 1) or 1))
-                    maintain_pod_pool(target=want, on_status=None)
-                except Exception as refresh_err:
-                    if on_status:
-                        on_status(f"pod heal failed: {refresh_err}"[:160])
-                    try:
-                        refresh_pod_pool(count=want, on_status=None, force=True)
-                    except Exception:
-                        pass
+                want = max(1, int(getattr(app_config, "RUNPOD_MAX_INFLIGHT", 1) or 1))
+                if on_status:
+                    on_status("GPU blip — switching pod (heal in background)…")
+                _kick_async_pool_heal(want)
                 # Always burn another attempt on infra — never give up early in-loop.
                 if attempt < total_attempts:
                     if on_status:
                         on_status(f"pod retry {attempt}/{total_attempts}: {err_s[:120]}")
-                    time.sleep(min(25.0, 4.0 * attempt))
+                    # Keep this short so idle healthy GPUs are not left starving.
+                    time.sleep(min(2.5, 0.4 * attempt))
                     continue
                 break
             if attempt < total_attempts and _is_retryable_remote_error(err_s):

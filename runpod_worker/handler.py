@@ -908,7 +908,12 @@ def process_job(inp: dict) -> dict:
                             .strip()
                             .lower()
                         )
-                        if backend_raw in (
+                        if backend_raw in ("off", "none", "0", "false", "skip"):
+                            backend = "off"
+                            can_verify = False
+                            oai_key = ""
+                            vlm_base = ""
+                        elif backend_raw in (
                             "ollama_then_openai",
                             "cascade",
                             "ollama+openai",
@@ -920,16 +925,25 @@ def process_job(inp: dict) -> dict:
                             backend = "open_vlm"
                         else:
                             backend = "openai"
-                        os.environ["VERIFY_BACKEND"] = backend
-                        os.environ.setdefault("OPENAI_VERIFY", "1")
-                        vlm_base = (
-                            inp.get("open_vlm_base_url") or os.environ.get("OPEN_VLM_BASE_URL") or ""
-                        ).strip()
-                        oai_key = (inp.get("openai_api_key") or os.environ.get("OPENAI_API_KEY") or "").strip()
-                        if backend in ("open_vlm", "ollama_then_openai"):
-                            can_verify = bool(vlm_base)
+                        if backend != "off":
+                            os.environ["VERIFY_BACKEND"] = backend
+                            os.environ.setdefault("OPENAI_VERIFY", "1")
+                            vlm_base = (
+                                inp.get("open_vlm_base_url")
+                                or os.environ.get("OPEN_VLM_BASE_URL")
+                                or ""
+                            ).strip()
+                            oai_key = (
+                                inp.get("openai_api_key")
+                                or os.environ.get("OPENAI_API_KEY")
+                                or ""
+                            ).strip()
+                            if backend in ("open_vlm", "ollama_then_openai"):
+                                can_verify = bool(vlm_base)
+                            else:
+                                can_verify = bool(oai_key)
                         else:
-                            can_verify = bool(oai_key)
+                            os.environ["OPENAI_VERIFY"] = "0"
                         if can_verify:
                             if backend in ("open_vlm", "ollama_then_openai"):
                                 os.environ["SHTETL_POD"] = "1"

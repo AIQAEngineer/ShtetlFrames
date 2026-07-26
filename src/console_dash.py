@@ -258,6 +258,10 @@ def refresh_from_jobs() -> bool:
         return False
 
     try:
+        tj = get_job("train_seed") or {}
+    except Exception:
+        tj = {}
+    try:
         pj = get_job("pathe_scrape") or {}
     except Exception:
         pj = {}
@@ -266,15 +270,45 @@ def refresh_from_jobs() -> bool:
     except Exception:
         yj = {}
 
+    train_run = str(tj.get("status") or "") == "running" and "youtube" in str(
+        tj.get("phase") or ""
+    )
     pathe_run = str(pj.get("status") or "") == "running"
     yt_run = str(yj.get("status") or "") == "running"
-    if not pathe_run and not yt_run:
+    if not train_run and not pathe_run and not yt_run:
         return False
+
+    if train_run:
+        live: list[dict[str, str]] = []
+        try:
+            from pipeline_scrape import scrape_live_snapshot
+
+            live = scrape_live_snapshot()
+        except Exception:
+            live = []
+        if not live:
+            live = [
+                {
+                    "title": "Orthodox reference",
+                    "phase": "scanning",
+                    "detail": str(tj.get("message") or "Local scan…"),
+                }
+            ]
+        set_scrape(
+            done=0,
+            total=1,
+            hits=int(tj.get("hits") or 0),
+            errors=0,
+            live=live,
+            headline="Orthodox training scan (this PC)…",
+            sub=str(tj.get("message") or "")[:120],
+        )
+        return True
 
     live: list[dict[str, str]] = []
     if pathe_run:
         try:
-            from pipeline_pathe import pathe_live_snapshot
+            from pipeline_pathe import pathe_live_snapshot, pathe_session_counters
 
             live = [
                 {
@@ -284,13 +318,22 @@ def refresh_from_jobs() -> bool:
                 }
                 for info in (pathe_live_snapshot() or [])[:8]
             ]
+            ctr = pathe_session_counters()
+            done = int(ctr.get("completed") or 0)
+            hits = int(ctr.get("hits") or 0)
+            errors = int(ctr.get("errors") or 0)
+            total = max(int(ctr.get("total") or 0), int(pj.get("total") or 0), 1)
         except Exception:
             live = list(_state.get("live") or [])
+            done = int(pj.get("completed") or 0)
+            hits = int(pj.get("hits") or 0)
+            errors = 0
+            total = max(int(pj.get("total") or 0), 1)
         set_scrape(
-            done=int(pj.get("completed") or 0),
-            total=max(int(pj.get("total") or 0), 1),
-            hits=int(pj.get("hits") or 0),
-            errors=0,
+            done=done,
+            total=total,
+            hits=hits,
+            errors=errors,
             live=live,
             headline="Looking through British Pathé…",
             sub=str(pj.get("message") or "")[:120],

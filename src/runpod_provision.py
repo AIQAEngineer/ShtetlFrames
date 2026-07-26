@@ -1016,6 +1016,14 @@ def ensure_pods(
                     for result in pool.map(_wait_one, pending):
                         if result:
                             out.append(result)
+                            # Publish each newly-ready proxy immediately so scrape
+                            # can use it before the full fill wave finishes.
+                            try:
+                                from runpod_client import merge_pod_pool
+
+                                merge_pod_pool([result[1]])
+                            except Exception:
+                                pass
                 pending = []
 
             # After a wave, trim again in case something raced past the cap.
@@ -1088,13 +1096,25 @@ def ensure_pods(
                 print(f"[shtetl] bg-fill: {(msg or '')[:140]}", flush=True)
 
             try:
-                _create_until_full(
+                filled = _create_until_full(
                     snapshot,
                     already_booting=boot_snap,
                     deadline=None,
                     status_cb=_bg_status,
                     target=n,
                 )
+                # Soft-return used to leave _POD_POOL stuck at the first healthy
+                # GPU — publish every ready proxy once background fill finishes.
+                try:
+                    from runpod_client import merge_pod_pool
+
+                    urls = [base for _, base in (filled or [])]
+                    urls += [base for _, _, base in (boot_snap or [])]
+                    if urls:
+                        merged = merge_pod_pool(urls)
+                        _bg_status(f"pool now {len(merged)} proxy URL(s)")
+                except Exception as e:
+                    _bg_status(f"pool merge failed: {e}"[:120])
             except Exception as e:
                 _bg_status(f"background pod fill failed: {e}"[:160])
             finally:
@@ -1105,12 +1125,31 @@ def ensure_pods(
             target=_bg_fill, daemon=True, name="runpod-ensure-fill"
         ).start()
 
+    def _pool_urls(
+        ready_now: list[tuple[str, str]],
+        boot_now: list[tuple[str, str, str]] | None = None,
+    ) -> list[str]:
+        """Ready + booting proxy bases so soft-return does not hide GPUs."""
+        out: list[str] = []
+        seen: set[str] = set()
+        for _, base in ready_now:
+            u = (base or "").rstrip("/")
+            if u and u not in seen:
+                seen.add(u)
+                out.append(u)
+        for _, _, base in boot_now or []:
+            u = (base or "").rstrip("/")
+            if u and u not in seen:
+                seen.add(u)
+                out.append(u)
+        return out
+
     if creates_blocked:
         # Discover-only / manual freeze — never create or bg-fill.
         if not ready:
             raise RuntimeError("pod_creates_blocked and no healthy pods")
         _persist_pod_id(ready[0][0])
-        return [base for _, base in ready]
+        return _pool_urls(ready, booting)
 
     if return_early and ready:
         # #region agent log
@@ -1125,7 +1164,7 @@ def ensure_pods(
         # #endregion
         _start_bg_fill(list(ready), list(booting))
         _persist_pod_id(ready[0][0])
-        return [base for _, base in ready]
+        return _pool_urls(ready, booting)
 
     # Already have enough healthy pods — do not block on cold boots.
     if len(ready) >= max(min_ready, 1) and len(ready) >= n:
@@ -1141,7 +1180,7 @@ def ensure_pods(
             n=n,
         )
         # #endregion
-        return [base for _, base in ready]
+        return _pool_urls(ready, booting)
 
     if len(ready) < n:
         # extra_fill_sec=0 means: block only until min_ready, then scrape while
@@ -1189,7 +1228,7 @@ def ensure_pods(
                 )
             _start_bg_fill(list(ready), list(booting))
             _persist_pod_id(ready[0][0])
-            return [base for _, base in ready]
+            return _pool_urls(ready, booting)
 
     if not ready:
         raise RuntimeError("Could not start GPU pods.")
@@ -1204,4 +1243,4 @@ def ensure_pods(
         n=n,
     )
     # #endregion
-    return [base for _, base in ready]
+    return _pool_urls(ready, booting)

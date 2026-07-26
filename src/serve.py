@@ -123,6 +123,21 @@ class Handler(BaseHTTPRequestHandler):
 
             api_pathe.handle_get_queue(self, parsed)
             return
+        if path == "/api/train/summary":
+            import api_train
+
+            api_train.handle_get_summary(self, parsed)
+            return
+        if path == "/api/train/clips":
+            import api_train
+
+            api_train.handle_get_clips(self, parsed)
+            return
+        if path == "/api/train/youtube":
+            import api_train
+
+            api_train.handle_get_youtube(self, parsed)
+            return
         if path == "/api/errors":
             api_jobs.handle_get_errors(self, parsed)
             return
@@ -173,6 +188,9 @@ class Handler(BaseHTTPRequestHandler):
             return
         if path == "/pathe" or path == "/pathe.html":
             self._file(WEB_DIR / "pathe.html", "text/html; charset=utf-8")
+            return
+        if path == "/train" or path == "/train.html":
+            self._file(WEB_DIR / "train.html", "text/html; charset=utf-8")
             return
         if path == "/health" or path == "/health.html":
             self._file(WEB_DIR / "health.html", "text/html; charset=utf-8")
@@ -284,6 +302,42 @@ class Handler(BaseHTTPRequestHandler):
             api_pathe.handle_post_scrape_stop(
                 self, body if isinstance(body, dict) else {}
             )
+            return
+
+        if path == "/api/train/seed":
+            import api_train
+
+            api_train.handle_post_seed(self, body if isinstance(body, dict) else {})
+            return
+
+        if path == "/api/train/youtube":
+            import api_train
+
+            api_train.handle_post_youtube(self, body if isinstance(body, dict) else {})
+            return
+
+        if path == "/api/train/clear":
+            import api_train
+
+            api_train.handle_post_clear(self, body if isinstance(body, dict) else {})
+            return
+
+        if path == "/api/train/label":
+            import api_train
+
+            api_train.handle_post_label(self, body if isinstance(body, dict) else {})
+            return
+
+        if path == "/api/train/thumbs":
+            import api_train
+
+            api_train.handle_post_thumbs(self, body if isinstance(body, dict) else {})
+            return
+
+        if path == "/api/train/scan":
+            import api_train
+
+            api_train.handle_post_scan(self, body if isinstance(body, dict) else {})
             return
 
         if path == "/api/console/refresh":

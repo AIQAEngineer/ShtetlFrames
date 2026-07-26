@@ -64,6 +64,9 @@ from pipeline_state import _active, _lock
 
 _pathe_live: dict[int, dict] = {}
 _scrape_stop = threading.Event()
+# Updated from worker threads when a video finishes so the console "checked"
+# counter moves even if the coordinator is busy with pod-pool maintenance.
+_pathe_counters = {"completed": 0, "hits": 0, "errors": 0, "total": 1}
 
 
 def stop_pathe_scrape(*, message: str = "Pathé scrape stopped") -> dict:
@@ -618,6 +621,69 @@ def _touch_pathe_live_dash() -> None:
         pass
 
 
+def pathe_session_counters() -> dict:
+    """Live checked/clips/failed for this scrape session (worker-updated)."""
+    with _lock:
+        return {
+            "completed": int(_pathe_counters.get("completed") or 0),
+            "hits": int(_pathe_counters.get("hits") or 0),
+            "errors": int(_pathe_counters.get("errors") or 0),
+            "total": int(_pathe_counters.get("total") or 1),
+        }
+
+
+def _reset_pathe_counters(*, total: int = 1) -> None:
+    with _lock:
+        _pathe_counters["completed"] = 0
+        _pathe_counters["hits"] = 0
+        _pathe_counters["errors"] = 0
+        _pathe_counters["total"] = max(1, int(total or 1))
+
+
+def _note_pathe_finished(*, hits: int = 0, error: bool = False) -> None:
+    """Worker-thread safe: bump checked/clips and push the console dashboard."""
+    with _lock:
+        if error:
+            _pathe_counters["errors"] = int(_pathe_counters.get("errors") or 0) + 1
+        else:
+            _pathe_counters["completed"] = int(_pathe_counters.get("completed") or 0) + 1
+            _pathe_counters["hits"] = int(_pathe_counters.get("hits") or 0) + max(
+                0, int(hits or 0)
+            )
+        completed = int(_pathe_counters["completed"])
+        hit_n = int(_pathe_counters["hits"])
+        err_n = int(_pathe_counters["errors"])
+        total = int(_pathe_counters.get("total") or 1)
+    try:
+        pending_left = int(queue_stats_pathe().get("n_pending") or 0)
+    except Exception:
+        pending_left = 0
+    total_est = max(total, completed + pending_left, 1)
+    with _lock:
+        _pathe_counters["total"] = total_est
+    try:
+        set_job(
+            "pathe_scrape",
+            completed=completed,
+            hits=hit_n,
+            total=total_est,
+            progress=min(99, 5 + 90 * completed / max(1, total_est)),
+            message=(
+                f"Pathé scrape {completed}/{total_est} · "
+                f"{hit_n} hits · {pending_left} pending"
+            ),
+        )
+    except Exception:
+        pass
+    _publish_pathe_dash(
+        completed=completed,
+        hits=hit_n,
+        errors=err_n,
+        total=total_est,
+        pending=pending_left,
+    )
+
+
 def _publish_pathe_dash(
     *,
     completed: int,
@@ -666,7 +732,6 @@ def _pathe_scrape_job(workers: int, backend: str, limit: int | None) -> None:
     claimed = 0
     try:
         if backend == "runpod":
-            from runpod_client import set_pod_pool
             from runpod_provision import MAX_PARALLEL_PODS, ensure_pods
 
             # GPU count = Settings Parallel GPU pods (synced from UI workers on start).
@@ -714,13 +779,17 @@ def _pathe_scrape_job(workers: int, backend: str, limit: int | None) -> None:
                 n_pods=n_pods,
             )
             # #endregion
-            set_pod_pool(bases)
+            # Soft ensure returns ready-only — merge, never wipe booting URLs (H3).
+            from runpod_client import merge_pod_pool
+
+            merge_pod_pool(bases or [])
             status(
                 f"{len(bases)}/{n_pods} GPU pod(s) ready — Pathé scrape starting",
                 job="pathe_scrape",
                 persist=True,
             )
             pending0 = int(queue_stats_pathe().get("n_pending") or 0)
+            _reset_pathe_counters(total=max(pending0, 1))
             _publish_pathe_dash(
                 completed=0,
                 hits=0,
@@ -731,23 +800,26 @@ def _pathe_scrape_job(workers: int, backend: str, limit: int | None) -> None:
             )
 
             def _fill_remaining_pods() -> None:
-                """Block until pool is full (or capacity runs out); expand workers via pool."""
+                """Expand toward a full pool without wiping URLs already in use."""
 
                 def _fill_status(msg: str) -> None:
                     # Console/log only — do not overwrite the live scrape job message.
                     status(msg, job="pathe_scrape", persist=False)
 
                 try:
-                    # Wait for a full pool (min_ready=n) — do not return after the first pod.
+                    from runpod_client import merge_pod_pool
+
+                    # Soft fill: reuse ensure_pods bg thread; merge so we never
+                    # replace a working multi-GPU pool with a shorter ready-only list.
                     more = ensure_pods(
                         count=n_pods,
                         on_status=_fill_status,
-                        min_ready=max(1, n_pods),
-                        extra_fill_sec=1200,
+                        min_ready=1,
+                        extra_fill_sec=0,
                     )
-                    set_pod_pool(more)
+                    merged = merge_pod_pool(more or [])
                     status(
-                        f"Pod pool expanded to {len(more)}/{n_pods}",
+                        f"Pod pool expanded to {len(merged)}/{n_pods}",
                         job="pathe_scrape",
                         persist=True,
                     )
@@ -808,7 +880,7 @@ def _pathe_scrape_job(workers: int, backend: str, limit: int | None) -> None:
                     try:
                         from runpod_client import (
                             get_pod_pool,
-                            maintain_pod_pool,
+                            kick_async_pool_heal,
                             pathe_stack_limit,
                             pathe_stack_max,
                         )
@@ -827,26 +899,17 @@ def _pathe_scrape_job(workers: int, backend: str, limit: int | None) -> None:
                             1,
                             min(n_pods * stack_ceil, MAX_PARALLEL_PODS * stack_ceil),
                         )
-                        # Self-heal dead/broken GPUs every few seconds.
-                        if time.monotonic() - last_pool_sync >= 3.0:
+                        # Never block the claim/result loop on GraphQL/health probes —
+                        # that froze "checked" at 0 while workers finished videos.
+                        if time.monotonic() - last_pool_sync >= 5.0:
                             last_pool_sync = time.monotonic()
-
-                            def _heal_status(msg: str) -> None:
-                                if "self-heal" in (msg or "").lower():
-                                    status(msg, job="pathe_scrape", persist=True)
-
-                            more = (
-                                maintain_pod_pool(
-                                    target=n_pods, on_status=_heal_status
-                                )
-                                or []
-                            )
-                            if not more:
-                                more = get_pod_pool()
-                        else:
-                            more = get_pod_pool()
+                            kick_async_pool_heal(n_pods)
+                        more = get_pod_pool()
                         stack_n = max(1, min(stack_ceil, pathe_stack_limit()))
-                        healthy = max(1, len(more) or len(get_pod_pool()) or 1)
+                        healthy = max(1, len(more) or 1)
+                        # Don't pile stack×N jobs onto 1–2 GPUs (502 storms).
+                        if healthy <= 2:
+                            stack_n = 1
                         new_workers = _pathe_client_slots(
                             healthy, stack_n, cap=workers_cap
                         )
@@ -896,9 +959,8 @@ def _pathe_scrape_job(workers: int, backend: str, limit: int | None) -> None:
                     for fut in done:
                         row = futs.pop(fut)
                         try:
-                            n = fut.result()
-                            hits += int(n or 0)
-                            completed += 1
+                            fut.result()
+                            # Success path already bumped counters + dash in the worker.
                         except Exception as e:
                             err_s = str(e)
                             from runpod_client import is_infra_error
@@ -927,8 +989,6 @@ def _pathe_scrape_job(workers: int, backend: str, limit: int | None) -> None:
                                 )
                                 claimed = max(0, claimed - 1)
                             else:
-                                errors += 1
-                                completed += 1
                                 set_queue_status(
                                     row["id"], "error", error=err_s[:500]
                                 )
@@ -937,29 +997,11 @@ def _pathe_scrape_job(workers: int, backend: str, limit: int | None) -> None:
                                     job="pathe_scrape",
                                     persist=True,
                                 )
-                        pending_left = int(queue_stats_pathe().get("n_pending") or 0)
-                        total_est = max(claimed + pending_left, completed)
-                        set_job(
-                            "pathe_scrape",
-                            completed=completed,
-                            hits=hits,
-                            total=total_est,
-                            progress=min(
-                                99,
-                                5 + 90 * completed / max(1, total_est),
-                            ),
-                            message=(
-                                f"Pathé scrape {completed}/{total_est} · "
-                                f"{hits} hits · {pending_left} pending"
-                            ),
-                        )
-                        _publish_pathe_dash(
-                            completed=completed,
-                            hits=hits,
-                            errors=errors,
-                            total=total_est,
-                            pending=pending_left,
-                        )
+                                _note_pathe_finished(error=True)
+                        with _lock:
+                            completed = int(_pathe_counters.get("completed") or 0)
+                            hits = int(_pathe_counters.get("hits") or 0)
+                            errors = int(_pathe_counters.get("errors") or 0)
                     continue
 
                 # No in-flight work — wait for discover to enqueue more, or finish.
@@ -989,6 +1031,10 @@ def _pathe_scrape_job(workers: int, backend: str, limit: int | None) -> None:
                     continue
                 break
 
+        with _lock:
+            completed = int(_pathe_counters.get("completed") or 0)
+            hits = int(_pathe_counters.get("hits") or 0)
+            errors = int(_pathe_counters.get("errors") or 0)
         set_job(
             "pathe_scrape",
             status="done",
@@ -1153,6 +1199,7 @@ def _process_one_pathe(row: dict, backend: str) -> int:
     set_queue_status(qid, "done", detail=f"hits={len(rows)}")
     with _lock:
         _pathe_live.pop(qid, None)
+    _note_pathe_finished(hits=len(rows), error=False)
     return len(rows)
 
 

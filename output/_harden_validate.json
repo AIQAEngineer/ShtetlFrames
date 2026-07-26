@@ -1,0 +1,196 @@
+{
+  "munkacs_keep": "6/6",
+  "pathe_fp_drop": "7/7",
+  "pass": true,
+  "rows": [
+    {
+      "path": "C:\\Users\\Avi Schwartz\\Documents\\hasidic-footage-scan\\output\\debug_munkacs_compare\\munkacs_peak_0.1623.jpg",
+      "expect": "keep",
+      "ok": true,
+      "kept": true,
+      "verdict": {
+        "keep": true,
+        "looks_jewish": true,
+        "head_covered": true,
+        "marker": "orthodox_fedora",
+        "confidence": 0.97,
+        "reason": "Bearded Orthodox/Hasidic-looking men in dark coats with visible black hats; matches keep bar."
+      }
+    },
+    {
+      "path": "C:\\Users\\Avi Schwartz\\Documents\\hasidic-footage-scan\\output\\debug_munkacs_compare\\munkacs_peak_0.1414.jpg",
+      "expect": "keep",
+      "ok": true,
+      "kept": true,
+      "verdict": {
+        "keep": true,
+        "looks_jewish": true,
+        "head_covered": true,
+        "marker": "orthodox_fedora",
+        "confidence": 0.98,
+        "reason": "Bearded Orthodox-looking man in dark brimmed hat and coat; clear Jewish/Orthodox head covering."
+      }
+    },
+    {
+      "path": "C:\\Users\\Avi Schwartz\\Documents\\hasidic-footage-scan\\output\\debug_munkacs_compare\\munkacs_peak_0.1191.jpg",
+      "expect": "keep",
+      "ok": true,
+      "kept": true,
+      "verdict": {
+        "keep": true,
+        "looks_jewish": true,
+        "head_covered": true,
+        "marker": "orthodox_fedora",
+        "confidence": 0.98,
+        "reason": "Bearded Orthodox/Hasidic-looking man in dark coat with a clear dark hat covering his head."
+      }
+    },
+    {
+      "path": "C:\\Users\\Avi Schwartz\\Documents\\hasidic-footage-scan\\output\\debug_munkacs_compare\\munkacs_t60.jpg",
+      "expect": "keep",
+      "ok": true,
+      "kept": true,
+      "verdict": {
+        "keep": true,
+        "looks_jewish": true,
+        "head_covered": true,
+        "marker": "shtreimel",
+        "confidence": 0.95,
+        "reason": "Bearded Orthodox/Hasidic-looking man with a round fur hat; grainy but clear Jewish head covering and dress."
+      }
+    },
+    {
+      "path": "C:\\Users\\Avi Schwartz\\Documents\\hasidic-footage-scan\\output\\debug_munkacs_compare\\munkacs_t42.jpg",
+      "expect": "keep",
+      "ok": true,
+      "kept": true,
+      "verdict": {
+        "keep": true,
+        "looks_jewish": true,
+        "head_covered": true,
+        "marker": "orthodox_fedora",
+        "confidence": 0.96,
+        "reason": "Bearded Orthodox-looking man in dark hat and coat; clear Jewish/Orthodox head covering visible."
+      }
+    },
+    {
+      "path": "C:\\Users\\Avi Schwartz\\Documents\\hasidic-footage-scan\\output\\debug_munkacs_compare\\munkacs_t14.jpg",
+      "expect": "keep",
+      "ok": true,
+      "kept": true,
+      "verdict": {
+        "keep": true,
+        "looks_jewish": true,
+        "head_covered": true,
+        "marker": "orthodox_fedora",
+        "confidence": 0.95,
+        "reason": "Bearded Orthodox-looking man in dark hat and coat, with yeshiva-style books nearby."
+      }
+    },
+    {
+      "id": 1806,
+      "path": "C:\\Users\\Avi Schwartz\\Documents\\hasidic-footage-scan\\output\\contact_sheets\\cand_1806.jpg",
+      "expect": "drop",
+      "ok": true,
+      "kept": false,
+      "verdict": {
+        "keep": false,
+        "looks_jewish": false,
+        "head_covered": false,
+        "marker": "none",
+        "confidence": 0.98,
+        "reason": "Garden party scene with secular dress; no Orthodox/Hasidic cues or Jewish head covering."
+      }
+    },
+    {
+      "id": 1822,
+      "path": "C:\\Users\\Avi Schwartz\\Documents\\hasidic-footage-scan\\output\\contact_sheets\\cand_1822.jpg",
+      "expect": "drop",
+      "ok": true,
+      "kept": false,
+      "verdict": {
+        "keep": false,
+        "looks_jewish": false,
+        "head_covered": false,
+        "marker": "none",
+        "confidence": 0.88,
+        "reason": "Generic secular-looking men in overcoats; no visible Orthodox Jewish head covering or clear Hasidic/Litvish markers."
+      }
+    },
+    {
+      "id": 1824,
+      "path": "C:\\Users\\Avi Schwartz\\Documents\\hasidic-footage-scan\\output\\contact_sheets\\cand_1824.jpg",
+      "expect": "drop",
+      "ok": true,
+      "kept": false,
+      "verdict": {
+        "keep": false,
+        "looks_jewish": false,
+        "head_covered": true,
+        "marker": "shtreimel",
+        "confidence": 0.93,
+        "reason": "Generic crowd in overcoats and hats; no clear Orthodox/Hasidic markers like beard, kippah, payot, or shtreimel."
+      }
+    },
+    {
+      "id": 1825,
+      "path": "C:\\Users\\Avi Schwartz\\Documents\\hasidic-footage-scan\\output\\contact_sheets\\cand_1825.jpg",
+      "expect": "drop",
+      "ok": true,
+      "kept": false,
+      "verdict": {
+        "keep": false,
+        "looks_jewish": false,
+        "head_covered": true,
+        "marker": "none",
+        "confidence": 0.98,
+        "reason": "Astronaut/space scene with helmet and suit; not Orthodox/Hasidic dress."
+      }
+    },
+    {
+      "id": 1831,
+      "path": "C:\\Users\\Avi Schwartz\\Documents\\hasidic-footage-scan\\output\\contact_sheets\\cand_1831.jpg",
+      "expect": "drop",
+      "ok": true,
+      "kept": false,
+      "verdict": {
+        "keep": false,
+        "looks_jewish": false,
+        "head_covered": false,
+        "marker": "none",
+        "confidence": 0.98,
+        "reason": "Military parade scene with uniformed soldiers; no Orthodox/Hasidic cues."
+      }
+    },
+    {
+      "id": 1832,
+      "path": "C:\\Users\\Avi Schwartz\\Documents\\hasidic-footage-scan\\output\\contact_sheets\\cand_1832.jpg",
+      "expect": "drop",
+      "ok": true,
+      "kept": false,
+      "verdict": {
+        "keep": false,
+        "looks_jewish": false,
+        "head_covered": true,
+        "marker": "none",
+        "confidence": 0.96,
+        "reason": "Military parade scene with uniformed troops and spectators; no clear Orthodox/Hasidic Jewish markers."
+      }
+    },
+    {
+      "id": 1833,
+      "path": "C:\\Users\\Avi Schwartz\\Documents\\hasidic-footage-scan\\output\\contact_sheets\\cand_1833.jpg",
+      "expect": "drop",
+      "ok": true,
+      "kept": false,
+      "verdict": {
+        "keep": false,
+        "looks_jewish": false,
+        "head_covered": false,
+        "marker": "none",
+        "confidence": 0.95,
+        "reason": "Secular society/gathering scene with mixed crowd; no clear Orthodox/Hasidic male dress or Jewish head covering visible."
+      }
+    }
+  ]
+}

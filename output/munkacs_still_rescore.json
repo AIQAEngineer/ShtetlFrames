@@ -1,0 +1,46 @@
+{
+  "min_head": 0.25,
+  "threshold": 0.1,
+  "rows": [
+    {
+      "name": "prev_0.1623",
+      "score": 0.1374,
+      "pos": 0.3145,
+      "neg": 0.1771,
+      "head": 0.2596,
+      "cue": "Hasidic rebbe with white beard sidelocks and shtreimel fur hat",
+      "passes": true,
+      "image_url": "https://files.catbox.moe/vmmdw6.jpg"
+    },
+    {
+      "name": "prev_0.1414",
+      "score": 0.1159,
+      "pos": 0.3316,
+      "neg": 0.2157,
+      "head": 0.2715,
+      "cue": "Hasidic rebbe with white beard sidelocks and shtreimel fur hat",
+      "passes": true,
+      "image_url": "https://files.catbox.moe/7i7c5z.jpg"
+    },
+    {
+      "name": "prev_0.1191",
+      "score": 0.1147,
+      "pos": 0.3447,
+      "neg": 0.23,
+      "head": 0.3169,
+      "cue": "Hasidic rebbe with white beard sidelocks and shtreimel fur hat",
+      "passes": true,
+      "image_url": "https://files.catbox.moe/9al9mv.jpg"
+    },
+    {
+      "name": "prev_0.1040",
+      "score": 0.0752,
+      "pos": 0.3051,
+      "neg": 0.23,
+      "head": 0.2595,
+      "cue": "Hasidic rebbe with white beard sidelocks and shtreimel fur hat",
+      "passes": false,
+      "image_url": "https://files.catbox.moe/wimcyk.jpg"
+    }
+  ]
+}

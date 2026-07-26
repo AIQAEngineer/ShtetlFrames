@@ -243,6 +243,7 @@ def download_ytdlp(
     existing = list(dest_dir.glob(f"{out_name}.*"))
     existing = [p for p in existing if p.suffix.lower() in {".mp4", ".webm", ".mkv", ".avi", ".mov"}]
     if existing:
+        existing.sort(key=lambda p: p.stat().st_size, reverse=True)
         return existing[0]
 
     is_youtube = "youtube.com" in url.lower() or "youtu.be" in url.lower()
@@ -319,6 +320,7 @@ def download_britishpathe(
         if p.suffix.lower() in {".mp4", ".webm", ".mkv", ".avi", ".mov"}
     ]
     if existing:
+        existing.sort(key=lambda p: p.stat().st_size, reverse=True)
         return existing[0]
 
     job = prepare_pathe_job(url, title or out_name)

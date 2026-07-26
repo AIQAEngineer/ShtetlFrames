@@ -1,0 +1,17 @@
+{
+  "meta": {
+    "enabled": true,
+    "n_keep": 2,
+    "n_pass": 3,
+    "keep_ids": [
+      243,
+      242
+    ],
+    "pass_ids": [
+      479,
+      477,
+      453
+    ]
+  },
+  "n_parts": 11
+}

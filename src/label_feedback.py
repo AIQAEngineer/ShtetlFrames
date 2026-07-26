@@ -196,10 +196,20 @@ def _select_labeled_examples(
     init_db()
     with db() as conn:
         rows = conn.execute(
-            "SELECT id, decision, notes, image_url, video_id FROM candidates "
+            "SELECT id, decision, notes, image_url, video_id, source_url FROM candidates "
             "WHERE decision=? ORDER BY id DESC LIMIT ?",
             (decision, max(limit * 16, 48)),
         ).fetchall()
+
+    # Optional YouTube Orthodox reference — pin its Keeps at the top of few-shot.
+    yt_ref_id = ""
+    try:
+        from pipeline_train import load_youtube_train_ref
+
+        ref = load_youtube_train_ref() or {}
+        yt_ref_id = str(ref.get("video_id") or "").strip()
+    except Exception:
+        yt_ref_id = ""
 
     scored: list[tuple[int, dict[str, Any]]] = []
     for r in rows:
@@ -213,8 +223,15 @@ def _select_labeled_examples(
             continue
         notes = str(d.get("notes") or "")
         low = notes.lower()
+        src = str(d.get("source_url") or "")
         ai = _openai_tag(notes)
         priority = 0
+        if decision == "accept" and (
+            "train:orthodox_ref" in low
+            or (yt_ref_id and yt_ref_id in src)
+        ):
+            # Explicit Orthodox look reference video — strongest KEEP teaching signal.
+            priority += 250
         if prefer_false_keep:
             # Best teaching signal: model kept, human passed.
             if ai == "keep":

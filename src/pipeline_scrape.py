@@ -319,10 +319,140 @@ def prioritize_queue_url(url: str, *, title: str = "") -> dict:
     }
 
 
-def start_scrape(max_videos: str | int = "all", workers: int = DEFAULT_WORKERS) -> dict:
+def scrape_live_snapshot() -> list[dict[str, str]]:
+    """In-memory worker rows for console dashboard heal."""
+    with _lock:
+        return [
+            {
+                "title": str(info.get("title") or ""),
+                "phase": str(info.get("phase") or ""),
+                "detail": str(info.get("detail") or ""),
+            }
+            for info in _scrape_live.values()
+        ][:8]
+
+
+def _publish_train_local_dash(row: dict) -> None:
+    """Push local Orthodox training scan progress to SQLite + CMD dashboard."""
+    import re
+
+    qid = int(row.get("id") or 0)
+    with _lock:
+        info = dict(_scrape_live.get(qid) or {})
+    title = _short_title(info.get("title") or row.get("title") or "Orthodox reference")
+    detail = (info.get("detail") or info.get("phase") or "Local scan…").strip()
+    phase = (info.get("phase") or "scanning").strip()
+    hits = 0
+    m = re.search(r"(\d+)\s+frame hits", detail)
+    if m:
+        hits = int(m.group(1))
+    progress = 20.0
+    mp = re.search(r"(\d+)%", detail)
+    if mp:
+        progress = min(95.0, 20.0 + 75.0 * int(mp.group(1)) / 100.0)
+    msg = detail or "Local download + scan…"
+    try:
+        set_job(
+            "train_seed",
+            status="running",
+            phase="youtube_local",
+            message=msg[:200],
+            progress=progress,
+            hits=hits,
+            hub_url=(row.get("url") or "")[:300],
+        )
+    except Exception:
+        pass
+    try:
+        from console_dash import is_enabled, set_scrape
+
+        if is_enabled():
+            set_scrape(
+                done=0,
+                total=1,
+                hits=hits,
+                errors=0,
+                live=[{"title": title, "phase": phase, "detail": detail}],
+                headline="Orthodox training scan (this PC)…",
+                sub=msg[:120],
+            )
+    except Exception:
+        pass
+
+
+def scan_one_local(row: dict, *, status_job: str = "scrape") -> int:
+    """Download + scan one queue row on this machine (never uses RunPod)."""
+    from logutil import status
+
+    row = dict(row)
+    if status_job == "train_seed":
+        row["_dash_job"] = status_job
+
+    qid = int(row["id"])
+    title = _short_title(row.get("title") or "")
+    _safe_queue_status(qid, "scanning", error="", detail="local scan")
+    _set_worker_phase(row, "downloading", "Getting the video…")
+    ticker_stop = threading.Event()
+    ticker: threading.Thread | None = None
+    if status_job == "train_seed":
+        _publish_train_local_dash(row)
+
+        def _dash_ticker() -> None:
+            while not ticker_stop.wait(1.0):
+                try:
+                    _publish_train_local_dash(row)
+                except Exception:
+                    pass
+
+        ticker = threading.Thread(target=_dash_ticker, daemon=True, name="train-local-dash")
+        ticker.start()
+    try:
+        n = _process_one(row, backend="local")
+        _safe_queue_status(qid, "done", error="", detail=f"{n} hit segment(s)")
+        status(f"DONE #{qid} {title} → {n} hits (local)", job=status_job, persist=True)
+        if status_job == "train_seed":
+            try:
+                from console_dash import is_enabled, set_done
+
+                if is_enabled():
+                    set_done(hits=n, errors=0, done=1)
+            except Exception:
+                pass
+        return n
+    except Exception as e:
+        err_txt = str(e)[:800]
+        from runpod_client import is_permanent_youtube_skip
+
+        if is_permanent_youtube_skip(err_txt):
+            _safe_queue_status(qid, "done", error="", detail=f"skipped: {err_txt[:160]}")
+        else:
+            _safe_queue_status(qid, "error", error=err_txt, detail="")
+        status(f"ERROR #{qid} {title}: {err_txt[:160]}", job=status_job, persist=True)
+        if status_job == "train_seed":
+            try:
+                from console_dash import is_enabled, set_error
+
+                if is_enabled():
+                    set_error(err_txt[:160])
+            except Exception:
+                pass
+        raise
+    finally:
+        ticker_stop.set()
+        _clear_worker(qid)
+
+
+def start_scrape(
+    max_videos: str | int = "all",
+    workers: int = DEFAULT_WORKERS,
+    *,
+    backend: str | None = None,
+) -> dict:
     init_db()
     load_env()
-    backend = effective_scan_backend()
+    backend = (backend or effective_scan_backend()).strip().lower()
+    if backend not in ("local", "runpod"):
+        backend = effective_scan_backend()
     with _lock:
         if _active["discover"] or _active["scrape"]:
             return {"ok": False, "error": "busy", "job": get_job("scrape")}
@@ -443,22 +573,46 @@ def _scrape_job(items: list[dict], workers: int, backend: str = "local") -> None
             )
             set_job("scrape", message="Spinning up RunPod GPU Pod…", progress=3)
 
-            from runpod_client import set_pod_pool
+            from runpod_client import get_pod_pool, merge_pod_pool
             from runpod_provision import MAX_PARALLEL_PODS, ensure_pods, stop_pod
 
             def pod_status(msg: str) -> None:
                 status(msg, job="scrape")
                 set_job("scrape", message=msg)
 
+
             n_pods = max(1, min(int(app_config.RUNPOD_MAX_INFLIGHT or workers or 2), MAX_PARALLEL_PODS))
             # Start scrape as soon as the first pod is healthy — don't wait for the full pool.
+            pool_before = get_pod_pool()
+            # #region agent log
+            _dbg(
+                "H3",
+                "pipeline_scrape.py:_scrape_job",
+                "ensure_pods_enter",
+                n_pods=n_pods,
+                pool_before=len(pool_before),
+                runId="yt-train-gpu",
+            )
+            # #endregion
             bases = ensure_pods(
                 count=n_pods,
                 on_status=pod_status,
                 min_ready=1,
                 extra_fill_sec=0,
             )
-            set_pod_pool(bases)
+            # Soft ensure returns ready-only; merge so we never wipe booting URLs (H3).
+            merged = merge_pod_pool(bases or [])
+            # #region agent log
+            _dbg(
+                "H3",
+                "pipeline_scrape.py:_scrape_job",
+                "ensure_pods_exit_merged",
+                n_bases=len(bases or []),
+                n_pods=n_pods,
+                pool_after=len(merged),
+                runId="yt-train-gpu",
+            )
+            # #endregion
             status(
                 f"{len(bases)}/{n_pods} GPU pod(s) ready — starting work",
                 job="scrape",
@@ -474,9 +628,9 @@ def _scrape_job(items: list[dict], workers: int, backend: str = "local") -> None
                             min_ready=1,
                             extra_fill_sec=900,
                         )
-                        set_pod_pool(more)
+                        filled = merge_pod_pool(more or [])
                         status(
-                            f"Pod pool expanded to {len(more)}/{n_pods}",
+                            f"Pod pool expanded to {len(filled)}/{n_pods}",
                             job="scrape",
                             persist=True,
                         )
@@ -1032,6 +1186,11 @@ def _process_one(row: dict, backend: str = "local") -> int:
                 if qid in _scrape_live:
                     _scrape_live[qid]["detail"] = detail
                     _scrape_live[qid]["phase"] = "scanning"
+            if row.get("_dash_job") == "train_seed":
+                try:
+                    _publish_train_local_dash(row)
+                except Exception:
+                    pass
 
         load_env()
         thr = float(getattr(app_config, "SCORE_THRESHOLD", None) or DEFAULT_SCORE_THRESHOLD)
