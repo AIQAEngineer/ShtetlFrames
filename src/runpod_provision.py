@@ -1073,6 +1073,17 @@ def ensure_pods(
                 # end lock — allow other readers between creates
 
             if pending:
+                # Soft path may already have wait_for healthy pods from ready_now
+                # (e.g. expanding 7→8). Do not block on the new cold boot — hand
+                # pending to leftover/bg-fill and return the live fleet now.
+                if (
+                    leftover_booting is not None
+                    and len(out) >= wait_for
+                ):
+                    leftover_booting.clear()
+                    leftover_booting.extend(pending)
+                    pending = []
+                    break
                 if status_cb:
                     status_cb(
                         f"waiting for {len(pending)} pod(s) to finish bootstrap "
