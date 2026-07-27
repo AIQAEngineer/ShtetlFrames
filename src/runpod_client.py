@@ -142,15 +142,12 @@ _pathe_stack_ok_streak = 0
 _pathe_stack_fail_streak = 0
 _pathe_stack_lock = threading.Lock()
 _PATHE_SCALE_UP_AFTER_OK = 1  # recover stacking immediately after a clean job
-_PATHE_FAIL_STRIKES = 2  # non-overload failures before −1
+_PATHE_FAIL_STRIKES = 3  # non-overload failures before −1 (was 2; flaky proxies)
+# Only true GPU saturation — not boot/proxy death (502/524), which used to pin
+# stack at the floor while the fleet death-spiraled.
 _PATHE_OVERLOAD_MARKERS = (
     "pod_saturated",
     "http_503",
-    "http_524",
-    "http_502",
-    "gateway time-out",
-    "gateway timeout",
-    "gpu pod not ready",
 )
 
 _INFRA_MARKERS = (
@@ -1417,12 +1414,17 @@ def pathe_stack_limit() -> int:
 
 
 def note_pathe_stack_outcome(*, ok: bool, err: str = "") -> None:
-    """Client AIMD for Pathé stacking: −1 on overload, 2-strike −1 otherwise; fast up."""
+    """Client AIMD for Pathé stacking: −1 on saturation only; ignore dead-proxy noise."""
     global _pathe_stack_limit, _pathe_stack_ok_streak, _pathe_stack_fail_streak
     mx = pathe_stack_max()
     # Keep at least 2 when the UI ceiling allows it — floor 1 + idle-only was a deadlock.
     floor = 2 if mx >= 2 else 1
     err_l = (err or "").lower()
+    # Boot/proxy death is fleet health — do not shrink jobs-per-pod for it.
+    if (not ok) and is_infra_error(err_l) and not any(
+        m in err_l for m in _PATHE_OVERLOAD_MARKERS
+    ):
+        return
     overload = (not ok) and any(m in err_l for m in _PATHE_OVERLOAD_MARKERS)
     with _pathe_stack_lock:
         if ok:
@@ -1450,6 +1452,19 @@ def note_pathe_stack_outcome(*, ok: bool, err: str = "") -> None:
                     _pathe_stack_fail_streak = 0
         if _pathe_stack_limit < floor:
             _pathe_stack_limit = floor
+
+
+def reset_pathe_stack_limit(to: int | None = None) -> int:
+    """Force Pathé jobs-per-pod back to ``to`` or Settings PATHE_STACK_MAX."""
+    global _pathe_stack_limit, _pathe_stack_ok_streak, _pathe_stack_fail_streak
+    mx = pathe_stack_max()
+    target = mx if to is None else max(1, min(_PATHE_STACK_HARD_CAP, int(to)))
+    target = min(target, mx)
+    with _pathe_stack_lock:
+        _pathe_stack_limit = target
+        _pathe_stack_ok_streak = 0
+        _pathe_stack_fail_streak = 0
+        return _pathe_stack_limit
 
 
 def is_infra_error(msg: str) -> bool:

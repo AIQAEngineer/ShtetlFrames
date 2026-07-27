@@ -139,7 +139,13 @@ def handle_post_pod_reload(handler: BaseHTTPRequestHandler, body: dict) -> None:
 
 def handle_post_pool_sync(handler: BaseHTTPRequestHandler, body: dict) -> None:
     """Adopt live healthy GraphQL pods into the scrape pool (no recreate)."""
-    from runpod_client import get_pod_pool, maintain_pod_pool, pool_size
+    from runpod_client import (
+        get_pod_pool,
+        maintain_pod_pool,
+        pathe_stack_limit,
+        pool_size,
+        reset_pathe_stack_limit,
+    )
     import config as app_config
 
     load_env()
@@ -149,6 +155,10 @@ def handle_post_pool_sync(handler: BaseHTTPRequestHandler, body: dict) -> None:
             min(int(body.get("target") or app_config.RUNPOD_MAX_INFLIGHT or 8), 8),
         )
         alive = maintain_pod_pool(target=want)
+        stack_reset = False
+        if body.get("reset_stack"):
+            reset_pathe_stack_limit()
+            stack_reset = True
         json_response(
             handler,
             200,
@@ -158,6 +168,8 @@ def handle_post_pool_sync(handler: BaseHTTPRequestHandler, body: dict) -> None:
                 "pool": get_pod_pool(),
                 "maintain_alive": len(alive or []),
                 "want": want,
+                "pathe_stack": pathe_stack_limit(),
+                "stack_reset": stack_reset,
             },
         )
     except Exception as e:
