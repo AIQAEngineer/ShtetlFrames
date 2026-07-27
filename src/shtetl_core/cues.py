@@ -15,13 +15,14 @@ POSITIVE_PROMPTS = [
     "Orthodox Jewish man with curled payot sidelocks and black yarmulke or fedora",
 ]
 
-# Must also fire for a hit: visible Jewish/Orthodox head covering on the person.
+# Must also fire for a hit: Jewish/Orthodox covering — NOT any dark hat.
+# Generic "black hat" / "fedora" alone matched Pathé secular crowds.
 HEADCOVER_PROMPTS = [
-    "Jewish man wearing a black fedora homburg or Borsalino hat",
-    "Jewish man wearing a large round shtreimel or spodik fur hat",
-    "Jewish man wearing a black yarmulke kippah skullcap on his head",
-    "Orthodox Jewish man with his head covered by a black hat",
-    "Hasidic man in a wide brim black hat covering his head",
+    "Orthodox Jewish man with beard wearing a black Borsalino fedora and payot",
+    "Hasidic Jewish man wearing a large round shtreimel fur hat",
+    "Hasidic Jewish man wearing a tall dark spodik hat",
+    "Orthodox Jewish man wearing a black yarmulke kippah skullcap",
+    "bearded Hasidic man in black hat with visible sidelocks payot",
 ]
 
 # Must look male (adult man). Compared against FEMALE_PROMPTS so women are rejected.
@@ -85,6 +86,9 @@ NEGATIVE_PROMPTS = [
     "close-up face only no body or shoulders",
     "tight headshot with no torso visible",
     "secular european crowd in dark coats at a ceremony",
+    "man in dark fedora and overcoat no beard no payot no kippah",
+    "british royal pageant or state visit crowd in formal hats",
+    "cathedral or abbey ceremony guests in hats",
     # Pathé false-keep clusters (OpenAI was inventing shtreimels on these).
     "english public school boys in school uniforms and caps",
     "cricket players in white flannels and sports caps",
@@ -92,6 +96,8 @@ NEGATIVE_PROMPTS = [
     "royal or aristocratic outdoor garden reception",
     "space race astronaut or rocket launch crowd",
     "british newsreel crowd of secular men in overcoats",
+    "greek or european royalty state visit formal dress",
+    "westminster abbey or church anniversary ceremony crowd",
 ]
 
 # OpenCLIP encoder (ViT-L-14 >> classic OpenAI ViT-B/32 for fine-grained dress cues).
@@ -103,14 +109,14 @@ YOLO_WEIGHTS = "yolov8s.pt"
 # 0.08 missed clear kippah Pathé (peak ~0.04); 0.04 + softer negs recovers those; OpenAI still gates.
 # Keep-safe sweep: viable Review Keeps clear ~0.11+ @ blend 0.5; use 0.10 with
 # probe blend 0.7 (~0.03 margin). Some human Keeps already fail strong-neg clamp.
-DEFAULT_SCORE_THRESHOLD = 0.10
-MIN_POS_SCORE = 0.20
-MIN_HEADCOVER_SCORE = 0.16
+DEFAULT_SCORE_THRESHOLD = 0.12
+MIN_POS_SCORE = 0.22
+MIN_HEADCOVER_SCORE = 0.22
 MIN_MALE_SCORE = 0.18
 MIN_BODY_SCORE = 0.16
-# Slightly stricter than 0.95 — Pathé secular coats were sneaking past.
-MAX_NEG_TO_POS_RATIO = 0.90
-NEG_SCORE_WEIGHT = 0.90
+# Stricter — Pathé secular coats/hats were sneaking past soft negs.
+MAX_NEG_TO_POS_RATIO = 0.82
+NEG_SCORE_WEIGHT = 1.05
 DEFAULT_FPS = 1.5
 MIN_SEGMENT_SEC = 3.0
 MAX_GAP_SEC = 2.0
