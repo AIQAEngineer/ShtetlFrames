@@ -236,8 +236,12 @@ class CueScorer:
         female_score = float(female_sims.max().item())
         body_score = float(body_sims.max().item())
         face_score = float(face_sims.max().item())
-        # Soften negative pull so OpenAI sees more borderline crops.
-        prompt_score = pos_score - float(NEG_SCORE_WEIGHT) * neg_score
+        # Soften neg pull when Orthodox headcover is already strong (e.g. shtreimel
+        # next to keffiyeh in the same Palestine street frame).
+        neg_w = float(NEG_SCORE_WEIGHT)
+        if headcover_score >= float(MIN_HEADCOVER_SCORE):
+            neg_w = min(neg_w, 0.65)
+        prompt_score = pos_score - neg_w * neg_score
         best_cue = POSITIVE_PROMPTS[int(top_idx[0].item())]
         score = prompt_score
         if self.probe is not None:
@@ -245,10 +249,22 @@ class CueScorer:
             probe_prob = float(torch.sigmoid(logit).item())
             probe_signed = 2.0 * probe_prob - 1.0
             b = float(self.probe_blend)
-            score = (1.0 - b) * prompt_score + b * probe_signed
+            blended = (1.0 - b) * prompt_score + b * probe_signed
+            # Don't let a weak probe zero out a frame that already clears the
+            # headcover+prompt gate (Palestine shtreimel groups were wiped to ~0).
+            if (
+                headcover_score >= float(MIN_HEADCOVER_SCORE)
+                and prompt_score >= float(DEFAULT_SCORE_THRESHOLD)
+            ):
+                score = max(prompt_score, blended)
+            else:
+                score = blended
         score = clamp_weak_score(score, pos_score)
-        score = clamp_not_male(score, male_score, female_score)
-        score = clamp_face_only(score, body_score, face_score)
+        # Strong Orthodox headcover (shtreimel etc.): skip male/body clamps so
+        # mixed street groups / wide crops are not zeroed by keffiyeh neighbors.
+        if headcover_score < float(MIN_HEADCOVER_SCORE):
+            score = clamp_not_male(score, male_score, female_score)
+            score = clamp_face_only(score, body_score, face_score)
         score = clamp_without_headcover(score, headcover_score)
         score = clamp_strong_negative(score, pos_score, neg_score)
         return score, pos_score, neg_score, best_cue

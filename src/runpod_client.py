@@ -69,13 +69,13 @@ _warming_since: dict[str, float] = {}
 _terminate_at: dict[str, float] = {}
 _heal_lock = threading.Lock()
 _TERMINATE_COOLDOWN_SEC = 90.0
-_WARMING_REPLACE_SEC = 900.0  # first-boot uvicorn can take 5–15 min
+_WARMING_REPLACE_SEC = 1200.0  # first-boot uvicorn can take 5–20 min
 # Cold boots: no ports / young uptime — do not kill for proxy 404/502.
 _ORPHAN_BOOT_GRACE_SEC = 900.0
-# Ports often appear while uvicorn/deps still install (502). Give ~10 min, then replace.
-_ORPHAN_DEAD_WITH_PORTS_GRACE_SEC = 600.0
-_BROKEN_STRIKES = 2
-_ORPHAN_DEAD_STRIKES = 4  # ~12s of failed probes after grace before terminate
+# Ports often appear while uvicorn/deps still install (502). Give full boot window.
+_ORPHAN_DEAD_WITH_PORTS_GRACE_SEC = 900.0
+_BROKEN_STRIKES = 4
+_ORPHAN_DEAD_STRIKES = 8  # after grace; avoid replace storms from flaky proxies
 _pool_fill_lock = threading.Lock()
 _pool_fill_active = False
 _maintain_bg_lock = threading.Lock()
@@ -934,24 +934,45 @@ def maintain_pod_pool(
         kind = _classify_pod(u)
         kinds[u.split("//")[-1][:18]] = kind
         if kind == "dead":
-            # Transient RunPod proxy 404/502 is common — require strikes, not one probe.
+            # Transient RunPod proxy 404/502 is common during first boot — require
+            # a grace window AND strikes before terminate (not 4 quick probes).
+            # Premature kills were the fleet death spiral with the 2m heal loop.
             with _heal_lock:
                 strikes = int(_pod_strikes.get(u) or 0) + 1
                 _pod_strikes[u] = strikes
                 if u not in _warming_since:
                     _warming_since[u] = now
+                started = float(_warming_since.get(u) or now)
+            age = now - started
+            if age < _ORPHAN_DEAD_WITH_PORTS_GRACE_SEC:
+                alive.append(u)
+                booting_pool_n += 1
+                continue
             if strikes >= _ORPHAN_DEAD_STRIKES:
                 drop_pod_url(u, terminate=True, reason="proxy_dead")
                 replaced += 1
-            # Do not count soft-dead toward healthy/fill — free the slot to recreate.
+            else:
+                alive.append(u)
+                booting_pool_n += 1
             continue
         if kind == "broken":
             with _heal_lock:
                 strikes = int(_pod_strikes.get(u) or 0) + 1
                 _pod_strikes[u] = strikes
+                if u not in _warming_since:
+                    _warming_since[u] = now
+                started = float(_warming_since.get(u) or now)
+            age = now - started
+            if age < _ORPHAN_DEAD_WITH_PORTS_GRACE_SEC:
+                alive.append(u)
+                booting_pool_n += 1
+                continue
             if strikes >= _BROKEN_STRIKES:
                 drop_pod_url(u, terminate=True, reason="warm_broken")
                 replaced += 1
+            else:
+                alive.append(u)
+                booting_pool_n += 1
             continue
         if kind == "warming":
             with _heal_lock:

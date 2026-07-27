@@ -107,16 +107,17 @@ YOLO_WEIGHTS = "yolov8s.pt"
 
 # CLIP pre-filter before vision verify. Soft -0.28 flooded pods (~6–20 segs/video).
 # 0.08 missed clear kippah Pathé (peak ~0.04); 0.04 + softer negs recovers those; OpenAI still gates.
-# Keep-safe sweep: viable Review Keeps clear ~0.11+ @ blend 0.5; use 0.10 with
-# probe blend 0.7 (~0.03 margin). Some human Keeps already fail strong-neg clamp.
-DEFAULT_SCORE_THRESHOLD = 0.12
+# Keep-safe: human Keeps often raw ~0.11–0.19; Pass rejects stay ≤~0.00 raw.
+# 0.12 + MAX_NEG 0.82 clamped almost all Keeps to thr-0.05 (0.07) via neg_ratio.
+DEFAULT_SCORE_THRESHOLD = 0.10
 MIN_POS_SCORE = 0.22
-MIN_HEADCOVER_SCORE = 0.22
-MIN_MALE_SCORE = 0.18
-MIN_BODY_SCORE = 0.16
-# Stricter — Pathé secular coats/hats were sneaking past soft negs.
-MAX_NEG_TO_POS_RATIO = 0.82
+MIN_HEADCOVER_SCORE = 0.19
+MIN_MALE_SCORE = 0.17
+MIN_BODY_SCORE = 0.12
+# Pass rejects sit at neg/pos ≥~1.01; Keeps cluster ~0.82–0.97. Cap under 1.0.
+MAX_NEG_TO_POS_RATIO = 0.98
 NEG_SCORE_WEIGHT = 1.05
+# When headcover ≥ MIN_HEADCOVER_SCORE, scoring.py caps neg weight at 0.65.
 DEFAULT_FPS = 1.5
 MIN_SEGMENT_SEC = 3.0
 MAX_GAP_SEC = 2.0
