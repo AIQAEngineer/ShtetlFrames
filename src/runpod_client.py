@@ -70,9 +70,12 @@ _terminate_at: dict[str, float] = {}
 _heal_lock = threading.Lock()
 _TERMINATE_COOLDOWN_SEC = 90.0
 _WARMING_REPLACE_SEC = 900.0  # first-boot uvicorn can take 5–15 min
-_ORPHAN_BOOT_GRACE_SEC = 900.0  # do not kill GraphQL RUNNING pods for proxy 404 in this window
+# Cold boots: no ports / young uptime — do not kill for proxy 404/502.
+_ORPHAN_BOOT_GRACE_SEC = 900.0
+# Ports often appear while uvicorn/deps still install (502). Give ~10 min, then replace.
+_ORPHAN_DEAD_WITH_PORTS_GRACE_SEC = 600.0
 _BROKEN_STRIKES = 2
-_ORPHAN_DEAD_STRIKES = 8  # ~24s of failed probes after grace before terminate
+_ORPHAN_DEAD_STRIKES = 4  # ~12s of failed probes after grace before terminate
 _pool_fill_lock = threading.Lock()
 _pool_fill_active = False
 _maintain_bg_lock = threading.Lock()
@@ -846,7 +849,21 @@ def maintain_pod_pool(
     on_status: OnStatus | None = None,
 ) -> list[str]:
     """Health-check pool; terminate broken/dead GPUs; refill + push local handler."""
-    from runpod_provision import MAX_PARALLEL_PODS, find_shtetl_pods, pod_proxy_url
+    from runpod_provision import (
+        MAX_PARALLEL_PODS,
+        find_shtetl_pods,
+        pod_proxy_url,
+        set_pod_create_ceiling,
+        set_pod_creates_blocked,
+    )
+
+    # Scrape heal must be allowed to grow the fleet. Discover can leave
+    # ceiling=1 / creates-blocked set if it overlapped a running scrape.
+    try:
+        set_pod_creates_blocked(False)
+        set_pod_create_ceiling(None)
+    except Exception:
+        pass
 
     want = max(1, min(int(target or 1), MAX_PARALLEL_PODS))
     with _pool_lock:
@@ -890,6 +907,8 @@ def maintain_pod_pool(
             return []
 
     alive: list[str] = []
+    healthy_n = 0
+    booting_pool_n = 0
     replaced = 0
     now = time.time()
     kinds: dict[str, str] = {}
@@ -907,9 +926,7 @@ def maintain_pod_pool(
             if strikes >= _ORPHAN_DEAD_STRIKES:
                 drop_pod_url(u, terminate=True, reason="proxy_dead")
                 replaced += 1
-            else:
-                # Keep slot so we do not stampede creates on a blip.
-                alive.append(u)
+            # Do not count soft-dead toward healthy/fill — free the slot to recreate.
             continue
         if kind == "broken":
             with _heal_lock:
@@ -932,11 +949,13 @@ def maintain_pod_pool(
             else:
                 # Keep in pool so we don't over-create while it's booting.
                 alive.append(u)
+                booting_pool_n += 1
             continue
         with _heal_lock:
             _pod_strikes.pop(u, None)
             _warming_since.pop(u, None)
         alive.append(u)
+        healthy_n += 1
     # #region agent log
     if replaced or any(k in ("dead", "broken", "warming", "unknown") for k in kinds.values()):
         _agent_log(
@@ -947,6 +966,7 @@ def maintain_pod_pool(
                 "want": want,
                 "pool": len(pool),
                 "alive": len(alive),
+                "healthy": healthy_n,
                 "replaced": replaced,
                 "kinds": kinds,
             },
@@ -954,10 +974,10 @@ def maintain_pod_pool(
     # #endregion
 
     # GraphQL orphans: RUNNING but not in scrape pool yet.
-    # CRITICAL: bootstrap proxies return 404/502 for 5–15 min — that must NOT
-    # terminate the pod. Old code killed every fill pod as orphan_dead → 0 GPUs.
+    # Cold boots (no ports / young) must NOT be killed. Sustained 502 after ports
+    # are up means the container died — terminate and free the create slot.
     known = {u.rstrip("/") for u in alive}
-    booting_n = 0
+    booting_n = booting_pool_n
     try:
         for p in find_shtetl_pods():
             pid = p.get("id")
@@ -967,16 +987,17 @@ def maintain_pod_pool(
             if not base or base in known:
                 continue
             status = (p.get("desiredStatus") or "").upper()
+            if status in ("EXITED", "FAILED", "TERMINATED"):
+                # Ghost slot — terminate so create gates are not blocked.
+                drop_pod_url(base, terminate=True, reason=f"orphan_{status.lower()}")
+                replaced += 1
+                continue
             runtime = p.get("runtime") if isinstance(p.get("runtime"), dict) else {}
             ports = (runtime or {}).get("ports") or []
             try:
                 uptime = float((runtime or {}).get("uptimeInSeconds") or 0.0)
             except (TypeError, ValueError):
                 uptime = 0.0
-            # No HTTP ports / young uptime = still installing deps.
-            likely_booting = status == "RUNNING" and (
-                not ports or uptime < _ORPHAN_BOOT_GRACE_SEC
-            )
             kind = _classify_pod(base)
             if kind in ("dead", "broken", "warming", "unknown"):
                 with _heal_lock:
@@ -986,16 +1007,31 @@ def maintain_pod_pool(
                     strikes = int(_pod_strikes.get(base) or 0) + 1
                     _pod_strikes[base] = strikes
                 age = now - started
-                if likely_booting or age < _ORPHAN_BOOT_GRACE_SEC:
+                # No ports yet = installing deps (allow long grace).
+                no_ports = not ports
+                # Ports up + HTTP 502/404 is common during first boot; then zombie.
+                dead_with_ports = bool(ports) and kind in ("dead", "broken")
+                if no_ports and (
+                    uptime < _ORPHAN_BOOT_GRACE_SEC or age < _ORPHAN_BOOT_GRACE_SEC
+                ):
                     booting_n += 1
-                    # Track as warming so we do not over-create past account cap.
                     continue
-                # Past grace: only kill after sustained dead probes.
-                if kind in ("dead", "broken") and strikes >= _ORPHAN_DEAD_STRIKES:
+                if dead_with_ports and uptime < _ORPHAN_DEAD_WITH_PORTS_GRACE_SEC:
+                    booting_n += 1
+                    continue
+                if (
+                    not dead_with_ports
+                    and not no_ports
+                    and age < _ORPHAN_BOOT_GRACE_SEC
+                ):
+                    # warming/unknown with ports — still installing models.
+                    booting_n += 1
+                    continue
+                # Past grace: terminate after strikes. Do NOT keep counting as
+                # "booting" — that used to block refill forever (covered >= want).
+                if strikes >= _ORPHAN_DEAD_STRIKES:
                     drop_pod_url(base, terminate=True, reason=f"orphan_{kind}")
                     replaced += 1
-                else:
-                    booting_n += 1
                 continue
             # Healthy orphan — join the scrape pool.
             with _heal_lock:
@@ -1004,17 +1040,18 @@ def maintain_pod_pool(
             if len(alive) < MAX_PARALLEL_PODS:
                 alive.append(base)
                 known.add(base)
+                healthy_n += 1
     except Exception:
         pass
 
     if {u.rstrip("/") for u in alive} != {u.rstrip("/") for u in pool}:
         set_pod_pool(alive)
 
-    # NEVER block the Pathé/scrape coordinator on ensure_pods. A synchronous
-    # refresh here froze wait(futs) for minutes → "Looking carefully" forever
-    # while active queue rows sat stuck and the console % did not move.
-    # If GraphQL still has pods booting, do not stampede creates — wait for them.
-    need_fill = len(alive) < want and booting_n == 0
+    # NEVER block the Pathé/scrape coordinator on ensure_pods. Create the deficit
+    # only: healthy + still-booting must cover ``want``. Old gate required
+    # booting_n==0, so a few 502 zombies blocked refill forever.
+    covered = healthy_n + booting_n
+    need_fill = covered < want
     if need_fill:
         # #region agent log
         _agent_log(
@@ -1024,14 +1061,22 @@ def maintain_pod_pool(
             {
                 "want": want,
                 "alive": len(alive),
+                "healthy": healthy_n,
                 "replaced": replaced,
                 "booting": booting_n,
+                "covered": covered,
                 "empty": not alive,
             },
         )
         # #endregion
-        if on_status and not alive:
-            on_status("self-heal: GPU pool empty — creating pods in background…")
+        if on_status:
+            if not alive:
+                on_status("self-heal: GPU pool empty — creating pods in background…")
+            else:
+                on_status(
+                    f"self-heal: {healthy_n}/{want} healthy "
+                    f"(+{booting_n} booting) — creating replacements…"
+                )
         _kick_async_pool_fill(want)
     if alive:
         _push_handlers_best_effort(alive)
@@ -1051,10 +1096,31 @@ def _kick_async_pool_fill(want: int) -> None:
         try:
             more = refresh_pod_pool(count=want, on_status=None, force=True)
             if more:
-                set_pod_pool(more)
-                _push_handlers_best_effort(more)
+                # Merge: soft ensure_pods returns only currently-ready URLs;
+                # do not drop healthy pool members that were briefly offline.
+                with _pool_lock:
+                    merged = list(_POD_POOL)
+                seen = {u.rstrip("/") for u in merged}
+                for u in more:
+                    key = u.rstrip("/")
+                    if key and key not in seen:
+                        merged.append(key)
+                        seen.add(key)
+                # Prefer the fresh ready list first (round-robin quality).
+                ordered: list[str] = []
+                seen2: set[str] = set()
+                for u in list(more) + merged:
+                    key = u.rstrip("/")
+                    if not key or key in seen2:
+                        continue
+                    ordered.append(key)
+                    seen2.add(key)
+                    if len(ordered) >= want:
+                        break
+                set_pod_pool(ordered)
+                _push_handlers_best_effort(ordered)
                 print(
-                    f"[shtetl] async pod fill ready: {len(more)}/{want}",
+                    f"[shtetl] async pod fill ready: {len(ordered)}/{want}",
                     flush=True,
                 )
         except Exception as e:
@@ -1907,71 +1973,99 @@ def _process_video_remote_attempts(
 def _hydrate_segment_stills(base: str, out: dict[str, Any]) -> None:
     """Fill missing still_b64 from pod GET /still (local-only; no Catbox).
 
-    Hard-bounded: old code used timeout=60 × 3 attempts × N segments and could
-    stall a finished Pathé job for 10+ minutes after \"pod done\".
+    Parallel fetch — large ``still_b64`` blobs are often stripped from /result
+    (proxy size), so GET /still is the primary path. Hard ceiling 120s.
     """
     import base64
     import time as _time
+    from concurrent.futures import ThreadPoolExecutor, as_completed
 
     segs = out.get("segments")
     if not isinstance(segs, list) or not segs:
         return
     qid = out.get("queue_id")
     root = (base or "").rstrip("/")
-    deadline = _time.time() + 45.0  # absolute ceiling for the whole hydrate pass
+
+    def _mark_miss(seg: dict[str, Any], tag: str = "still_hydrate_miss") -> None:
+        note = str(seg.get("notes") or "")
+        if tag not in note:
+            seg["notes"] = (f"{tag} {note}".strip())[:500]
+        url = str(seg.get("image_url") or "").lower()
+        if "catbox" in url:
+            seg["image_url"] = None
+
+    need: list[tuple[int, dict[str, Any]]] = []
     for i, seg in enumerate(segs, 1):
-        if _time.time() >= deadline:
-            break
         if not isinstance(seg, dict):
             continue
         if seg.get("still_b64") or seg.get("image_b64"):
             continue
-        got = False
-        if root and qid is not None:
-            idx = seg.get("still_index")
+        need.append((i, seg))
+    if not need:
+        return
+    if not root or qid is None:
+        for _, seg in need:
+            _mark_miss(seg)
+        return
+
+    def _fetch_one(item: tuple[int, dict[str, Any]]) -> tuple[int, bytes | None]:
+        i, seg = item
+        idx = seg.get("still_index")
+        try:
+            idx_i = int(idx) if idx is not None else i
+        except (TypeError, ValueError):
+            idx_i = i
+        qids: list[Any] = [qid]
+        if str(qid).isdigit():
+            qids.append(int(qid))
+        qids.append(str(qid))
+        for qtry in qids:
             try:
-                idx_i = int(idx) if idx is not None else i
-            except (TypeError, ValueError):
-                idx_i = i
-            qids = [qid]
-            if str(qid).isdigit():
-                qids.append(int(qid))
-            qids.append(str(qid))
-            for qtry in qids:
-                if _time.time() >= deadline:
-                    break
-                try:
-                    r = requests.get(
-                        f"{root}/still",
-                        params={"queue_id": qtry, "index": idx_i},
-                        timeout=6,
-                    )
-                except requests.RequestException:
-                    continue
-                if r.status_code != 200 or len(r.content) < 200:
-                    continue
-                ctype = (r.headers.get("content-type") or "").lower()
-                body = r.content
-                looks_img = (
-                    body[:3] == b"\xff\xd8\xff"
-                    or body[:8] == b"\x89PNG\r\n\x1a\n"
-                    or "image/jpeg" in ctype
-                    or "image/jpg" in ctype
-                    or "image/png" in ctype
+                r = requests.get(
+                    f"{root}/still",
+                    params={"queue_id": qtry, "index": idx_i},
+                    timeout=12,
                 )
-                if not looks_img:
+            except requests.RequestException:
+                continue
+            if r.status_code != 200 or len(r.content) < 200:
+                continue
+            ctype = (r.headers.get("content-type") or "").lower()
+            body = r.content
+            looks_img = (
+                body[:3] == b"\xff\xd8\xff"
+                or body[:8] == b"\x89PNG\r\n\x1a\n"
+                or "image/jpeg" in ctype
+                or "image/jpg" in ctype
+                or "image/png" in ctype
+            )
+            if looks_img:
+                return i, body
+        return i, None
+
+    got_map: dict[int, bytes] = {}
+    workers = max(1, min(8, len(need)))
+    try:
+        with ThreadPoolExecutor(max_workers=workers) as pool:
+            futs = [pool.submit(_fetch_one, item) for item in need]
+            for fut in as_completed(futs, timeout=120.0):
+                try:
+                    idx, body = fut.result()
+                except Exception:
                     continue
-                seg["still_b64"] = base64.standard_b64encode(body).decode("ascii")
-                seg["image_url"] = None
-                got = True
-                break
-        if not got:
-            note = str(seg.get("notes") or "")
-            if "still_hydrate_miss" not in note:
-                seg["notes"] = (f"still_hydrate_miss {note}".strip())[:500]
-            url = str(seg.get("image_url") or "").lower()
-            if "catbox" in url:
-                seg["image_url"] = None
+                if body:
+                    got_map[idx] = body
+    except Exception:
+        # Timeout / pool errors — mark whatever we did not get.
+        pass
+
+    for i, seg in need:
+        body = got_map.get(i)
+        if body:
+            seg["still_b64"] = base64.standard_b64encode(body).decode("ascii")
+            seg["image_url"] = None
+        else:
+            _mark_miss(seg)
 
 
 def _materialize_segment_stills(out: dict[str, Any]) -> None:
@@ -1994,7 +2088,10 @@ def _materialize_segment_stills(out: dict[str, Any]) -> None:
             raw = base64.standard_b64decode(str(b64).encode("ascii"), validate=False)
         except Exception:
             continue
-        if not raw or len(raw) < 200 or raw[:3] != b"\xff\xd8\xff":
+        if not raw or len(raw) < 200:
+            continue
+        # Accept JPEG (normal) or PNG (rare encode fallback).
+        if raw[:3] != b"\xff\xd8\xff" and raw[:8] != b"\x89PNG\r\n\x1a\n":
             continue
         try:
             with tempfile.NamedTemporaryFile(suffix=".jpg", delete=False) as tmp:

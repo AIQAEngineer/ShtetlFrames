@@ -467,11 +467,15 @@ def scan(payload: dict) -> JSONResponse:
         with _scan_threads_lock:
             _scan_threads.pop(key, None)
 
-        # Give the PC time to GET /still before freeing disk.
+        # Give the PC time to GET /still (parallel hydrate) before freeing disk.
         def _deferred_clear() -> None:
-            time.sleep(180.0)
+            time.sleep(600.0)
             try:
                 clear_job_stills(qid)
+            except Exception:
+                pass
+            try:
+                clear_job_result(qid)
             except Exception:
                 pass
 
@@ -498,6 +502,9 @@ def result(queue_id: str = Query(...)) -> dict:
     if str(queue_id).isdigit():
         qid = int(queue_id)
     key = str(qid)
+    # Do NOT consume on read — a failed/partial proxy response used to wipe the
+    # only copy before the PC could hydrate GET /still. Result is cleared with
+    # stills after the deferred TTL.
     done = get_job_result(qid, consume=False)
     if done is None:
         with _scan_threads_lock:
@@ -519,8 +526,6 @@ def result(queue_id: str = Query(...)) -> dict:
                 "detail": f"no_thread phase={phase or 'idle'}",
             }
         return {"ok": True, "pending": True, "queue_id": qid, **prog}
-    # Consume so memory does not grow; clear live progress.
-    done = get_job_result(qid, consume=True) or done
     clear_progress(qid)
     out = dict(done)
     out["pending"] = False

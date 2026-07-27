@@ -203,10 +203,14 @@ def _pathe_discover_job(
     discover_pod: str | None = None
     try:
         # Discover may reuse one GPU for listing — never grow a scrape fleet.
+        # If scrape is already running, do NOT set ceiling=1 (that trims the fleet).
         try:
-            from runpod_provision import set_pod_create_ceiling
+            with _lock:
+                scrape_owns = bool(_active.get("pathe_scrape"))
+            if not scrape_owns:
+                from runpod_provision import set_pod_create_ceiling
 
-            set_pod_create_ceiling(1)
+                set_pod_create_ceiling(1)
         except Exception:
             pass
 
@@ -438,15 +442,14 @@ def _pathe_discover_job(
                 pass
         with _lock:
             _active["pathe_discover"] = False
-            scraping = bool(_active.get("pathe_scrape"))
-        # Restore normal pod cap unless scrape already owns the fleet.
-        if not scraping:
-            try:
-                from runpod_provision import set_pod_create_ceiling
+        # Always clear discover's ceiling=1. Leaving it set while scrape ran
+        # caused trim→1 and blocked fleet refill.
+        try:
+            from runpod_provision import set_pod_create_ceiling
 
-                set_pod_create_ceiling(None)
-            except Exception:
-                pass
+            set_pod_create_ceiling(None)
+        except Exception:
+            pass
 
 
 def start_pathe_scrape(

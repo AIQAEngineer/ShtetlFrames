@@ -76,6 +76,48 @@ def handle_get_candidates(handler: BaseHTTPRequestHandler, parsed: ParseResult) 
     json_response(handler, 200, {"candidates": rows[:limit], "total": len(rows)})
 
 
+def handle_post_stills_backfill(handler: BaseHTTPRequestHandler, body: dict) -> None:
+    """POST /api/stills/backfill — repair missing Review contact sheets."""
+    init_db()
+    try:
+        from still_ensure import (
+            backfill_missing_stills,
+            kick_backfill_missing_stills,
+            missing_still_ids,
+        )
+
+        sync = bool(body.get("sync"))
+        limit = int(body.get("limit") or 5000)
+        limit = max(1, min(limit, 20000))
+        missing = missing_still_ids(limit=limit)
+        if not missing:
+            json_response(
+                handler,
+                200,
+                {"ok": True, "missing": 0, "saved": 0, "failed": 0, "started": False},
+            )
+            return
+        if sync:
+            result = backfill_missing_stills(limit=limit)
+            json_response(handler, 200, {**result, "started": False})
+            return
+        started = kick_backfill_missing_stills(limit=limit)
+        json_response(
+            handler,
+            200,
+            {
+                "ok": True,
+                "missing": len(missing),
+                "started": started,
+                "message": "backfill running in background"
+                if started
+                else "backfill already running",
+            },
+        )
+    except Exception as e:
+        json_response(handler, 500, {"ok": False, "error": str(e)[:240]})
+
+
 def handle_post_review(handler: BaseHTTPRequestHandler, body: dict) -> None:
     key = body.get("key")
     decision = body.get("decision", "")

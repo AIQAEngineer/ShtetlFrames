@@ -253,6 +253,17 @@ def find_shtetl_pods() -> list[dict]:
     return out
 
 
+def count_active_shtetl_pods() -> int:
+    """Pods that occupy create slots (excludes EXITED/FAILED ghosts)."""
+    n = 0
+    for p in find_shtetl_pods():
+        st = (p.get("desiredStatus") or "").upper()
+        if st in ("EXITED", "FAILED", "TERMINATED"):
+            continue
+        n += 1
+    return n
+
+
 def _pod_has_http_ports(pod: dict) -> bool:
     runtime = pod.get("runtime")
     ports = (runtime or {}).get("ports") or [] if isinstance(runtime, dict) else []
@@ -791,7 +802,7 @@ def ensure_pods(
     # in a background thread (extra_fill_sec=0). Otherwise spend extra_fill_sec creating.
     fill_deadline: float | None = None
     return_early = False
-    live_n = len(find_shtetl_pods())
+    live_n = count_active_shtetl_pods()
     have_or_booting = max(len(ready) + len(booting), live_n)
     if len(ready) >= min_ready and have_or_booting < n:
         if float(extra_fill_sec) <= 0:
@@ -845,8 +856,9 @@ def ensure_pods(
     # #endregion
 
     def _live_count() -> int:
+        """Count pods that still occupy create slots (not EXITED ghosts)."""
         try:
-            return len(find_shtetl_pods())
+            return count_active_shtetl_pods()
         except Exception:
             return account_cap  # fail closed: do not create
 
@@ -1137,13 +1149,24 @@ def ensure_pods(
                 print(f"[shtetl] bg-fill: {(msg or '')[:140]}", flush=True)
 
             try:
-                _create_until_full(
+                filled = _create_until_full(
                     snapshot,
                     already_booting=boot_snap,
                     deadline=None,
                     status_cb=_bg_status,
                     target=n,
                 )
+                # Soft start only returned the first ready URLs — push the full
+                # healthy set into the scrape pool once bg-fill finishes.
+                if filled:
+                    try:
+                        from runpod_client import set_pod_pool
+
+                        bases = [base for _, base in filled]
+                        set_pod_pool(bases)
+                        _bg_status(f"pool updated → {len(bases)}/{n} ready")
+                    except Exception as e:
+                        _bg_status(f"pool update skipped: {e}"[:120])
             except Exception as e:
                 _bg_status(f"background pod fill failed: {e}"[:160])
             finally:

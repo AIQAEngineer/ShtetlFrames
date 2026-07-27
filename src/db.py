@@ -717,10 +717,11 @@ def insert_candidates(rows: list[dict]) -> int:
     saved under ``output/contact_sheets/cand_{id}.jpg`` (not kept in SQLite).
     Missing stills are queued for background frame extract from source video.
     """
-    from still_ensure import enqueue_ensure_still
+    from still_ensure import enqueue_ensure_still, kick_backfill_missing_stills
     from still_store import save_candidate_still
 
     now = time.time()
+    need_ensure: list[dict] = []
     with db(write=True) as conn:
         for r in rows:
             cur = conn.execute(
@@ -762,7 +763,7 @@ def insert_candidates(rows: list[dict]) -> int:
                             "UPDATE candidates SET notes=? WHERE id=?",
                             ((f"no_still_bytes {note}".strip())[:1000], cid),
                         )
-                    enqueue_ensure_still(
+                    need_ensure.append(
                         {
                             "id": cid,
                             "source_url": r.get("source_url"),
@@ -781,7 +782,7 @@ def insert_candidates(rows: list[dict]) -> int:
                     )
                 except Exception:
                     pass
-                enqueue_ensure_still(
+                need_ensure.append(
                     {
                         "id": cid,
                         "source_url": r.get("source_url"),
@@ -791,6 +792,11 @@ def insert_candidates(rows: list[dict]) -> int:
                         "image_url": r.get("image_url"),
                     }
                 )
+    # Outside the write lock — queue extracts + kick grouped video backfill.
+    for row in need_ensure:
+        enqueue_ensure_still(row)
+    if need_ensure:
+        kick_backfill_missing_stills(limit=max(200, len(need_ensure) * 4))
     return len(rows)
 
 

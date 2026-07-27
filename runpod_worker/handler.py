@@ -148,8 +148,27 @@ def clear_progress(queue_id: Any = None) -> None:
 
 
 def store_job_result(queue_id: Any, result: dict[str, Any]) -> None:
+    """Store job result for GET /result.
+
+    Strip inline ``still_b64`` before caching — large base64 blobs often break
+    RunPod proxy responses. JPEGs stay on disk for GET /still (PC hydrates).
+    """
+    clean = dict(result or {})
+    segs = clean.get("segments")
+    if isinstance(segs, list):
+        thin: list[Any] = []
+        for s in segs:
+            if isinstance(s, dict):
+                s = dict(s)
+                s.pop("still_b64", None)
+                s.pop("image_b64", None)
+                thin.append(s)
+            else:
+                thin.append(s)
+        clean["segments"] = thin
+        clean["stills_on_disk"] = True
     with _job_results_lock:
-        _job_results[_job_key(queue_id)] = dict(result or {})
+        _job_results[_job_key(queue_id)] = clean
 
 
 def get_job_result(queue_id: Any, *, consume: bool = False) -> dict[str, Any] | None:

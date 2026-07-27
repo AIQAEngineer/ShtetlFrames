@@ -390,6 +390,11 @@ class Handler(BaseHTTPRequestHandler):
         if path == "/api/review":
             api_review.handle_post_review(self, body)
             return
+        if path == "/api/stills/backfill":
+            api_review.handle_post_stills_backfill(
+                self, body if isinstance(body, dict) else {}
+            )
+            return
 
         self._json(404, {"error": "not found"})
 
@@ -417,6 +422,14 @@ def main() -> None:
     (WEB_DIR / "assets").mkdir(parents=True, exist_ok=True)
     CONTACT_DIR.mkdir(parents=True, exist_ok=True)
     OUTPUT_DIR.mkdir(parents=True, exist_ok=True)
+    try:
+        from still_ensure import kick_backfill_missing_stills, start_ensure_worker
+
+        start_ensure_worker()
+        # Repair Review blanks left by truncated pod JSON / failed hydrate.
+        kick_backfill_missing_stills(limit=5000)
+    except Exception as e:
+        print(f"[web] still backfill kick skipped: {e}"[:160])
     host = "127.0.0.1"
     server = ThreadingHTTPServer((host, PORT), Handler)
     try:
