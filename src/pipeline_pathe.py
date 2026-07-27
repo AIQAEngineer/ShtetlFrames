@@ -725,6 +725,14 @@ def _pathe_scrape_job(workers: int, backend: str, limit: int | None) -> None:
             # #endregion
             set_pod_pool(bases)
             try:
+                from runpod_client import maintain_pod_pool
+
+                # Soft ensure may return min_ready only — absorb the other live
+                # GraphQL pods into the scrape pool immediately.
+                maintain_pod_pool(target=n_pods, on_status=pod_status)
+            except Exception as e:
+                status(f"pod pool adopt skipped: {e}"[:120], job="pathe_scrape")
+            try:
                 from runpod_client import push_clip_probe_to_pods
 
                 pod_status("Installing CLIP Keep/Pass probe on GPU pods…")

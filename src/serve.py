@@ -279,6 +279,9 @@ class Handler(BaseHTTPRequestHandler):
         if path == "/api/runpod/pod/reload":
             api_runpod.handle_post_pod_reload(self, body)
             return
+        if path == "/api/runpod/pool/sync":
+            api_runpod.handle_post_pool_sync(self, body)
+            return
 
         if path == "/api/discover":
             api_queue.handle_post_discover(self, body)
