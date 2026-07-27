@@ -4,10 +4,12 @@ from __future__ import annotations
 
 import concurrent.futures
 import json
+import sys
 import threading
 import time
+from contextlib import contextmanager
 from pathlib import Path
-from typing import Any, Callable
+from typing import Any, Callable, Iterator
 
 import requests
 
@@ -56,6 +58,57 @@ _bg_fill_active = False
 # Names reserved by in-flight creates (GraphQL list lags → duplicate names otherwise).
 _claimed_names: set[str] = set()
 _claimed_names_lock = threading.Lock()
+# Cross-process create lock — serve + heal scripts used to both create
+# shtetlframes-scan-3 in the same second (in-process RLock is not enough).
+_CREATE_LOCK_PATH = Path(__file__).resolve().parents[1] / "output" / ".pod_create.lock"
+
+
+@contextmanager
+def _cross_process_create_lock(timeout_sec: float = 240.0) -> Iterator[None]:
+    """Exclusive lock across serve + CLI heal so name slots are unique."""
+    _CREATE_LOCK_PATH.parent.mkdir(parents=True, exist_ok=True)
+    fh = open(_CREATE_LOCK_PATH, "a+b")
+    deadline = time.time() + float(timeout_sec)
+    locked = False
+    try:
+        while time.time() < deadline:
+            try:
+                if sys.platform == "win32":
+                    import msvcrt
+
+                    fh.seek(0)
+                    msvcrt.locking(fh.fileno(), msvcrt.LK_NBLCK, 1)
+                else:
+                    import fcntl
+
+                    fcntl.flock(fh.fileno(), fcntl.LOCK_EX | fcntl.LOCK_NB)
+                locked = True
+                break
+            except OSError:
+                time.sleep(0.4)
+        if not locked:
+            raise TimeoutError("pod create lock busy")
+        yield
+    finally:
+        if locked:
+            try:
+                if sys.platform == "win32":
+                    import msvcrt
+
+                    fh.seek(0)
+                    msvcrt.locking(fh.fileno(), msvcrt.LK_UNLCK, 1)
+                else:
+                    import fcntl
+
+                    fcntl.flock(fh.fileno(), fcntl.LOCK_UN)
+            except OSError:
+                pass
+        try:
+            fh.close()
+        except Exception:
+            pass
+
+
 # When True, ensure_pods / create_pod will not spin up new machines (discover-only).
 _pod_creates_blocked = False
 _pod_creates_lock = threading.Lock()
@@ -975,118 +1028,131 @@ def ensure_pods(
                 if len(out) + len(pending) >= target:
                     break
 
-                with _ensure_lock:
-                    # Re-check under lock right before the GraphQL create.
-                    live = _live_count()
-                    if live >= account_cap or live >= target:
-                        break
-                    gql_pods = find_shtetl_pods()
-                    used_names = {(p.get("name") or "") for p in gql_pods}
-                    pid_to_name = {
-                        (p.get("id") or ""): (p.get("name") or "")
-                        for p in gql_pods
-                        if p.get("id")
-                    }
-                    # GraphQL can lag after probe — never reuse names of pods
-                    # already in ``out`` / pending (that created duplicate
-                    # shtetlframes-scan-3 while the original was healthy).
-                    for pid, _ in out:
-                        n = pid_to_name.get(pid)
-                        if n:
-                            used_names.add(n)
-                    used_names |= {nm for nm, _, _ in pending if nm}
-                    for _nm, pid, _ in pending:
-                        n = pid_to_name.get(pid)
-                        if n:
-                            used_names.add(n)
-                    with _claimed_names_lock:
-                        used_names |= set(_claimed_names)
-                    name = None
-                    # Prefer slots 0..cap-1; if GraphQL still lists ghosts, keep going
-                    # a few past cap with unique higher indexes (trimmed later).
-                    while slot < account_cap + 4:
-                        cand = pod_slot_name(slot)
-                        slot += 1
-                        if cand not in used_names:
-                            name = cand
+                try:
+                    create_lock_cm = _cross_process_create_lock(timeout_sec=120.0)
+                    create_lock_cm.__enter__()
+                except TimeoutError:
+                    if status_cb:
+                        status_cb("pod create lock busy — waiting for other process…")
+                    time.sleep(2.0)
+                    continue
+                try:
+                    with _ensure_lock:
+                        # Re-check under lock right before the GraphQL create.
+                        live = _live_count()
+                        if live >= account_cap or live >= target:
                             break
-                    if not name:
-                        if status_cb:
-                            status_cb(
-                                f"no free pod slot under cap {account_cap} "
-                                f"(live={live}) — stop creating"
-                            )
-                        break
-                    with _claimed_names_lock:
-                        _claimed_names.add(name)
-
-                    tried_dead: set[str] = set()
-                    created = False
-                    try:
-                        for img in images:
-                            if img in tried_dead:
-                                continue
-                            if deadline is not None and time.time() >= deadline:
+                        if len(out) + len(pending) >= target:
+                            break
+                        gql_pods = find_shtetl_pods()
+                        used_names = {(p.get("name") or "") for p in gql_pods}
+                        pid_to_name = {
+                            (p.get("id") or ""): (p.get("name") or "")
+                            for p in gql_pods
+                            if p.get("id")
+                        }
+                        # GraphQL can lag after probe — never reuse names of pods
+                        # already in ``out`` / pending (that created duplicate
+                        # shtetlframes-scan-3 while the original was healthy).
+                        for pid, _ in out:
+                            n = pid_to_name.get(pid)
+                            if n:
+                                used_names.add(n)
+                        used_names |= {nm for nm, _, _ in pending if nm}
+                        for _nm, pid, _ in pending:
+                            n = pid_to_name.get(pid)
+                            if n:
+                                used_names.add(n)
+                        with _claimed_names_lock:
+                            used_names |= set(_claimed_names)
+                        name = None
+                        # Prefer slots 0..cap-1; if GraphQL still lists ghosts, keep going
+                        # a few past cap with unique higher indexes (trimmed later).
+                        while slot < account_cap + 4:
+                            cand = pod_slot_name(slot)
+                            slot += 1
+                            if cand not in used_names:
+                                name = cand
                                 break
-                            # Final gate inside lock.
-                            live = _live_count()
-                            if live >= account_cap or live >= target:
-                                break
+                        if not name:
                             if status_cb:
                                 status_cb(
-                                    f"creating {name} · {img} "
-                                    f"(live {live}/{account_cap}, want {target}"
-                                    f"{'' if wave == 1 else f', wave {wave}'})…"
+                                    f"no free pod slot under cap {account_cap} "
+                                    f"(live={live}) — stop creating"
                                 )
-                            try:
-                                pod = create_pod(
-                                    image=img,
-                                    gpu_type=gpu,
-                                    docker_args=args,
-                                    on_status=status_cb,
-                                    skip_images=tried_dead,
-                                    name=name,
-                                )
-                                pid = pod["id"]
-                                base = pod_proxy_url(pid)
-                                pending.append((name, pid, base))
-                                created = True
-                                seen_pids.add(pid)
+                            break
+                        with _claimed_names_lock:
+                            _claimed_names.add(name)
+
+                        tried_dead: set[str] = set()
+                        created = False
+                        try:
+                            for img in images:
+                                if img in tried_dead:
+                                    continue
+                                if deadline is not None and time.time() >= deadline:
+                                    break
+                                # Final gate inside lock.
+                                live = _live_count()
+                                if live >= account_cap or live >= target:
+                                    break
                                 if status_cb:
                                     status_cb(
-                                        f"pod created · {name} — booting "
-                                        f"(live≈{live + 1}/{account_cap})"
+                                        f"creating {name} · {img} "
+                                        f"(live {live}/{account_cap}, want {target}"
+                                        f"{'' if wave == 1 else f', wave {wave}'})…"
                                     )
-                                break
-                            except (TimeoutError, RuntimeError) as e:
-                                last_err = e
-                                used = img
                                 try:
-                                    dead = next(
-                                        (
-                                            p
-                                            for p in find_shtetl_pods()
-                                            if (p.get("name") or "") == name
-                                        ),
-                                        None,
+                                    pod = create_pod(
+                                        image=img,
+                                        gpu_type=gpu,
+                                        docker_args=args,
+                                        on_status=status_cb,
+                                        skip_images=tried_dead,
+                                        name=name,
                                     )
-                                    if dead and dead.get("id"):
-                                        used = (dead.get("imageName") or img).strip()
-                                        terminate_pod(dead["id"])
-                                except Exception:
-                                    pass
-                                tried_dead.add(used)
-                                if status_cb:
-                                    status_cb(f"{name} failed ({e}) — try next image…")
-                                time.sleep(1.5)
-                                if "could not create a runpod" in str(e).lower():
+                                    pid = pod["id"]
+                                    base = pod_proxy_url(pid)
+                                    pending.append((name, pid, base))
+                                    created = True
+                                    seen_pids.add(pid)
+                                    if status_cb:
+                                        status_cb(
+                                            f"pod created · {name} — booting "
+                                            f"(live≈{live + 1}/{account_cap})"
+                                        )
                                     break
-                    finally:
+                                except (TimeoutError, RuntimeError) as e:
+                                    last_err = e
+                                    used = img
+                                    try:
+                                        dead = next(
+                                            (
+                                                p
+                                                for p in find_shtetl_pods()
+                                                if (p.get("name") or "") == name
+                                            ),
+                                            None,
+                                        )
+                                        if dead and dead.get("id"):
+                                            used = (dead.get("imageName") or img).strip()
+                                            terminate_pod(dead["id"])
+                                    except Exception:
+                                        pass
+                                    tried_dead.add(used)
+                                    if status_cb:
+                                        status_cb(f"{name} failed ({e}) — try next image…")
+                                    time.sleep(1.5)
+                                    if "could not create a runpod" in str(e).lower():
+                                        break
+                        finally:
+                            if not created:
+                                with _claimed_names_lock:
+                                    _claimed_names.discard(name)
                         if not created:
-                            with _claimed_names_lock:
-                                _claimed_names.discard(name)
-                    if not created:
-                        break
+                            break
+                finally:
+                    create_lock_cm.__exit__(None, None, None)
                 # end lock — allow other readers between creates
 
             if pending:
