@@ -66,6 +66,7 @@ _probe_push_lock = threading.Lock()
 # Self-heal: strike counts + terminate cooldown (avoid replace storms).
 _pod_strikes: dict[str, int] = {}
 _warming_since: dict[str, float] = {}
+_pod_first_seen: dict[str, float] = {}  # URL → first pool/adopt time (boot grace)
 _terminate_at: dict[str, float] = {}
 _heal_lock = threading.Lock()
 _TERMINATE_COOLDOWN_SEC = 90.0
@@ -74,8 +75,27 @@ _WARMING_REPLACE_SEC = 1200.0  # first-boot uvicorn can take 5–20 min
 _ORPHAN_BOOT_GRACE_SEC = 900.0
 # Ports often appear while uvicorn/deps still install (502). Give full boot window.
 _ORPHAN_DEAD_WITH_PORTS_GRACE_SEC = 900.0
+# Scrape http_524 / proxy flakes must not terminate during this window either —
+# that was the 8/8→0 death spiral (soft fill → adopt → /scan 524 → kill).
+_SCAN_TERMINATE_GRACE_SEC = 900.0
 _BROKEN_STRIKES = 4
 _ORPHAN_DEAD_STRIKES = 8  # after grace; avoid replace storms from flaky proxies
+# Reasons where terminate is demoted to drop-only while the pod is young.
+_GRACE_PROTECTED_REASONS = (
+    "http_524",
+    "http_502",
+    "http_404",
+    "http_520",
+    "http_521",
+    "http_522",
+    "http_523",
+    "scan_http",
+    "proxy_dead",
+    "proxy_dead_poll",
+    "result_unreachable",
+    "warm_broken",
+    "models_not_ready",
+)
 _pool_fill_lock = threading.Lock()
 _pool_fill_active = False
 _maintain_bg_lock = threading.Lock()
@@ -207,17 +227,70 @@ def _may_terminate(pod_id: str) -> bool:
         return True
 
 
+def _note_pod_seen(url: str | None) -> None:
+    """Record first-seen time for boot/scan terminate grace."""
+    u = (url or "").rstrip("/")
+    if not u:
+        return
+    with _heal_lock:
+        if u not in _pod_first_seen:
+            _pod_first_seen[u] = time.time()
+
+
+def _pod_age_sec(url: str) -> float | None:
+    """Seconds since we first saw this proxy URL; None if unknown."""
+    u = (url or "").rstrip("/")
+    if not u:
+        return None
+    with _heal_lock:
+        seen = float(_pod_first_seen.get(u) or 0.0)
+        warm = float(_warming_since.get(u) or 0.0)
+    started = min(x for x in (seen, warm) if x > 0) if (seen > 0 or warm > 0) else 0.0
+    if started <= 0:
+        return None
+    return max(0.0, time.time() - started)
+
+
+def _reason_grace_protected(reason: str) -> bool:
+    r = (reason or "").strip().lower()
+    if not r:
+        return False
+    if any(r == m or r.startswith(m) for m in _GRACE_PROTECTED_REASONS):
+        return True
+    # YOLO warm break / NoneType predict — treat as grace-protected flake.
+    return any(m in r for m in _BROKEN_WARM_MARKERS)
+
+
 def drop_pod_url(
     url: str | None,
     *,
     terminate: bool = False,
     reason: str = "",
 ) -> None:
-    """Remove a dead proxy from the pool; optionally terminate the RunPod GPU."""
+    """Remove a dead proxy from the pool; optionally terminate the RunPod GPU.
+
+    During the first ``_SCAN_TERMINATE_GRACE_SEC`` after a pod is seen, proxy
+    flakes (524/502/scan_http/broken warm) only drop from the pool — they must
+    not terminate. That kill race was wiping freshly filled fleets.
+    """
     global _POD_BASE_URL, _rr
     u = (url or "").rstrip("/")
     if not u:
         return
+    do_terminate = bool(terminate)
+    if do_terminate and _reason_grace_protected(reason):
+        age = _pod_age_sec(u)
+        # Unknown age → assume young (safer than killing a cold boot).
+        if age is None or age < _SCAN_TERMINATE_GRACE_SEC:
+            do_terminate = False
+            print(
+                f"[shtetl] self-heal drop-only "
+                f"{pod_id_from_proxy_url(u) or u[-16:]}… "
+                f"({reason or 'flake'}; grace "
+                f"{0 if age is None else int(age)}s/"
+                f"{int(_SCAN_TERMINATE_GRACE_SEC)}s)",
+                flush=True,
+            )
     with _pool_lock:
         _POD_POOL[:] = [x for x in _POD_POOL if x.rstrip("/") != u]
         _reserved_until.pop(u, None)
@@ -230,8 +303,11 @@ def drop_pod_url(
         _probe_pushed.pop(u, None)
     with _heal_lock:
         _pod_strikes.pop(u, None)
-        _warming_since.pop(u, None)
-    if not terminate:
+        # Keep first_seen / warming for grace across drop-only cycles.
+        if do_terminate:
+            _warming_since.pop(u, None)
+            _pod_first_seen.pop(u, None)
+    if not do_terminate:
         return
     pid = pod_id_from_proxy_url(u)
     if not pid or not _may_terminate(pid):
@@ -256,6 +332,8 @@ def set_pod_base_url(url: str | None) -> None:
         _POD_POOL = [u] if u else []
         _rr = 0
         _reserved_until.clear()
+    if u:
+        _note_pod_seen(u)
 
 
 def set_pod_pool(urls: list[str]) -> None:
@@ -284,6 +362,8 @@ def set_pod_pool(urls: list[str]) -> None:
             if u not in cleaned:
                 _pick_counts.pop(u, None)
     _POD_BASE_URL = cleaned[0] if cleaned else None
+    for u in cleaned:
+        _note_pod_seen(u)
 
 
 def get_pod_pool() -> list[str]:
@@ -762,9 +842,11 @@ def _classify_pod(base: str) -> str:
     try:
         r = requests.get(f"{root}/health", timeout=2.5)
     except requests.RequestException:
-        return "dead"
+        # Boot / proxy flake — not a confirmed dead GPU.
+        return "warming"
     if int(r.status_code or 0) in _TERMINATE_PROXY_CODES:
-        return "dead"
+        # 404/502/524 while ports are up is normal during first-boot install.
+        return "warming"
     if r.status_code == 503:
         # Overloaded or models_not_ready — not always a kill, but not pickable idle.
         try:
@@ -1762,6 +1844,7 @@ def _process_video_remote_attempts(
         last_line = {"v": ""}
 
         proxy_dead = {"v": False}
+        proxy_dead_strikes = {"n": 0}
 
         def _poll() -> None:
             while not stop.wait(2.0):
@@ -1769,8 +1852,14 @@ def _process_video_remote_attempts(
                     q = f"?queue_id={queue_id}" if queue_id is not None else ""
                     r = requests.get(f"{base}/progress{q}", timeout=8)
                     if _is_dead_proxy_status(r.status_code):
-                        proxy_dead["v"] = True
-                        return
+                        proxy_dead_strikes["n"] += 1
+                        # Single 502/524 blip during cold proxy is common — need
+                        # consecutive hits before declaring the worker dead.
+                        if proxy_dead_strikes["n"] >= 3:
+                            proxy_dead["v"] = True
+                            return
+                        continue
+                    proxy_dead_strikes["n"] = 0
                     if r.status_code != 200:
                         continue
                     data = r.json() if r.content else {}
@@ -1779,8 +1868,10 @@ def _process_video_remote_attempts(
                         last_line["v"] = line
                         on_status(line)
                 except requests.RequestException:
-                    proxy_dead["v"] = True
-                    return
+                    proxy_dead_strikes["n"] += 1
+                    if proxy_dead_strikes["n"] >= 3:
+                        proxy_dead["v"] = True
+                        return
                 except Exception:
                     pass
 

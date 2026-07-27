@@ -982,6 +982,10 @@ def ensure_pods(
         # status_cb so "waiting for GPU…" cannot stomp the live scrape job message.
         status_live = threading.Event()
         status_live.set()
+        # Soft early-exit must not let leftover wait_healthy threads terminate
+        # pods that bg-fill still owns (that raced with scrape and wiped fleets).
+        may_terminate_waiter = threading.Event()
+        may_terminate_waiter.set()
 
         def _gated_status(msg: str) -> None:
             if status_live.is_set() and status_cb:
@@ -1000,10 +1004,11 @@ def ensure_pods(
                 return (pid, base)
             except (TimeoutError, RuntimeError) as e:
                 _gated_status(f"{name} unhealthy ({e}) — dropping")
-                try:
-                    terminate_pod(pid)
-                except Exception:
-                    pass
+                if may_terminate_waiter.is_set():
+                    try:
+                        terminate_pod(pid)
+                    except Exception:
+                        pass
                 return None
 
         # At most 2 replacement waves — old code ran 3 and over-created under races.
@@ -1203,8 +1208,10 @@ def ensure_pods(
                                 leftover_booting.clear()
                                 leftover_booting.extend(still)
                             early = True
-                            # Stop leftover threads from overwriting UI / job message.
+                            # Stop leftover threads from overwriting UI / job message
+                            # and from terminating pods bg-fill still owns.
                             status_live.clear()
+                            may_terminate_waiter.clear()
                             break
                 finally:
                     # Soft start must not block on the other cold boots.
