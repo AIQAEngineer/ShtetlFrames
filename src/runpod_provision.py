@@ -1156,12 +1156,18 @@ def ensure_pods(
                 # end lock — allow other readers between creates
 
             if pending:
-                # Soft path may already have wait_for healthy pods from ready_now
-                # (e.g. expanding 7→8). Do not block on the new cold boot — hand
-                # pending to leftover/bg-fill and return the live fleet now.
+                # Soft path: skip blocking wait_healthy only after create quota is
+                # filled (or account already at target). Old code handed off after
+                # the first create whenever ready_now already met wait_for — so
+                # expanding 6→8 only ever created one GPU.
+                create_quota_met = (
+                    len(out) + len(pending) >= target
+                    or _live_count() >= min(target, account_cap)
+                )
                 if (
                     leftover_booting is not None
                     and len(out) >= wait_for
+                    and create_quota_met
                 ):
                     leftover_booting.clear()
                     leftover_booting.extend(pending)
