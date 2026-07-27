@@ -1,0 +1,90 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>Train — ShtetlFrames</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link href="https://fonts.googleapis.com/css2?family=Figtree:wght@400;500;600&family=Fraunces:opsz,wght@9..144,500;9..144,560&display=swap" rel="stylesheet" />
+  <link rel="stylesheet" href="/assets/styles.css?v=12" />
+  <style>
+    .train-card {
+      display: grid;
+      grid-template-columns: 7.5rem 1fr;
+      gap: 0.75rem;
+      align-items: stretch;
+      padding: 0.55rem 0.75rem 0.55rem 0.55rem;
+    }
+    .train-thumb {
+      width: 7.5rem;
+      height: 4.6rem;
+      object-fit: cover;
+      background: #0a0908;
+      border: 1px solid var(--line);
+    }
+    .train-thumb-empty {
+      background:
+        linear-gradient(135deg, rgba(42, 36, 28, 0.9), rgba(18, 16, 13, 0.95));
+    }
+    .train-card-body {
+      min-width: 0;
+    }
+    #trainQuery {
+      min-width: 14rem;
+    }
+  </style>
+</head>
+<body>
+  <div class="wrap">
+    <nav class="site-nav">
+      <div class="nav-left">
+        <a class="brand-mark" href="/">Shtetl<span>Frames</span></a>
+        <a class="nav-pathe" href="/pathe">British Pathé</a>
+      </div>
+      <div class="nav-links">
+        <a href="/">Home</a>
+        <a href="/review">Review</a>
+        <a class="active" href="/train">Train</a>
+        <a href="/crops">Crops</a>
+        <a href="/health">Health</a>
+      </div>
+    </nav>
+
+    <header class="review-head">
+      <div>
+        <h1>Train</h1>
+        <p class="section-lede" style="margin:0">
+          Paste a YouTube URL (Orthodox reference) or a Pathé search, then tag Orthodox Jew / Not.
+        </p>
+        <p class="section-lede" style="margin:0.35rem 0 0" id="trainStats">—</p>
+      </div>
+      <div class="filters">
+        <input id="trainQuery" type="search" placeholder="YouTube URL or Pathé search…" />
+        <div class="chip-row" id="statusChips">
+          <button class="chip active" data-status="pending">To tag</button>
+          <button class="chip" data-status="">All</button>
+          <button class="chip" data-status="yes">Orthodox</button>
+          <button class="chip" data-status="no">Not</button>
+        </div>
+        <input id="search" type="search" placeholder="Filter titles…" />
+        <button class="btn" id="loadBtn" type="button">Load Pathé search</button>
+        <button class="btn ghost" id="scanBtn" type="button">Score these</button>
+        <button class="btn ghost" id="clipBtn" type="button">Train CLIP from Keeps</button>
+        <button class="btn ghost" id="clearBtn" type="button">Clear set</button>
+      </div>
+    </header>
+
+    <p class="section-lede" id="trainStatus" style="margin:0 0 1rem"></p>
+
+    <div class="board">
+      <div class="list" id="list"></div>
+      <aside class="detail" id="detail">
+        <div class="sheet placeholder">Select a clip</div>
+      </aside>
+    </div>
+  </div>
+
+  <script src="/assets/train.js?v=5"></script>
+</body>
+</html>
