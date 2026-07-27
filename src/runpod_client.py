@@ -725,11 +725,27 @@ def refresh_pod_pool(
                     extra_fill_sec=0,
                 )
                 if bases:
-                    set_pod_pool(bases)
+                    with _pool_lock:
+                        prior = list(_POD_POOL)
+                    # refresh(count=1) must not shrink an 8-GPU scrape pool.
+                    if prior and len(bases) < len(prior) and n < len(prior):
+                        merged: list[str] = []
+                        seen: set[str] = set()
+                        for u in [*bases, *prior]:
+                            u = u.rstrip("/")
+                            if not u or u in seen:
+                                continue
+                            seen.add(u)
+                            merged.append(u)
+                        set_pod_pool(merged)
+                    else:
+                        set_pod_pool(bases)
                     _refresh_mono = time.monotonic()
                     # New/reused pods may be on stale GitHub code — pin local handler.
-                    _push_handlers_best_effort(bases)
-                    return bases
+                    with _pool_lock:
+                        pinned = list(_POD_POOL)
+                    _push_handlers_best_effort(pinned)
+                    return pinned
                 last_err = RuntimeError("ensure_pods returned no proxies")
             except Exception as e:
                 last_err = e

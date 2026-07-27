@@ -226,7 +226,13 @@ def sync_from_github(*, force: bool = False) -> dict[str, Any]:
         for rel, url in _SYNC_FILES:
             dest = ROOT / rel
             dest.parent.mkdir(parents=True, exist_ok=True)
-            remote = _fetch(url)
+            try:
+                remote = _fetch(url)
+            except Exception as fe:
+                # One missing file (e.g. deleted ollama_pod.py) must not fail
+                # the whole sync — pods kept a stale last_error HTTP 404 forever.
+                print(f"[shtetl] sync skip {rel}: {fe}"[:200], flush=True)
+                continue
             local = dest.read_bytes() if dest.is_file() else b""
             if _sha(remote) == _sha(local) and not force:
                 continue

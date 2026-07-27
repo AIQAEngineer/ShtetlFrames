@@ -228,14 +228,28 @@ def _name_slot(name: str) -> int:
     return 999
 
 
-def shtetl_account_cap() -> int:
-    """Hard ceiling on shtetlframes-scan* pods for this account (scrape + discover)."""
+def shtetl_hard_cap() -> int:
+    """Account max for shtetlframes-scan* pods (scrape fleet + discover spare).
+
+    Never applies the temporary create ceiling — that used to make
+    ``trim_shtetl_pods(keep=1)`` wipe a running 8-GPU scrape fleet whenever
+    Pathé discover (or train) set ``set_pod_create_ceiling(1)``.
+    """
     load_env()
     scrape = max(
         1,
         min(int(getattr(app_config, "RUNPOD_MAX_INFLIGHT", None) or 8), MAX_PARALLEL_PODS),
     )
-    cap = min(MAX_SHTETL_PODS, scrape + MAX_DISCOVER_EXTRA)
+    return min(MAX_SHTETL_PODS, scrape + MAX_DISCOVER_EXTRA)
+
+
+def shtetl_account_cap() -> int:
+    """Create budget for this call: hard cap, optionally lowered by create ceiling.
+
+    Discover/train set a temporary ceiling so listing cannot grow a scrape fleet.
+    Trim / keep-alive must use ``shtetl_hard_cap()`` instead — never this.
+    """
+    cap = shtetl_hard_cap()
     ceiling = pod_create_ceiling()
     if ceiling is not None:
         return max(1, min(cap, int(ceiling)))
@@ -280,7 +294,7 @@ def trim_shtetl_pods(
     Keeps lowest slot numbers; among duplicate names, keeps the one with HTTP ports.
     Returns how many were terminated.
     """
-    cap = int(keep) if keep is not None else shtetl_account_cap()
+    cap = int(keep) if keep is not None else shtetl_hard_cap()
     cap = max(1, min(cap, MAX_SHTETL_PODS))
     with _ensure_lock:
         pods = find_shtetl_pods()
@@ -679,14 +693,22 @@ def ensure_pods(
     ``extra_fill_sec`` trying to fill the rest. Pass ``extra_fill_sec=0`` to
     return immediately after the first healthy pod (background fill can expand later).
 
-    Hard account cap is ``shtetl_account_cap()`` (scrape max + 1 discover) — never
-    creates past that, even when multiple callers / background fills race.
+    Hard account cap is ``shtetl_hard_cap()`` (scrape max + 1 discover) — never
+    trims below that for a temporary create ceiling. Creates respect
+    ``shtetl_account_cap()`` (may be lowered by ``set_pod_create_ceiling``).
     """
     from runpod_bootstrap import DEFAULT_BASE_IMAGE, IMAGE_CANDIDATES, docker_start_args
 
     load_env()
-    account_cap = shtetl_account_cap()
-    n = max(1, min(int(count or 1), account_cap, MAX_SHTETL_PODS))
+    # Trim / pool size uses the real account hard cap. Create budget may be
+    # temporarily lowered by discover/train via set_pod_create_ceiling(1).
+    hard_cap = shtetl_hard_cap()
+    create_cap = shtetl_account_cap()
+    account_cap = create_cap  # create gates + slot naming inside this call
+    n = max(1, min(int(count or 1), hard_cap, MAX_SHTETL_PODS))
+    # When ceiling=1 (discover), still return/reuse the existing scrape fleet —
+    # only block growing past create_cap.
+    n_create = max(1, min(n, create_cap, MAX_SHTETL_PODS))
     min_ready = max(1, min(int(min_ready or 1), n))
     preferred = (app_config.RUNPOD_DOCKER_IMAGE or "").strip() or DEFAULT_BASE_IMAGE
     gpu = (app_config.RUNPOD_GPU_TYPE or "NVIDIA GeForce RTX 3090").strip()
@@ -713,9 +735,10 @@ def ensure_pods(
             on_status(f"recreating up to {n} GPU pod(s)…")
         terminate_shtetl_pods(on_status=on_status)
     else:
-        trimmed = trim_shtetl_pods(keep=account_cap, on_status=on_status)
+        # NEVER trim to the temporary create ceiling (that wiped 8→1).
+        trimmed = trim_shtetl_pods(keep=hard_cap, on_status=on_status)
         if trimmed and on_status:
-            on_status(f"trimmed {trimmed} surplus pod(s) → cap {account_cap}")
+            on_status(f"trimmed {trimmed} surplus pod(s) → cap {hard_cap}")
 
     ready: list[tuple[str, str]] = []  # (pod_id, base_url)
     # Pods still cold-starting (null runtime / deps installing). Must NOT be
@@ -723,7 +746,7 @@ def ensure_pods(
     booting: list[tuple[str, str, str]] = []  # name, pid, base
     # Include every healthy paid GPU in the return pool (up to scrape cap),
     # even when create-target ``n`` is lower — otherwise orphan pods sit idle.
-    scrape_pool_cap = min(MAX_PARALLEL_PODS, account_cap)
+    scrape_pool_cap = min(MAX_PARALLEL_PODS, hard_cap)
     existing = find_shtetl_pods()
     for p in existing:
         pid = p.get("id")
@@ -1090,10 +1113,17 @@ def ensure_pods(
                 if early and len(out) >= wait_for:
                     break
 
-            # After a wave, trim again in case something raced past the cap.
-            trim_shtetl_pods(keep=account_cap, on_status=status_cb)
+            # After a wave, trim again in case something raced past the hard cap.
+            trim_shtetl_pods(keep=hard_cap, on_status=status_cb)
 
-            if len(out) >= wait_for:
+            # Soft wait_for may already be satisfied by ready_now (e.g. 1/8).
+            # Only stop the wave loop when we have wait_for AND are not still
+            # short of the create target (or cannot create more).
+            if len(out) >= wait_for and (
+                len(out) >= target
+                or _live_count() >= min(target, account_cap)
+                or (deadline is not None and time.time() >= deadline)
+            ):
                 break
 
             if len(out) < target and wave < 2 and status_cb:
@@ -1230,12 +1260,13 @@ def ensure_pods(
         return [base for _, base in ready]
 
     if len(ready) < n:
-        # Soft start (extra_fill_sec=0): CREATE all n pods now (parallel boot),
+        # Soft start (extra_fill_sec=0): CREATE up to create budget now (parallel boot),
         # but only WAIT until min_ready are healthy. Old code created target=1
         # then waited — so 7 GPUs never started until the first finished 5–15 min.
+        # Discover ceiling lowers create_target without shrinking the return pool.
         soft = float(extra_fill_sec) <= 0
-        create_target = n
-        wait_for = min_ready if soft else n
+        create_target = n_create
+        wait_for = min_ready if soft else n_create
         leftover: list[tuple[str, str, str]] = []
         # #region agent log
         _dbg(
@@ -1245,6 +1276,9 @@ def ensure_pods(
             ready=len(ready),
             booting=len(booting),
             n=n,
+            n_create=n_create,
+            hard_cap=hard_cap,
+            create_cap=create_cap,
             min_ready=min_ready,
             create_target=create_target,
             wait_for=wait_for,
@@ -1252,8 +1286,8 @@ def ensure_pods(
             soft_return=soft,
         )
         # #endregion
-        if len(ready) < wait_for or (
-            soft and _live_count() < create_target
+        if create_target > len(ready) and (
+            len(ready) < wait_for or (soft and _live_count() < create_target)
         ):
             ready = _create_until_full(
                 ready,
