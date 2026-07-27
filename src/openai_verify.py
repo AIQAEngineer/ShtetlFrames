@@ -1,13 +1,9 @@
-"""Second-pass vision check on CLIP-flagged stills (OpenAI or open VLM).
+"""Second-pass vision check on CLIP-flagged stills via OpenAI GPT vision.
 
 Confirms the frame shows an Orthodox Jewish man with a visible Jewish head covering
 (yarmulke / black hat / shtreimel / spodik). Soft CLIP may flood candidates; this
 pass must stay strict. Visual filter only — not identity.
 Uses human Keep/Pass few-shots when available (see label_feedback).
-
-Backends (Settings → VERIFY_BACKEND):
-- openai — GPT vision via OPENAI_API_KEY
-- open_vlm — OpenAI-compatible endpoint (Ollama / vLLM / OpenRouter) for Qwen2.5-VL etc.
 """
 
 from __future__ import annotations
@@ -20,22 +16,18 @@ import threading
 import time
 from pathlib import Path
 from typing import Any, Callable
-from urllib.parse import urlparse
 
 import requests
 
 OnStatus = Callable[[str], None]
 
 DEFAULT_MODEL = "gpt-5.4-mini"
-DEFAULT_OPEN_VLM_MODEL = "qwen2.5vl:3b"
-POD_OLLAMA_URL = "http://127.0.0.1:11434/v1"
 _OPENAI_API_URL = "https://api.openai.com/v1/chat/completions"
 # Cap parallel vision calls so scrape workers don't pile up on OpenAI/SQLite.
 _VERIFY_SEM = threading.Semaphore(2)
 _DISABLE_LOCK = threading.Lock()
 _disabled_reason: str | None = None
 _DEFAULT_TIMEOUT = 25.0
-_OPEN_VLM_TIMEOUT = 90.0
 
 # Allowed marker values for a KEEP (must name one concrete Orthodox cue).
 _KEEP_MARKERS = frozenset(
@@ -98,19 +90,7 @@ def _load_env() -> None:
 
 
 def verify_backend() -> str:
-    """Return ``ollama_then_openai``, ``openai``, or ``open_vlm``."""
-    _load_env()
-    raw = (os.environ.get("VERIFY_BACKEND") or "openai").strip().lower()
-    if raw in (
-        "ollama_then_openai",
-        "cascade",
-        "ollama+openai",
-        "vlm_then_openai",
-        "open_vlm_then_openai",
-    ):
-        return "ollama_then_openai"
-    if raw in ("open_vlm", "vlm", "ollama", "qwen", "open-vlm"):
-        return "open_vlm"
+    """Vision second pass is OpenAI GPT only."""
     return "openai"
 
 
@@ -119,77 +99,19 @@ def openai_configured() -> bool:
     return bool((os.environ.get("OPENAI_API_KEY") or "").strip())
 
 
-def running_on_pod() -> bool:
-    """True inside a ShtetlFrames RunPod worker process."""
-    if (os.environ.get("SHTETL_POD") or "").strip() in ("1", "true", "yes"):
-        return True
-    try:
-        return Path("/workspace/shtetl/entry.py").is_file()
-    except Exception:
-        return False
-
-
-def open_vlm_runs_on_pod() -> bool:
-    """True when OPEN_VLM_BASE_URL means Ollama on the RunPod GPU (not the PC)."""
-    _load_env()
-    raw = (os.environ.get("OPEN_VLM_BASE_URL") or "pod").strip().lower().rstrip("/")
-    if raw in ("", "pod", "gpu", "runpod", "local-pod"):
-        return True
-    # Explicit loopback in Settings also means pod Ollama when cascade is on.
-    if raw in ("http://127.0.0.1:11434/v1", "http://localhost:11434/v1"):
-        return True
-    return False
-
-
-def open_vlm_base_url() -> str:
-    _load_env()
-    raw = (os.environ.get("OPEN_VLM_BASE_URL") or "pod").strip().rstrip("/")
-    if raw.lower() in ("", "pod", "gpu", "runpod", "local-pod"):
-        return POD_OLLAMA_URL
-    return raw
-
-
-def open_vlm_configured() -> bool:
-    # ``pod`` / empty resolves to loopback — configured for on-GPU Ollama.
-    return bool(open_vlm_base_url())
-
-
-def open_vlm_model() -> str:
-    _load_env()
-    return (
-        (os.environ.get("OPEN_VLM_MODEL") or DEFAULT_OPEN_VLM_MODEL).strip()
-        or DEFAULT_OPEN_VLM_MODEL
-    )
-
-
-def open_vlm_api_key() -> str:
-    _load_env()
-    return (os.environ.get("OPEN_VLM_API_KEY") or "").strip()
-
-
 def verify_note_prefix() -> str:
-    """Notes tag prefix used in Review filters (``openai:`` or ``vlm:``)."""
-    backend = verify_backend()
-    if backend == "open_vlm":
-        return "vlm"
-    # Cascade finals are usually openai:; Ollama-only drops stay vlm:.
+    """Notes tag prefix used in Review filters."""
     return "openai"
 
 
 def openai_verify_enabled() -> bool:
-    """True when the vision second pass is on and the selected backend is configured."""
+    """True when the vision second pass is on and OpenAI is configured."""
     if _disabled_reason:
         return False
     _load_env()
     flag = (os.environ.get("OPENAI_VERIFY") or "1").strip().lower()
     if flag in ("0", "false", "off", "no", "none"):
         return False
-    backend = verify_backend()
-    if backend == "open_vlm":
-        return open_vlm_configured()
-    if backend == "ollama_then_openai":
-        # Cascade needs Ollama/VLM; OpenAI is optional (only runs on VLM keeps).
-        return open_vlm_configured()
     return openai_configured()
 
 
@@ -229,27 +151,6 @@ def _should_disable_http(status_code: int, body: str) -> bool:
 
 def _api_key() -> str:
     return (os.environ.get("OPENAI_API_KEY") or "").strip()
-
-
-def _chat_completions_url(base: str) -> str:
-    root = (base or "").strip().rstrip("/")
-    if root.endswith("/chat/completions"):
-        return root
-    if root.endswith("/v1"):
-        return f"{root}/chat/completions"
-    return f"{root}/v1/chat/completions"
-
-
-def open_vlm_url_is_local(url: str | None = None) -> bool:
-    """True when pods cannot reach this host (localhost / private loopback)."""
-    raw = (url or open_vlm_base_url() or "").strip()
-    if not raw:
-        return False
-    try:
-        host = (urlparse(raw).hostname or "").lower()
-    except Exception:
-        return False
-    return host in ("127.0.0.1", "localhost", "::1", "0.0.0.0")
 
 
 def _notes_tag_match(notes: str | None, tag: str) -> bool:
@@ -518,19 +419,8 @@ def verify_still(
     Returns {keep, confidence, reason, skipped, error?, provider?}.
     If verify is off/unconfigured, keep=True and skipped=True (caller treats as passthrough).
     When enabled: fail closed — errors/skips set keep=False so Review stays empty of unverified hits.
-
-    ``ollama_then_openai``: Ollama/VLM first; OpenAI only when that pass keeps.
     """
-    backend = verify_backend()
-    if backend == "ollama_then_openai":
-        return _verify_cascade(
-            image_path=image_path,
-            image_url=image_url,
-            image_b64=image_b64,
-            timeout=timeout,
-        )
     return _verify_still_one(
-        backend,
         image_path=image_path,
         image_url=image_url,
         image_b64=image_b64,
@@ -586,62 +476,7 @@ def verify_stills_any(
     return out
 
 
-def _verify_cascade(
-    *,
-    image_path: Path | str | None = None,
-    image_url: str | None = None,
-    image_b64: str | None = None,
-    timeout: float | None = None,
-) -> dict[str, Any]:
-    """Ollama/VLM gate, then OpenAI only on positives."""
-    if not openai_verify_enabled():
-        return {
-            "keep": True,
-            "confidence": 0.0,
-            "reason": _disabled_reason or "vision_verify_off",
-            "skipped": True,
-            "provider": "vlm",
-        }
-    vlm = _verify_still_one(
-        "open_vlm",
-        image_path=image_path,
-        image_url=image_url,
-        image_b64=image_b64,
-        timeout=timeout,
-        require_enabled=False,
-    )
-    if not verdict_is_keep(vlm):
-        # Drop / uncertain / error — never spend OpenAI tokens.
-        vlm["provider"] = "vlm"
-        prior = str(vlm.get("reason") or "")
-        if not prior.startswith("vlm_only"):
-            vlm["reason"] = f"vlm_only {prior}".strip()[:240]
-        return vlm
-    if not openai_configured():
-        # No OpenAI key — accept Ollama keep (still cheaper than GPT-on-everything).
-        vlm["provider"] = "vlm"
-        prior = str(vlm.get("reason") or "")
-        vlm["reason"] = f"vlm_keep_no_openai {prior}".strip()[:240]
-        return vlm
-    oai = _verify_still_one(
-        "openai",
-        image_path=image_path,
-        image_url=image_url,
-        image_b64=image_b64,
-        timeout=timeout,
-        require_enabled=False,
-    )
-    oai["provider"] = "openai"
-    vlm_r = str(vlm.get("reason") or "")[:80]
-    oai_r = str(oai.get("reason") or "")
-    oai["reason"] = f"after_vlm({vlm_r}) {oai_r}".strip()[:240]
-    oai["vlm_keep"] = True
-    oai["vlm_confidence"] = vlm.get("confidence")
-    return oai
-
-
 def _verify_still_one(
-    backend: str,
     *,
     image_path: Path | str | None = None,
     image_url: str | None = None,
@@ -649,8 +484,8 @@ def _verify_still_one(
     timeout: float | None = None,
     require_enabled: bool = True,
 ) -> dict[str, Any]:
-    """Single-provider vision call (``openai`` or ``open_vlm``)."""
-    provider = "vlm" if backend == "open_vlm" else "openai"
+    """OpenAI GPT vision call."""
+    provider = "openai"
     if require_enabled and not openai_verify_enabled():
         return {
             "keep": True,
@@ -660,46 +495,20 @@ def _verify_still_one(
             "provider": provider,
         }
 
-    if backend == "open_vlm":
-        if not open_vlm_configured():
-            return {
-                "keep": False,
-                "confidence": 0.0,
-                "reason": "open_vlm_unconfigured",
-                "skipped": True,
-                "error": "unconfigured",
-                "provider": provider,
-            }
-        # Ollama runs on the RunPod GPU — do not fall back to the PC.
-        if open_vlm_runs_on_pod() and not running_on_pod():
-            return {
-                "keep": False,
-                "confidence": 0.0,
-                "reason": "ollama_gpu_pod_only",
-                "skipped": True,
-                "error": "pod_only",
-                "provider": provider,
-            }
-        api_url = _chat_completions_url(open_vlm_base_url())
-        key = open_vlm_api_key()
-        model = open_vlm_model()
-        use_json_format = False
-        req_timeout = float(timeout if timeout is not None else _OPEN_VLM_TIMEOUT)
-    else:
-        if not openai_configured():
-            return {
-                "keep": False,
-                "confidence": 0.0,
-                "reason": "openai_unconfigured",
-                "skipped": True,
-                "error": "unconfigured",
-                "provider": provider,
-            }
-        api_url = _OPENAI_API_URL
-        key = _api_key()
-        model = openai_model()
-        use_json_format = True
-        req_timeout = float(timeout if timeout is not None else _DEFAULT_TIMEOUT)
+    if not openai_configured():
+        return {
+            "keep": False,
+            "confidence": 0.0,
+            "reason": "openai_unconfigured",
+            "skipped": True,
+            "error": "unconfigured",
+            "provider": provider,
+        }
+    api_url = _OPENAI_API_URL
+    key = _api_key()
+    model = openai_model()
+    use_json_format = True
+    req_timeout = float(timeout if timeout is not None else _DEFAULT_TIMEOUT)
 
     path = Path(image_path) if image_path else None
     raw: bytes | None = None
@@ -895,14 +704,8 @@ def filter_candidates_openai(
     """
     if not rows:
         return rows
-    backend = verify_backend()
     prefix = verify_note_prefix()
-    if backend == "ollama_then_openai":
-        label = "Ollama→OpenAI"
-    elif backend == "open_vlm":
-        label = "Open VLM"
-    else:
-        label = "OpenAI"
+    label = "OpenAI"
     if not openai_verify_enabled():
         return _passthrough_rows(rows, f"{prefix}:skip {_disabled_reason or 'verify_off'}")
 

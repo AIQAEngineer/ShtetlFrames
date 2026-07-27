@@ -137,8 +137,8 @@ def test_min_keep_confidence_bounds(monkeypatch):
     assert min_keep_confidence() == 0.0
 
 
-def test_format_notes_uses_vlm_provider(monkeypatch):
-    monkeypatch.setenv("VERIFY_BACKEND", "open_vlm")
+def test_format_notes_legacy_vlm_provider():
+    """Old Review rows may still carry vlm: notes from prior runs."""
     note = format_verdict_notes(
         {
             "keep": True,
@@ -152,97 +152,7 @@ def test_format_notes_uses_vlm_provider(monkeypatch):
     assert note.startswith("vlm:keep")
 
 
-def test_open_vlm_enabled_needs_base_url(monkeypatch):
-    from openai_verify import (
-        openai_verify_enabled,
-        open_vlm_runs_on_pod,
-        open_vlm_url_is_local,
-    )
+def test_verify_backend_always_openai():
+    from openai_verify import verify_backend
 
-    # Avoid load_env() overwriting monkeypatched vars from .env / SQLite.
-    monkeypatch.setattr("openai_verify._load_env", lambda: None)
-    monkeypatch.setenv("OPENAI_VERIFY", "1")
-    monkeypatch.setenv("VERIFY_BACKEND", "open_vlm")
-    monkeypatch.setattr("openai_verify._disabled_reason", None)
-    # Empty / pod → on-GPU Ollama (configured).
-    monkeypatch.setenv("OPEN_VLM_BASE_URL", "pod")
-    assert openai_verify_enabled() is True
-    assert open_vlm_runs_on_pod() is True
-    monkeypatch.setenv("OPEN_VLM_BASE_URL", "https://openrouter.ai/api/v1")
-    assert openai_verify_enabled() is True
-    assert open_vlm_runs_on_pod() is False
-    assert open_vlm_url_is_local("http://127.0.0.1:11434/v1") is True
-    assert open_vlm_url_is_local("https://openrouter.ai/api/v1") is False
-
-
-def test_cascade_skips_openai_on_vlm_drop(monkeypatch):
-    from openai_verify import verify_still
-
-    monkeypatch.setattr("openai_verify._load_env", lambda: None)
-    monkeypatch.setattr("openai_verify._disabled_reason", None)
-    monkeypatch.setenv("OPENAI_VERIFY", "1")
-    monkeypatch.setenv("VERIFY_BACKEND", "ollama_then_openai")
-    monkeypatch.setenv("OPEN_VLM_BASE_URL", "http://127.0.0.1:11434/v1")
-    monkeypatch.setenv("OPENAI_API_KEY", "sk-test")
-    calls: list[str] = []
-
-    def fake_one(backend, **kwargs):
-        calls.append(backend)
-        if backend == "open_vlm":
-            return {
-                "keep": False,
-                "looks_jewish": False,
-                "head_covered": False,
-                "confidence": 0.9,
-                "reason": "secular fedora",
-                "skipped": False,
-                "provider": "vlm",
-            }
-        raise AssertionError("OpenAI must not run after VLM drop")
-
-    monkeypatch.setattr("openai_verify._verify_still_one", fake_one)
-    v = verify_still(image_b64="aGVsbG8=")  # unused; fake_one short-circuits
-    assert calls == ["open_vlm"]
-    assert v["keep"] is False
-    assert v["provider"] == "vlm"
-
-
-def test_cascade_calls_openai_on_vlm_keep(monkeypatch):
-    from openai_verify import verify_still
-
-    monkeypatch.setattr("openai_verify._load_env", lambda: None)
-    monkeypatch.setattr("openai_verify._disabled_reason", None)
-    monkeypatch.setenv("OPENAI_VERIFY", "1")
-    monkeypatch.setenv("VERIFY_BACKEND", "ollama_then_openai")
-    monkeypatch.setenv("OPEN_VLM_BASE_URL", "http://127.0.0.1:11434/v1")
-    monkeypatch.setenv("OPENAI_API_KEY", "sk-test")
-    calls: list[str] = []
-
-    def fake_one(backend, **kwargs):
-        calls.append(backend)
-        if backend == "open_vlm":
-            return {
-                "keep": True,
-                "looks_jewish": True,
-                "head_covered": True,
-                "confidence": 0.88,
-                "reason": "shtreimel",
-                "skipped": False,
-                "provider": "vlm",
-            }
-        return {
-            "keep": True,
-            "looks_jewish": True,
-            "head_covered": True,
-            "confidence": 0.95,
-            "reason": "confirmed",
-            "skipped": False,
-            "provider": "openai",
-        }
-
-    monkeypatch.setattr("openai_verify._verify_still_one", fake_one)
-    v = verify_still(image_b64="aGVsbG8=")
-    assert calls == ["open_vlm", "openai"]
-    assert v["keep"] is True
-    assert v["provider"] == "openai"
-    assert "after_vlm" in (v.get("reason") or "")
+    assert verify_backend() == "openai"

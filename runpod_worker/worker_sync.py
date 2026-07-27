@@ -40,7 +40,6 @@ _SYNC_FILES: tuple[tuple[str, str], ...] = (
     ("entry.py", _sync_url("runpod_worker/entry.py")),
     ("handler.py", _sync_url("runpod_worker/handler.py")),
     ("worker_sync.py", _sync_url("runpod_worker/worker_sync.py")),
-    ("ollama_pod.py", _sync_url("runpod_worker/ollama_pod.py")),
     ("openai_verify.py", _sync_url("src/openai_verify.py")),
     ("label_feedback.py", _sync_url("src/label_feedback.py")),
     ("shtetl_core/__init__.py", _sync_url("src/shtetl_core/__init__.py")),
@@ -131,7 +130,6 @@ def _reload_modules(changed: list[str]) -> list[str]:
         "shtetl_core",
         "openai_verify",
         "label_feedback",
-        "ollama_pod",
         "handler",
         "worker_sync",
     ]
@@ -150,9 +148,6 @@ def _reload_modules(changed: list[str]) -> list[str]:
         elif rel == "label_feedback.py":
             want.add("label_feedback")
             want.add("openai_verify")
-        elif rel == "ollama_pod.py":
-            want.add("ollama_pod")
-            want.add("handler")
         elif rel == "worker_sync.py":
             want.add("worker_sync")
 

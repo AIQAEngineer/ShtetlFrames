@@ -53,7 +53,7 @@ function render(data) {
   document.getElementById("healthStats").innerHTML = `
     <div class="stat"><span>Pods</span><strong>${s.busy_count ?? 0} busy · ${s.healthy_count ?? 0}/${s.pod_count ?? 0} healthy</strong></div>
     <div class="stat"><span>Idle healthy</span><strong>${s.idle_healthy_count ?? 0}</strong></div>
-    <div class="stat"><span>Ollama ready</span><strong>${s.ollama_ready_count ?? 0}/${s.pod_count ?? 0}</strong></div>
+    <div class="stat"><span>Verify</span><strong>openai</strong></div>
     <div class="stat"><span>Scrape pool</span><strong>${s.scrape_pool_size ?? 0}</strong></div>
     <div class="stat"><span>Stack</span><strong>${s.pathe_stack ?? "—"} / ${s.pathe_stack_max ?? "—"}</strong></div>
     <div class="stat"><span>MAX_INFLIGHT</span><strong>${s.max_inflight ?? "—"}</strong></div>
@@ -77,7 +77,7 @@ function render(data) {
   const tbody = document.getElementById("healthPods");
   const pods = data.pods || [];
   if (!pods.length) {
-    tbody.innerHTML = `<tr><td colspan="7" class="empty-cell">No pods found</td></tr>`;
+    tbody.innerHTML = `<tr><td colspan="6" class="empty-cell">No pods found</td></tr>`;
   } else {
     tbody.innerHTML = pods
       .map((p) => {
@@ -90,23 +90,12 @@ function render(data) {
           p.inflight != null
             ? `${p.inflight}${p.inflight_limit_pathe != null ? "/" + p.inflight_limit_pathe : ""}`
             : "—";
-        let ollama = "—";
-        if (p.ollama_model_ready === true) {
-          ollama = `<span class="badge accept">ready</span>`;
-        } else if (p.ollama_pulling) {
-          ollama = `<span class="badge pending">pulling</span>`;
-        } else if (p.ollama_ready === true) {
-          ollama = `<span class="badge pending">no model</span>`;
-        } else if (p.ollama_ready === false) {
-          ollama = `<span class="badge reject">down</span>`;
-        }
         const err = p.error || p.sync_error || "";
         return `<tr class="${p.busy ? "row-busy" : p.healthy ? "" : "row-down"}">
           <td class="col-title">${escapeHtml(p.name || "?")}</td>
           <td>${status}</td>
           <td>${escapeHtml(p.phase || "—")}</td>
           <td>${escapeHtml(inf)}</td>
-          <td title="${escapeHtml(p.ollama_model || "")}">${ollama}</td>
           <td class="col-title">${escapeHtml(p.title || p.message || "")}</td>
           <td class="col-source">${escapeHtml(err)}</td>
         </tr>`;

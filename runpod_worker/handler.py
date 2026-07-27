@@ -63,8 +63,6 @@ _tls = threading.local()
 _job_progress: dict[str, dict[str, Any]] = {}
 _job_results: dict[str, dict[str, Any]] = {}
 _job_results_lock = threading.Lock()
-_ollama_prepared = False
-_ollama_prep_lock = threading.Lock()
 _IDLE_PROGRESS: dict[str, Any] = {
     "phase": "idle",
     "message": "",
@@ -798,7 +796,6 @@ def _is_retryable_job_error(msg: str) -> bool:
 
 
 def process_job(inp: dict) -> dict:
-    global _ollama_prepared
     url = (inp.get("url") or "").strip()
     title = inp.get("title") or "video"
     queue_id = inp.get("queue_id")
@@ -895,7 +892,7 @@ def process_job(inp: dict) -> dict:
                             )
                         else:
                             raise
-                # Free CLIP activations before Ollama shares the GPU.
+                # Free CLIP activations before OpenAI verify / next segment.
                 try:
                     if torch.cuda.is_available():
                         torch.cuda.empty_cache()
@@ -921,100 +918,31 @@ def process_job(inp: dict) -> dict:
                         tmp_path = Path(tmp.name)
                     wrote = write_sheet_from_crops(group, tmp_path)
                     if wrote:
-                        # Vision verify on the pod with the local JPEG.
-                        backend_raw = (
-                            str(inp.get("verify_backend") or os.environ.get("VERIFY_BACKEND") or "openai")
-                            .strip()
-                            .lower()
-                        )
-                        if backend_raw in (
-                            "ollama_then_openai",
-                            "cascade",
-                            "ollama+openai",
-                            "vlm_then_openai",
-                            "open_vlm_then_openai",
-                        ):
-                            backend = "ollama_then_openai"
-                        elif backend_raw in ("open_vlm", "vlm", "ollama", "qwen"):
-                            backend = "open_vlm"
-                        else:
-                            backend = "openai"
-                        os.environ["VERIFY_BACKEND"] = backend
+                        # Vision verify on the pod with the local JPEG (OpenAI only).
                         os.environ.setdefault("OPENAI_VERIFY", "1")
-                        vlm_base = (
-                            inp.get("open_vlm_base_url") or os.environ.get("OPEN_VLM_BASE_URL") or ""
+                        oai_key = (
+                            inp.get("openai_api_key") or os.environ.get("OPENAI_API_KEY") or ""
                         ).strip()
-                        oai_key = (inp.get("openai_api_key") or os.environ.get("OPENAI_API_KEY") or "").strip()
-                        if backend in ("open_vlm", "ollama_then_openai"):
-                            can_verify = bool(vlm_base)
-                        else:
-                            can_verify = bool(oai_key)
-                        if can_verify:
-                            if backend in ("open_vlm", "ollama_then_openai"):
-                                os.environ["SHTETL_POD"] = "1"
-                                os.environ["OPEN_VLM_BASE_URL"] = vlm_base or "http://127.0.0.1:11434/v1"
-                                vlm_model = (
-                                    inp.get("open_vlm_model")
-                                    or os.environ.get("OPEN_VLM_MODEL")
-                                    or ""
-                                ).strip()
-                                if vlm_model:
-                                    os.environ["OPEN_VLM_MODEL"] = vlm_model
-                                vlm_key = (
-                                    inp.get("open_vlm_api_key")
-                                    or os.environ.get("OPEN_VLM_API_KEY")
-                                    or ""
-                                ).strip()
-                                if vlm_key:
-                                    os.environ["OPEN_VLM_API_KEY"] = vlm_key
-                                # Once per process: serve + wait for model (bg pull from warm).
-                                with _ollama_prep_lock:
-                                    if not _ollama_prepared:
-                                        try:
-                                            from ollama_pod import (
-                                                ensure_ollama,
-                                                start_background_pull,
-                                                wait_for_model,
-                                            )
-
-                                            start_background_pull()
-                                            ensure_ollama(pull=False, use_cache=True)
-                                            ok = wait_for_model(timeout_sec=180.0)
-                                            _ollama_prepared = bool(ok)
-                                            print(
-                                                f"[shtetl] ollama prepare ok={ok}",
-                                                flush=True,
-                                            )
-                                        except Exception as ol_err:
-                                            print(
-                                                f"[shtetl] ollama ensure: {ol_err}",
-                                                flush=True,
-                                            )
-                            if backend in ("openai", "ollama_then_openai") and oai_key:
-                                os.environ["OPENAI_API_KEY"] = oai_key
-                                oai_model = (
-                                    inp.get("openai_model") or os.environ.get("OPENAI_MODEL") or ""
-                                ).strip()
-                                if oai_model:
-                                    os.environ["OPENAI_MODEL"] = oai_model
-                            label = {
-                                "ollama_then_openai": "Ollama→OpenAI",
-                                "open_vlm": "Open VLM",
-                            }.get(backend, "OpenAI")
+                        if oai_key:
+                            os.environ["OPENAI_API_KEY"] = oai_key
+                            oai_model = (
+                                inp.get("openai_model") or os.environ.get("OPENAI_MODEL") or ""
+                            ).strip()
+                            if oai_model:
+                                os.environ["OPENAI_MODEL"] = oai_model
                             try:
                                 from openai_verify import format_verdict_notes, verify_still
 
                                 set_progress(
                                     "upload",
-                                    f"{label} verify {i}/{n_segs}",
+                                    f"OpenAI verify {i}/{n_segs}",
                                     pct=(100.0 * i / n_segs) if n_segs else 100,
-                                    detail=f"local still → {label}",
+                                    detail="local still → OpenAI",
                                     queue_id=queue_id,
                                 )
                                 notes = format_verdict_notes(verify_still(image_path=wrote))
                             except Exception as oai_err:
-                                prefix = "vlm" if backend == "open_vlm" else "openai"
-                                notes = f"{prefix}:drop conf=0.00 pod_verify:{oai_err}"[:500]
+                                notes = f"openai:drop conf=0.00 pod_verify:{oai_err}"[:500]
                         still_raw, still_b64 = _encode_review_still(Path(wrote))
                         # Durable on-disk still for GET /still (survives large JSON truncation).
                         try:

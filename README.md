@@ -104,9 +104,6 @@ Do not commit secrets. Copy from `.env.example`.
 | `RUNPOD_STOP_WHEN_DONE` | No | `1` = stop pods after scrape (saves money) |
 | `RUNPOD_JOB_TIMEOUT_SEC` | No | Per-video timeout (default `1800`) |
 | `SCORE_THRESHOLD` | No | CLIP gate before vision verify (default `0.04`) |
-| `VERIFY_BACKEND` | No | `ollama_then_openai` (default: Ollama first, OpenAI on keeps), `openai`, or `open_vlm` |
-| `OPEN_VLM_BASE_URL` | If open_vlm | `pod` = Ollama on RunPod GPU (default); or remote OpenAI-compatible URL |
-| `OPEN_VLM_MODEL` | No | Default `qwen2.5vl:3b` (faster on-pod Ollama) |
 | `OPENAI_API_KEY` | No | Vision second pass before Review |
 | `OPENAI_VERIFY` | No | `1` = only vision-approved stills in Review |
 | `OPENAI_MODEL` | No | Vision model (default `gpt-5.4-mini`) |

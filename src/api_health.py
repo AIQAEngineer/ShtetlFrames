@@ -43,10 +43,6 @@ def probe_pod(pod: dict) -> dict[str, Any]:
         "busy": False,
         "error": None,
         "sync_error": None,
-        "ollama_ready": None,
-        "ollama_model_ready": None,
-        "ollama_model": None,
-        "ollama_pulling": None,
     }
     if not base:
         entry["error"] = "no_proxy_url"
@@ -64,12 +60,6 @@ def probe_pod(pod: dict) -> dict[str, Any]:
             entry["inflight"] = data.get("inflight")
             entry["inflight_limit_pathe"] = data.get("inflight_limit_pathe")
             entry["inflight_limit_yt"] = data.get("inflight_limit_yt")
-            ollama = data.get("ollama") if isinstance(data.get("ollama"), dict) else {}
-            if ollama:
-                entry["ollama_ready"] = bool(ollama.get("ready"))
-                entry["ollama_model_ready"] = bool(ollama.get("model_ready"))
-                entry["ollama_model"] = (ollama.get("model") or "")[:64] or None
-                entry["ollama_pulling"] = bool(ollama.get("pulling"))
             if data.get("warm_error"):
                 entry["error"] = str(data.get("warm_error"))[:200]
             sync = data.get("github_sync") if isinstance(data.get("github_sync"), dict) else {}
@@ -174,7 +164,6 @@ def build_health_snapshot(*, force: bool = False) -> dict[str, Any]:
     max_inflight = int(getattr(app_config, "RUNPOD_MAX_INFLIGHT", None) or 8)
     healthy_n = sum(1 for p in probes if p.get("healthy"))
     busy_n = sum(1 for p in probes if p.get("busy"))
-    ollama_ready_n = sum(1 for p in probes if p.get("ollama_model_ready"))
     idle_healthy = [
         p for p in probes if p.get("healthy") and not p.get("busy")
     ]
@@ -197,13 +186,6 @@ def build_health_snapshot(*, force: bool = False) -> dict[str, Any]:
     for p in probes:
         if p.get("healthy") and not p.get("models_ready"):
             alert("amber", "models_not_ready", f"{p.get('name')}: models not ready")
-        if p.get("healthy") and p.get("ollama_model_ready") is False:
-            pulling = " (pulling…)" if p.get("ollama_pulling") else ""
-            alert(
-                "amber",
-                "ollama_not_ready",
-                f"{p.get('name')}: Ollama model not ready{pulling}",
-            )
         if p.get("sync_error"):
             alert(
                 "amber",
@@ -274,12 +256,12 @@ def build_health_snapshot(*, force: bool = False) -> dict[str, Any]:
             "healthy_count": healthy_n,
             "busy_count": busy_n,
             "idle_healthy_count": len(idle_healthy),
-            "ollama_ready_count": ollama_ready_n,
             "max_inflight": max_inflight,
             "max_parallel_pods": MAX_PARALLEL_PODS,
             "scrape_pool_size": pool_n,
             "pathe_stack": stack,
             "pathe_stack_max": stack_max,
+            "verify_backend": "openai",
         },
         "pool": {
             "urls": [u.split("//")[-1][:40] for u in scrape_pool],

@@ -299,38 +299,11 @@ def _attach_vision_verify_payload(payload: dict[str, Any]) -> None:
     runs after segments return.
     """
     try:
-        from openai_verify import (
-            POD_OLLAMA_URL,
-            _api_key,
-            openai_model,
-            openai_verify_enabled,
-            open_vlm_api_key,
-            open_vlm_base_url,
-            open_vlm_model,
-            open_vlm_runs_on_pod,
-            verify_backend,
-        )
+        from openai_verify import _api_key, openai_model, openai_verify_enabled
 
         if not openai_verify_enabled():
             return
-        backend = verify_backend()
-        payload["verify_backend"] = backend
-        if backend in ("open_vlm", "ollama_then_openai"):
-            # Default: Ollama on the RunPod GPU (pod loopback). Remote URL = OpenRouter etc.
-            if open_vlm_runs_on_pod():
-                payload["open_vlm_base_url"] = POD_OLLAMA_URL
-            else:
-                payload["open_vlm_base_url"] = open_vlm_base_url()
-            payload["open_vlm_model"] = open_vlm_model()
-            vlm_key = open_vlm_api_key()
-            if vlm_key:
-                payload["open_vlm_api_key"] = vlm_key
-            if backend == "ollama_then_openai":
-                oai = _api_key()
-                if oai:
-                    payload["openai_api_key"] = oai
-                    payload["openai_model"] = openai_model()
-            return
+        payload["verify_backend"] = "openai"
         key = _api_key()
         if key:
             # Verify on the GPU while the JPEG is local (Catbox is unreliable).
@@ -348,7 +321,6 @@ def _local_worker_files_for_push() -> dict[str, str]:
         "runpod_worker/entry.py",
         "runpod_worker/handler.py",
         "runpod_worker/worker_sync.py",
-        "runpod_worker/ollama_pod.py",
         "src/openai_verify.py",
         "src/label_feedback.py",
         "src/shtetl_core/__init__.py",

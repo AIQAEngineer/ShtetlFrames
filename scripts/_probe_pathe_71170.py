@@ -59,8 +59,7 @@ def main() -> int:
 
     thr = float(getattr(app_config, "SCORE_THRESHOLD", None) or 0.04)
     print(
-        f"using {base.split('//')[-1][:40]} thr={thr} "
-        f"verify={os.environ.get('VERIFY_BACKEND')}",
+        f"using {base.split('//')[-1][:40]} thr={thr} verify=openai",
         flush=True,
     )
 

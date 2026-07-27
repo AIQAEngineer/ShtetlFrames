@@ -83,21 +83,15 @@ echo "[shtetl] fetch worker + shtetl_core from GitHub..."
 curl -fsSL "{WORKER_RAW_BASE}/entry.py" -o entry.py
 curl -fsSL "{WORKER_RAW_BASE}/handler.py" -o handler.py
 curl -fsSL "{WORKER_RAW_BASE}/worker_sync.py" -o worker_sync.py
-curl -fsSL "{WORKER_RAW_BASE}/ollama_pod.py" -o ollama_pod.py
 curl -fsSL "{_RAW}/src/openai_verify.py" -o openai_verify.py
 curl -fsSL "{_RAW}/src/label_feedback.py" -o label_feedback.py
 {core_curls}
-ls -la entry.py handler.py worker_sync.py ollama_pod.py openai_verify.py label_feedback.py shtetl_core
+ls -la entry.py handler.py worker_sync.py openai_verify.py label_feedback.py shtetl_core
 $PY -c "import entry; print('entry_import_ok', entry.app)"
 
-echo "[shtetl] starting HTTP :8000 (Ollama installs later only if VERIFY_BACKEND needs it)"
+echo "[shtetl] starting HTTP :8000"
 export PYTHONPATH=/workspace/shtetl
 export SHTETL_POD=1
-export OPEN_VLM_BASE_URL=http://127.0.0.1:11434/v1
-export OPEN_VLM_MODEL=qwen2.5vl:3b
-export VERIFY_BACKEND=openai
-# Bring HTTP up first — blocking on Ollama install left ports=0 for 8–15 min
-# and Pathé discover looked stuck. entry.py warms Ollama when backend needs it.
 exec $PY -m uvicorn entry:app --host 0.0.0.0 --port 8000
 """
 

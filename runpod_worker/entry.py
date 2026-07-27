@@ -143,29 +143,12 @@ def _warm_once() -> None:
 
     reset_models()
     _models()
-    # Ollama on this GPU — background pull so YOLO/CLIP models_ready is not blocked.
     try:
         import os
 
         os.environ.setdefault("SHTETL_POD", "1")
-        os.environ.setdefault("OPEN_VLM_BASE_URL", "http://127.0.0.1:11434/v1")
-        os.environ.setdefault("OPEN_VLM_MODEL", "qwen2.5vl:3b")
-        os.environ.setdefault("VERIFY_BACKEND", "openai")
-        # Ollama warm skipped while VERIFY_BACKEND=openai (re-enable with ollama_then_openai).
-        if (os.environ.get("VERIFY_BACKEND") or "").strip().lower() in (
-            "ollama_then_openai",
-            "open_vlm",
-            "vlm",
-            "ollama",
-        ):
-            from ollama_pod import ollama_status, start_background_pull
-
-            start_background_pull()
-            print(f"[shtetl] ollama_warm_bg {ollama_status()}", flush=True)
-        else:
-            print("[shtetl] ollama_warm skipped (VERIFY_BACKEND=openai)", flush=True)
-    except Exception as ollama_err:
-        print(f"[shtetl] ollama_warm_skip: {ollama_err}", flush=True)
+    except Exception:
+        pass
     print(
         f"[shtetl] warm ok cuda={torch.cuda.is_available()} numpy={numpy.__version__}",
         flush=True,
@@ -227,13 +210,6 @@ def health() -> dict:
         sync = worker_sync.sync_status()
     except Exception:
         pass
-    ollama = {}
-    try:
-        from ollama_pod import ollama_status
-
-        ollama = ollama_status()
-    except Exception:
-        ollama = {"ready": False, "model_ready": False}
     return {
         # ok tracks models_ready so wait_healthy does not accept a cold/broken warm.
         "ok": bool(_ready),
@@ -246,7 +222,6 @@ def health() -> dict:
         "inflight_limit_yt": yt_lim,
         "inflight_limit_pathe": pathe_lim,
         "github_sync": sync,
-        "ollama": ollama,
     }
 
 
@@ -319,7 +294,6 @@ def sync_push(payload: dict) -> dict:
                         "entry.py",
                         "handler.py",
                         "worker_sync.py",
-                        "ollama_pod.py",
                         "openai_verify.py",
                         "label_feedback.py",
                     }
@@ -575,10 +549,7 @@ def still(queue_id: str = Query(...), index: int = Query(1)):
 
 @app.post("/verify_still")
 def verify_still_http(payload: dict) -> dict:
-    """Run vision verify on a JPEG (image_b64). backend=open_vlm|openai.
-
-    Used from the PC to A/B Ollama-on-GPU vs OpenAI on identical crops.
-    """
+    """Run OpenAI vision verify on a JPEG (image_b64)."""
     import base64
     import os
     import tempfile
@@ -587,42 +558,15 @@ def verify_still_http(payload: dict) -> dict:
     b64 = (inp.get("image_b64") or "").strip()
     if not b64:
         return {"ok": False, "error": "image_b64_required"}
-    backend = (inp.get("backend") or "open_vlm").strip().lower()
-    if backend in ("ollama", "vlm", "qwen", "open-vlm"):
-        backend = "open_vlm"
-    if backend not in ("open_vlm", "openai"):
-        return {"ok": False, "error": f"unsupported_backend:{backend}"}
 
     os.environ["SHTETL_POD"] = "1"
     os.environ["OPENAI_VERIFY"] = "1"
-    os.environ["VERIFY_BACKEND"] = backend
-    if backend == "open_vlm":
-        os.environ["OPEN_VLM_BASE_URL"] = "http://127.0.0.1:11434/v1"
-        model = (inp.get("open_vlm_model") or os.environ.get("OPEN_VLM_MODEL") or "").strip()
-        if model:
-            os.environ["OPEN_VLM_MODEL"] = model
-        try:
-            from ollama_pod import ensure_ollama, start_background_pull, wait_for_model
-
-            start_background_pull()
-            ensure_ollama(pull=False, use_cache=True)
-            if not wait_for_model(timeout_sec=float(inp.get("ollama_wait_sec") or 240)):
-                from ollama_pod import ollama_status
-
-                return {
-                    "ok": False,
-                    "error": "ollama_model_not_ready",
-                    "ollama": ollama_status(),
-                }
-        except Exception as e:
-            return {"ok": False, "error": f"ollama_ensure:{e}"[:240]}
-    else:
-        key = (inp.get("openai_api_key") or os.environ.get("OPENAI_API_KEY") or "").strip()
-        if key:
-            os.environ["OPENAI_API_KEY"] = key
-        oai_model = (inp.get("openai_model") or os.environ.get("OPENAI_MODEL") or "").strip()
-        if oai_model:
-            os.environ["OPENAI_MODEL"] = oai_model
+    key = (inp.get("openai_api_key") or os.environ.get("OPENAI_API_KEY") or "").strip()
+    if key:
+        os.environ["OPENAI_API_KEY"] = key
+    oai_model = (inp.get("openai_model") or os.environ.get("OPENAI_MODEL") or "").strip()
+    if oai_model:
+        os.environ["OPENAI_MODEL"] = oai_model
 
     try:
         raw = base64.standard_b64decode(b64)
@@ -642,16 +586,13 @@ def verify_still_http(payload: dict) -> dict:
         import openai_verify as ov
 
         importlib.reload(ov)
-        # Clear any prior hard-disable from other backends in this process.
         ov._disabled_reason = None  # type: ignore[attr-defined]
         verdict = ov.verify_still(image_path=tmp_path, timeout=float(inp.get("timeout") or 90))
         notes = ov.format_verdict_notes(verdict)
         return {
             "ok": True,
-            "backend": backend,
-            "model": (
-                ov.open_vlm_model() if backend == "open_vlm" else ov.openai_model()
-            ),
+            "backend": "openai",
+            "model": ov.openai_model(),
             "keep": bool(verdict.get("keep")),
             "looks_jewish": verdict.get("looks_jewish"),
             "head_covered": verdict.get("head_covered"),
