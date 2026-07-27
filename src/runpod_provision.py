@@ -1013,6 +1013,9 @@ def ensure_pods(
 
         # At most 2 replacement waves — old code ran 3 and over-created under races.
         for wave in range(1, 3):
+            # Always restart name search — a prior wave can exhaust ``slot`` past
+            # account_cap+4 while live<<target (log: "no free pod slot … live=2").
+            slot = 0
             if len(out) >= target:
                 break
             if deadline is not None and time.time() >= deadline:
@@ -1050,7 +1053,17 @@ def ensure_pods(
                         if len(out) + len(pending) >= target:
                             break
                         gql_pods = find_shtetl_pods()
-                        used_names = {(p.get("name") or "") for p in gql_pods}
+                        # EXITED/FAILED ghosts must NOT block name reuse — that
+                        # left "no free pod slot under cap 9 (live=2)" while want=8.
+                        def _name_in_use(p: dict) -> bool:
+                            st = (p.get("desiredStatus") or "").upper()
+                            return st not in ("EXITED", "FAILED", "TERMINATED")
+
+                        used_names = {
+                            (p.get("name") or "")
+                            for p in gql_pods
+                            if (p.get("name") or "") and _name_in_use(p)
+                        }
                         pid_to_name = {
                             (p.get("id") or ""): (p.get("name") or "")
                             for p in gql_pods
@@ -1071,9 +1084,11 @@ def ensure_pods(
                         with _claimed_names_lock:
                             used_names |= set(_claimed_names)
                         name = None
-                        # Prefer slots 0..cap-1; if GraphQL still lists ghosts, keep going
-                        # a few past cap with unique higher indexes (trimmed later).
-                        while slot < account_cap + 4:
+                        # Prefer slots 0..cap-1; if names are busy, keep going with
+                        # unique higher indexes (trimmed later). Do not stop merely
+                        # because EXITED ghosts filled the low slots.
+                        slot_limit = account_cap + 24
+                        while slot < slot_limit:
                             cand = pod_slot_name(slot)
                             slot += 1
                             if cand not in used_names:
@@ -1083,7 +1098,7 @@ def ensure_pods(
                             if status_cb:
                                 status_cb(
                                     f"no free pod slot under cap {account_cap} "
-                                    f"(live={live}) — stop creating"
+                                    f"(live={live}, used={len(used_names)}) — stop creating"
                                 )
                             break
                         with _claimed_names_lock:
