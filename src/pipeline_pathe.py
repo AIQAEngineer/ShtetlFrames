@@ -55,11 +55,17 @@ from db import (
     insert_candidates,
     insert_queue_items,
     queue_stats_pathe,
+    reclaim_orphan_pathe_scanning,
     requeue_pathe_stuck,
     set_job,
     set_queue_status,
     take_pending_pathe,
 )
+
+# Hard ceiling per queue item so a wedged hydrate/insert cannot hold a slot forever.
+_PATHE_ITEM_DEADLINE_SEC = 22 * 60
+_PATHE_HEARTBEAT_SEC = 12.0
+_PATHE_RECLAIM_SEC = 45.0
 from pipeline_state import _active, _lock
 
 _pathe_live: dict[int, dict] = {}
@@ -787,10 +793,53 @@ def _pathe_scrape_job(workers: int, backend: str, limit: int | None) -> None:
         with ThreadPoolExecutor(max_workers=executor_max) as pool:
             futs: dict = {}
             last_pool_sync = 0.0
+            last_heartbeat = 0.0
+            last_reclaim = 0.0
             while True:
                 if _scrape_stop.is_set():
                     status("Pathé scrape stop requested", job="pathe_scrape")
                     break
+                now_mono = time.monotonic()
+                # Heartbeat even when no future completes — frozen counters were the
+                # #1 "stuck" signal while workers were blocked on DB/network.
+                if now_mono - last_heartbeat >= _PATHE_HEARTBEAT_SEC:
+                    last_heartbeat = now_mono
+                    try:
+                        pending_hb = int(queue_stats_pathe().get("n_pending") or 0)
+                        set_job(
+                            "pathe_scrape",
+                            completed=completed,
+                            hits=hits,
+                            workers=workers,
+                            total=max(claimed + pending_hb, completed, 1),
+                            message=(
+                                f"Pathé scrape {completed}/{max(claimed + pending_hb, completed, 1)} · "
+                                f"{hits} hits · {len(futs)} in flight · "
+                                f"{pending_hb} pending"
+                            ),
+                        )
+                        _publish_pathe_dash(
+                            completed=completed,
+                            hits=hits,
+                            errors=errors,
+                            total=max(claimed + pending_hb, completed, 1),
+                            pending=pending_hb,
+                        )
+                    except Exception:
+                        pass
+                if now_mono - last_reclaim >= _PATHE_RECLAIM_SEC:
+                    last_reclaim = now_mono
+                    try:
+                        active_ids = {int(r["id"]) for r in futs.values()}
+                        n_or = reclaim_orphan_pathe_scanning(active_ids)
+                        if n_or:
+                            status(
+                                f"Reclaimed {n_or} orphan scanning row(s)",
+                                job="pathe_scrape",
+                                persist=True,
+                            )
+                    except Exception as e:
+                        print(f"[shtetl] pathe reclaim: {e}"[:160], flush=True)
                 # Re-read stack ceiling every loop so Settings raises apply live.
                 if backend == "runpod":
                     try:
@@ -908,6 +957,10 @@ def _pathe_scrape_job(workers: int, backend: str, limit: int | None) -> None:
                                     "pathe_resolve",
                                     "scrapfly",
                                     "pathe_no_m3u8",
+                                    "pathe_item_deadline",
+                                    "pod_scan_timeout",
+                                    "errno 2",
+                                    "no such file",
                                 )
                             )
                             if soft:
@@ -1033,6 +1086,7 @@ def _process_one_pathe(row: dict, backend: str) -> int:
     title = row.get("title") or "video"
     url = (row.get("url") or "").strip()
     thr = float(getattr(app_config, "SCORE_THRESHOLD", None) or DEFAULT_SCORE_THRESHOLD)
+    t_start = time.time()
 
     def on_status(msg: str, *, phase: str | None = None) -> None:
         with _lock:
@@ -1041,7 +1095,7 @@ def _process_one_pathe(row: dict, backend: str) -> int:
                 "title": live.get("title") or title,
                 "phase": phase or live.get("phase") or "scanning",
                 "detail": msg,
-                "started": live.get("started") or time.time(),
+                "started": live.get("started") or t_start,
             }
         _touch_pathe_live_dash()
 
@@ -1049,6 +1103,11 @@ def _process_one_pathe(row: dict, backend: str) -> int:
     on_status("Pathé HLS download + scan…")
 
     if backend == "runpod":
+        # Bound remote work so one wedged pod cannot occupy a client slot forever.
+        remote_timeout = min(
+            float(getattr(app_config, "RUNPOD_JOB_TIMEOUT_SEC", None) or 1800),
+            float(_PATHE_ITEM_DEADLINE_SEC),
+        )
         out = process_pathe_remote(
             url=url,
             title=title,
@@ -1057,8 +1116,11 @@ def _process_one_pathe(row: dict, backend: str) -> int:
             score_threshold=thr,
             source_url=url,
             on_status=on_status,
-            max_attempts=8,
+            max_attempts=6,
+            timeout_sec=remote_timeout,
         )
+        if time.time() - t_start > _PATHE_ITEM_DEADLINE_SEC:
+            raise TimeoutError(f"pathe_item_deadline after {int(time.time() - t_start)}s")
         rows = segments_to_candidate_rows(out, source_url=url)
     else:
         from ultralytics import YOLO

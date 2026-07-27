@@ -506,6 +506,28 @@ def requeue_pathe_stuck() -> int:
         return int(cur.rowcount or 0)
 
 
+def reclaim_orphan_pathe_scanning(active_ids: set[int] | list[int]) -> int:
+    """Requeue Pathé ``scanning`` rows that no live worker owns.
+
+    The claim loop is the source of truth via ``active_ids``. Rows left in
+    ``scanning`` after a worker death otherwise block the UI forever.
+    """
+    keep = {int(x) for x in (active_ids or []) if x is not None}
+    with db(write=True) as conn:
+        rows = conn.execute(
+            f"SELECT id FROM queue_items WHERE status='scanning' AND {_PATHE_URL_SQL}"
+        ).fetchall()
+        orphan = [int(r["id"]) for r in rows if int(r["id"]) not in keep]
+        if not orphan:
+            return 0
+        conn.executemany(
+            "UPDATE queue_items SET status='pending', error='', "
+            "detail='reclaim_orphan_scanning' WHERE id=?",
+            [(i,) for i in orphan],
+        )
+        return len(orphan)
+
+
 def clear_queue_pathe() -> int:
     """Delete only British Pathé rows from the queue. Returns rows deleted."""
     with db(write=True) as conn:
@@ -724,29 +746,15 @@ def insert_candidates(rows: list[dict]) -> int:
             )
             cid = int(cur.lastrowid)
             try:
+                # ONLY local bytes/paths inside the write lock. Never download Pathé/YouTube
+                # here — ensure_candidate_still(download_video=True) held this lock for
+                # minutes and froze the entire scrape (queue status + job counters stuck).
                 saved = save_candidate_still(
                     cid,
                     path=r.get("_local_still") or r.get("local_still"),
                     b64=r.get("still_b64") or r.get("image_b64"),
-                    image_url=r.get("image_url"),
+                    image_url=None,
                 )
-                # Pods on stale GitHub often verify but never send still_b64 — pull a
-                # frame from the source URL before Review shows a blank sheet.
-                if saved is None and (r.get("source_url") or "").strip():
-                    try:
-                        from still_ensure import ensure_candidate_still
-
-                        saved = ensure_candidate_still(
-                            cid,
-                            source_url=str(r.get("source_url") or ""),
-                            video_id=str(r.get("video_id") or ""),
-                            start_sec=float(r.get("start_sec") or 0),
-                            end_sec=r.get("end_sec"),
-                            image_url=r.get("image_url"),
-                            download_video=True,
-                        )
-                    except Exception:
-                        saved = None
                 if saved is None:
                     note = (r.get("notes") or "").strip()
                     if "no_still_bytes" not in note:
@@ -754,7 +762,6 @@ def insert_candidates(rows: list[dict]) -> int:
                             "UPDATE candidates SET notes=? WHERE id=?",
                             ((f"no_still_bytes {note}".strip())[:1000], cid),
                         )
-                    # Permanent recovery: extract from source video in background.
                     enqueue_ensure_still(
                         {
                             "id": cid,

@@ -2,6 +2,7 @@
 
 from __future__ import annotations
 
+import threading
 import time
 from concurrent.futures import ThreadPoolExecutor, as_completed
 from http.server import BaseHTTPRequestHandler
@@ -110,7 +111,12 @@ def probe_pod(pod: dict) -> dict[str, Any]:
     return entry
 
 
-def build_health_snapshot() -> dict[str, Any]:
+_HEALTH_CACHE: dict[str, Any] = {"ts": 0.0, "snap": None}
+_HEALTH_CACHE_LOCK = threading.Lock()
+_HEALTH_CACHE_TTL_SEC = 8.0
+
+
+def build_health_snapshot(*, force: bool = False) -> dict[str, Any]:
     from db import list_jobs, queue_stats_pathe
     from runpod_client import (
         get_pod_pool,
@@ -119,6 +125,18 @@ def build_health_snapshot() -> dict[str, Any]:
         pool_size,
     )
     from runpod_provision import MAX_PARALLEL_PODS, find_shtetl_pods
+
+    # Cache: UI polls this often; each miss runs GraphQL + N pod probes and was
+    # hanging the server when RunPod was slow.
+    now = time.time()
+    with _HEALTH_CACHE_LOCK:
+        cached = _HEALTH_CACHE.get("snap")
+        if (
+            not force
+            and cached is not None
+            and (now - float(_HEALTH_CACHE.get("ts") or 0.0)) < _HEALTH_CACHE_TTL_SEC
+        ):
+            return cached
 
     load_env()
     t0 = time.time()
@@ -246,7 +264,7 @@ def build_health_snapshot() -> dict[str, Any]:
     level_rank = {"red": 0, "amber": 1}
     alerts.sort(key=lambda a: (level_rank.get(a["level"], 9), a["code"]))
 
-    return {
+    snap = {
         "ok": True,
         "ts": time.time(),
         "probe_ms": int((time.time() - t0) * 1000),
@@ -276,6 +294,10 @@ def build_health_snapshot() -> dict[str, Any]:
         "queue": {"pathe": pathe_q},
         "pods": probes,
     }
+    with _HEALTH_CACHE_LOCK:
+        _HEALTH_CACHE["ts"] = time.time()
+        _HEALTH_CACHE["snap"] = snap
+    return snap
 
 
 def _job_brief(job: dict | None) -> dict[str, Any]:

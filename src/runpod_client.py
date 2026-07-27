@@ -1901,25 +1901,21 @@ def _process_video_remote_attempts(
             ):
                 drop_pod_url(base, terminate=True, reason=err_s[:80])
 
-            # Dead / empty / overloaded pod pool — self-heal + refresh, then retry.
+            # Dead / empty / overloaded pod pool — kick background heal only.
+            # NEVER call maintain_pod_pool/refresh_pod_pool synchronously here:
+            # 8 workers each blocking on GraphQL+probes froze Pathé for minutes.
             if is_infra_error(err_s):
                 try:
                     if on_status:
-                        on_status("GPU busy — self-healing pod pool…")
+                        on_status("GPU blip — healing pool in background…")
                     want = max(1, int(getattr(app_config, "RUNPOD_MAX_INFLIGHT", 1) or 1))
-                    maintain_pod_pool(target=want, on_status=None)
-                except Exception as refresh_err:
-                    if on_status:
-                        on_status(f"pod heal failed: {refresh_err}"[:160])
-                    try:
-                        refresh_pod_pool(count=want, on_status=None, force=True)
-                    except Exception:
-                        pass
-                # Always burn another attempt on infra — never give up early in-loop.
+                    kick_maintain_pod_pool(target=want, on_status=None)
+                except Exception:
+                    pass
                 if attempt < total_attempts:
                     if on_status:
                         on_status(f"pod retry {attempt}/{total_attempts}: {err_s[:120]}")
-                    time.sleep(min(25.0, 4.0 * attempt))
+                    time.sleep(min(8.0, 1.5 * attempt))
                     continue
                 break
             if attempt < total_attempts and _is_retryable_remote_error(err_s):
@@ -1937,7 +1933,11 @@ def _process_video_remote_attempts(
 
 
 def _hydrate_segment_stills(base: str, out: dict[str, Any]) -> None:
-    """Fill missing still_b64 from pod GET /still (local-only; no Catbox)."""
+    """Fill missing still_b64 from pod GET /still (local-only; no Catbox).
+
+    Hard-bounded: old code used timeout=60 × 3 attempts × N segments and could
+    stall a finished Pathé job for 10+ minutes after \"pod done\".
+    """
     import base64
     import time as _time
 
@@ -1946,7 +1946,10 @@ def _hydrate_segment_stills(base: str, out: dict[str, Any]) -> None:
         return
     qid = out.get("queue_id")
     root = (base or "").rstrip("/")
+    deadline = _time.time() + 45.0  # absolute ceiling for the whole hydrate pass
     for i, seg in enumerate(segs, 1):
+        if _time.time() >= deadline:
+            break
         if not isinstance(seg, dict):
             continue
         if seg.get("still_b64") or seg.get("image_b64"):
@@ -1958,55 +1961,42 @@ def _hydrate_segment_stills(base: str, out: dict[str, Any]) -> None:
                 idx_i = int(idx) if idx is not None else i
             except (TypeError, ValueError):
                 idx_i = i
-            # Try string + int queue_id — some pods key stills by whichever form arrived.
             qids = [qid]
             if str(qid).isdigit():
                 qids.append(int(qid))
             qids.append(str(qid))
-            seen: set[str] = set()
-            for attempt in range(3):
-                if got:
+            for qtry in qids:
+                if _time.time() >= deadline:
                     break
-                if attempt:
-                    _time.sleep(0.4 * attempt)
-                for qtry in qids:
-                    key = str(qtry)
-                    if key in seen and attempt == 0:
-                        continue
-                    seen.add(key)
-                    try:
-                        r = requests.get(
-                            f"{root}/still",
-                            params={"queue_id": qtry, "index": idx_i},
-                            timeout=60,
-                        )
-                    except requests.RequestException:
-                        continue
-                    if r.status_code != 200 or len(r.content) < 200:
-                        continue
-                    ctype = (r.headers.get("content-type") or "").lower()
-                    body = r.content
-                    looks_img = (
-                        body[:3] == b"\xff\xd8\xff"
-                        or body[:8] == b"\x89PNG\r\n\x1a\n"
-                        or "image/jpeg" in ctype
-                        or "image/jpg" in ctype
-                        or "image/png" in ctype
+                try:
+                    r = requests.get(
+                        f"{root}/still",
+                        params={"queue_id": qtry, "index": idx_i},
+                        timeout=6,
                     )
-                    if not looks_img:
-                        continue
-                    seg["still_b64"] = base64.standard_b64encode(body).decode("ascii")
-                    # Drop stale cloud URLs — Review uses local contact_sheets only.
-                    seg["image_url"] = None
-                    got = True
-                    break
-                seen.clear()
+                except requests.RequestException:
+                    continue
+                if r.status_code != 200 or len(r.content) < 200:
+                    continue
+                ctype = (r.headers.get("content-type") or "").lower()
+                body = r.content
+                looks_img = (
+                    body[:3] == b"\xff\xd8\xff"
+                    or body[:8] == b"\x89PNG\r\n\x1a\n"
+                    or "image/jpeg" in ctype
+                    or "image/jpg" in ctype
+                    or "image/png" in ctype
+                )
+                if not looks_img:
+                    continue
+                seg["still_b64"] = base64.standard_b64encode(body).decode("ascii")
+                seg["image_url"] = None
+                got = True
+                break
         if not got:
             note = str(seg.get("notes") or "")
             if "still_hydrate_miss" not in note:
-                # Prefix so long OpenAI reasons cannot truncate the flag away.
                 seg["notes"] = (f"still_hydrate_miss {note}".strip())[:500]
-            # Never keep catbox URLs as the Review image source.
             url = str(seg.get("image_url") or "").lower()
             if "catbox" in url:
                 seg["image_url"] = None
@@ -2082,6 +2072,7 @@ def process_pathe_remote(
     source_url: str = "",
     on_status: OnStatus | None = None,
     max_attempts: int = 4,
+    timeout_sec: float | None = None,
 ) -> dict[str, Any]:
     """GPU scan for British Pathé asset URLs — HLS only, no YouTube proxy/cookies."""
     load_env()
@@ -2119,7 +2110,11 @@ def process_pathe_remote(
             "British Pathé HLS — GPU download (no YouTube proxy)…"
             + (" · cached" if job.get("cached") else "")
         )
-    timeout = float(app_config.RUNPOD_JOB_TIMEOUT_SEC or 1800)
+    timeout = float(
+        timeout_sec
+        if timeout_sec is not None
+        else (app_config.RUNPOD_JOB_TIMEOUT_SEC or 1800)
+    )
     # Pathé: prefer idle GPUs but allow stacking when limit≥2 (short reserve).
     stack = pathe_stack_limit()
     stack_mx = pathe_stack_max()
