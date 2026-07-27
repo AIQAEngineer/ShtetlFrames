@@ -805,21 +805,23 @@ def ensure_pods(
     live_n = count_active_shtetl_pods()
     have_or_booting = max(len(ready) + len(booting), live_n)
     if len(ready) >= min_ready and have_or_booting < n:
-        if float(extra_fill_sec) <= 0:
-            return_early = True
-            if on_status:
-                on_status(
-                    f"{len(ready)}/{n} pods ready"
-                    + (f", {len(booting)} booting" if booting else "")
-                    + f" — starting now; filling to {n} in background…"
-                )
-        else:
+        # Under target: must CREATE missing pods in the soft path below.
+        # Old code set return_early here and only kicked a daemon bg-fill —
+        # short callers (heal scripts) exited and killed that thread, so the
+        # fleet stayed stuck at ~4 forever.
+        if float(extra_fill_sec) > 0:
             fill_deadline = time.time() + float(extra_fill_sec)
             if on_status:
                 on_status(
                     f"{len(ready)}/{n} pods ready — scanning can start; "
                     f"trying for more (~{int(extra_fill_sec)}s)…"
                 )
+        elif on_status:
+            on_status(
+                f"{len(ready)}/{n} pods ready"
+                + (f", {len(booting)} booting" if booting else "")
+                + f" — creating up to {n} now…"
+            )
     elif len(ready) >= min_ready and have_or_booting >= n and len(ready) < n:
         # Enough pods exist (ready+booting / live); just wait — don't create more.
         if float(extra_fill_sec) <= 0:
