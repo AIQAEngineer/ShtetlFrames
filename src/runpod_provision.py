@@ -980,8 +980,25 @@ def ensure_pods(
                     live = _live_count()
                     if live >= account_cap or live >= target:
                         break
-                    used_names = {(p.get("name") or "") for p in find_shtetl_pods()}
-                    used_names |= {nm for nm, _, _ in pending}
+                    gql_pods = find_shtetl_pods()
+                    used_names = {(p.get("name") or "") for p in gql_pods}
+                    pid_to_name = {
+                        (p.get("id") or ""): (p.get("name") or "")
+                        for p in gql_pods
+                        if p.get("id")
+                    }
+                    # GraphQL can lag after probe — never reuse names of pods
+                    # already in ``out`` / pending (that created duplicate
+                    # shtetlframes-scan-3 while the original was healthy).
+                    for pid, _ in out:
+                        n = pid_to_name.get(pid)
+                        if n:
+                            used_names.add(n)
+                    used_names |= {nm for nm, _, _ in pending if nm}
+                    for _nm, pid, _ in pending:
+                        n = pid_to_name.get(pid)
+                        if n:
+                            used_names.add(n)
                     with _claimed_names_lock:
                         used_names |= set(_claimed_names)
                     name = None
