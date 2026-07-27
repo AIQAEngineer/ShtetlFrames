@@ -888,7 +888,18 @@ def ensure_pods(
         slot = 0
         last_err: Exception | None = None
         out = list(ready_now)
-        pending: list[tuple[str, str, str]] = list(already_booting or [])
+        # Deduplicate by pod id — soft start used to pass leftover+booting and
+        # wait the same GPU twice ("waiting for 12 pods" when target was 8).
+        pending: list[tuple[str, str, str]] = []
+        seen_pids: set[str] = {pid for pid, _ in out}
+        for item in already_booting or []:
+            if len(item) < 3:
+                continue
+            pid = item[1]
+            if not pid or pid in seen_pids:
+                continue
+            seen_pids.add(pid)
+            pending.append(item)
         # Soft early-exit leaves leftover wait_healthy threads running. Mute their
         # status_cb so "waiting for GPU…" cannot stomp the live scrape job message.
         status_live = threading.Event()
@@ -998,6 +1009,7 @@ def ensure_pods(
                                 base = pod_proxy_url(pid)
                                 pending.append((name, pid, base))
                                 created = True
+                                seen_pids.add(pid)
                                 if status_cb:
                                     status_cb(
                                         f"pod created · {name} — booting "
@@ -1267,7 +1279,14 @@ def ensure_pods(
                     f"{len(ready)}/{n} pods ready — starting scrape; "
                     f"filling remaining in background…"
                 )
-            _start_bg_fill(list(ready), list(leftover) + list(booting))
+            # leftover already has unfinished waiters; merge booting without dupes.
+            boot_by_pid: dict[str, tuple[str, str, str]] = {}
+            for item in list(booting) + list(leftover):
+                if len(item) >= 3 and item[1]:
+                    boot_by_pid[item[1]] = item
+            for pid, _ in ready:
+                boot_by_pid.pop(pid, None)
+            _start_bg_fill(list(ready), list(boot_by_pid.values()))
             _persist_pod_id(ready[0][0])
             return [base for _, base in ready]
 
