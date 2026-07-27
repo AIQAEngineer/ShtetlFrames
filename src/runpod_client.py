@@ -1062,7 +1062,10 @@ def maintain_pod_pool(
         pass
 
     if {u.rstrip("/") for u in alive} != {u.rstrip("/") for u in pool}:
-        set_pod_pool(alive)
+        # Never wipe a non-empty scrape pool to [] on a transient probe storm —
+        # that left Ops at pool=0 with 8 live GPUs while Pathé starved.
+        if alive or not pool:
+            set_pod_pool(alive)
 
     # NEVER block the Pathé/scrape coordinator on ensure_pods. Create the deficit
     # only: healthy + still-booting must cover ``want``. Old gate required
