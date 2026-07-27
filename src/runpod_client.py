@@ -777,20 +777,21 @@ def _classify_pod(base: str) -> str:
         return "broken"
     if data.get("models_ready") is False or data.get("ok") is False:
         return "warming"
+    # /health already proved the worker is up. /progress is only for phase ranking.
+    # Transient 502/timeout on progress used to return "dead" and our heal loop
+    # terminated warm GPUs — that was the main "most pods dead" death spiral.
     try:
         r2 = requests.get(f"{root}/progress", timeout=2.5)
     except requests.RequestException:
-        return "dead"
-    if int(r2.status_code or 0) in _TERMINATE_PROXY_CODES:
-        return "dead"
-    if r2.status_code != 200:
-        return "unknown"
+        return "idle"
+    if int(r2.status_code or 0) in _TERMINATE_PROXY_CODES or r2.status_code != 200:
+        return "idle"
     try:
         prog = r2.json() if r2.content else {}
     except Exception:
-        return "unknown"
+        return "idle"
     if not isinstance(prog, dict):
-        return "unknown"
+        return "idle"
     phase = str(prog.get("phase") or "").strip().lower()
     if phase in _PHASE_RANK:
         return phase
