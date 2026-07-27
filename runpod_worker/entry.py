@@ -27,20 +27,15 @@ _yt_ok_streak = 0
 _pathe_ok_streak = 0
 _SCALE_UP_AFTER_OK = 2  # successes at current limit before trying +1 again
 
+# Proxy death (502/524) is fleet/infra — do not shrink Pathé inflight for it.
+# Only true GPU saturation / OOM / worker death.
 _OVERLOAD_ERR_MARKERS = (
     "pod_saturated",
     "http_503",
-    "http_524",
-    "http_502",
-    "gateway time-out",
-    "gateway timeout",
     "cuda out of memory",
     "out of memory",
     "oom",
     "worker_died",
-    "connection reset",
-    "connection aborted",
-    "broken pipe",
 )
 
 

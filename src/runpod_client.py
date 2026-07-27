@@ -978,7 +978,9 @@ def maintain_pod_pool(
                 if not base:
                     continue
                 kind = _classify_pod(base)
-                if kind in ("dead", "broken", "warming", "unknown"):
+                # Include warming/unknown with a proxy URL — often busy/saturated
+                # GPUs that still accept work (pool was emptied by drop-only).
+                if kind in ("dead", "broken"):
                     continue
                 adopted.append(base)
                 if len(adopted) >= want:
@@ -1116,6 +1118,18 @@ def maintain_pod_pool(
             except (TypeError, ValueError):
                 uptime = 0.0
             kind = _classify_pod(base)
+            # Saturated / flaky /health (503) often classifies busy GPUs as
+            # warming/unknown. After drop-only on 524 they were left out of the
+            # scrape pool forever ("pool has 3 URLs but 7 live pods").
+            soft_busy = kind in ("warming", "unknown") and bool(ports)
+            if soft_busy and len(alive) < want:
+                with _heal_lock:
+                    _pod_strikes.pop(base, None)
+                if base not in known:
+                    alive.append(base)
+                    known.add(base)
+                    healthy_n += 1
+                continue
             if kind in ("dead", "broken", "warming", "unknown"):
                 with _heal_lock:
                     if base not in _warming_since:
