@@ -1,9 +1,9 @@
-<!DOCTYPE html>
+﻿<!DOCTYPE html>
 <html lang="en">
 <head>
   <meta charset="utf-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1" />
-  <title>Train — ShtetlFrames</title>
+  <title>Train â€” ShtetlFrames</title>
   <link rel="preconnect" href="https://fonts.googleapis.com" />
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
   <link href="https://fonts.googleapis.com/css2?family=Figtree:wght@400;500;600&family=Fraunces:opsz,wght@9..144,500;9..144,560&display=swap" rel="stylesheet" />
@@ -40,13 +40,16 @@
     <nav class="site-nav">
       <div class="nav-left">
         <a class="brand-mark" href="/">Shtetl<span>Frames</span></a>
-        <a class="nav-pathe" href="/pathe">British Pathé</a>
+        <a class="nav-pathe" href="/pathe">British PathÃ©</a>
       </div>
       <div class="nav-links">
         <a href="/">Home</a>
         <a href="/review">Review</a>
         <a class="active" href="/train">Train</a>
         <a href="/crops">Crops</a>
+        <a href="/mark">Mark</a>
+        <a href="/clip">Clip</a>
+        <a href="/probe">Probe</a>
         <a href="/health">Health</a>
       </div>
     </nav>
@@ -55,22 +58,22 @@
       <div>
         <h1>Train</h1>
         <p class="section-lede" style="margin:0">
-          Paste a YouTube URL (Orthodox reference) or a Pathé search, then tag Orthodox Jew / Not.
+          Paste a YouTube URL (Orthodox reference) or a PathÃ© search, then tag Orthodox Jew / Not.
         </p>
-        <p class="section-lede" style="margin:0.35rem 0 0" id="trainStats">—</p>
+        <p class="section-lede" style="margin:0.35rem 0 0" id="trainStats">â€”</p>
       </div>
       <div class="filters">
-        <input id="trainQuery" type="search" placeholder="YouTube URL or Pathé search…" />
+        <input id="trainQuery" type="search" placeholder="YouTube URL or PathÃ© searchâ€¦" />
         <div class="chip-row" id="statusChips">
           <button class="chip active" data-status="pending">To tag</button>
           <button class="chip" data-status="">All</button>
           <button class="chip" data-status="yes">Orthodox</button>
           <button class="chip" data-status="no">Not</button>
         </div>
-        <input id="search" type="search" placeholder="Filter titles…" />
-        <button class="btn" id="loadBtn" type="button">Load Pathé search</button>
+        <input id="search" type="search" placeholder="Filter titlesâ€¦" />
+        <button class="btn" id="loadBtn" type="button">Load PathÃ© search</button>
         <button class="btn ghost" id="scanBtn" type="button">Score these</button>
-        <button class="btn ghost" id="clipBtn" type="button">Train CLIP from Keeps</button>
+        <button class="btn ghost" id="clipBtn" type="button">Train CLIP (Keep/Pass deep)</button>
         <button class="btn ghost" id="clearBtn" type="button">Clear set</button>
       </div>
     </header>

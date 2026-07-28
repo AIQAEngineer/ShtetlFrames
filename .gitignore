@@ -7,6 +7,7 @@ data/
 output/crops/
 output/contact_sheets/
 output/hit_crops/
+output/trims/
 output/jobs.json
 output/reviews.json
 output/logs/
@@ -21,6 +22,8 @@ output/candidates.jsonl
 output/review_queue.csv
 *.meta.json
 .env
+secrets/*
+!secrets/README.md
 *.pt
 .yolo/
 _*.txt
@@ -31,3 +34,12 @@ serve.out.log
 serve.err.log
 err.txt
 yt_dlp_*.txt
+output/google_drive_token.json
+output/*.log
+output/.pod_create.lock
+output/_scrapefix_loop_state.json
+output/*_rescore_report.json
+output/*_ref.jpg
+output/pathe_yt_thumb.jpg
+output/clip_ft/
+output/yolo_ft/

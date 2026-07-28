@@ -725,10 +725,11 @@ def _pathe_scrape_job(workers: int, backend: str, limit: int | None) -> None:
             # #endregion
             set_pod_pool(bases)
             try:
-                from runpod_client import maintain_pod_pool
+                from runpod_client import maintain_pod_pool, merge_pod_pool
 
                 # Soft ensure may return min_ready only — absorb the other live
                 # GraphQL pods into the scrape pool immediately.
+                merge_pod_pool(bases, cap=n_pods)
                 maintain_pod_pool(target=n_pods, on_status=pod_status)
             except Exception as e:
                 status(f"pod pool adopt skipped: {e}"[:120], job="pathe_scrape")
@@ -1123,7 +1124,9 @@ def _process_one_pathe(row: dict, backend: str) -> int:
             url=url,
             title=title,
             queue_id=qid,
-            sample_fps=DEFAULT_FPS,
+            # Worker GPU lock scans one job at a time; 1.5 fps is ~3× denser than the
+            # pod default (0.5) and dominates wall time. OpenAI/CLIP gate still applies.
+            sample_fps=0.5,
             score_threshold=thr,
             source_url=url,
             on_status=on_status,

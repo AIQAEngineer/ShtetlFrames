@@ -138,6 +138,16 @@ class Handler(BaseHTTPRequestHandler):
 
             api_train.handle_get_youtube(self, parsed)
             return
+        if path == "/api/clip_ft/frames":
+            import api_probe_frames
+
+            api_probe_frames.handle_get_frames(self, parsed)
+            return
+        if path == "/api/clip_ft/summary":
+            import api_probe_frames
+
+            api_probe_frames.handle_get_summary(self)
+            return
         if path == "/api/errors":
             api_jobs.handle_get_errors(self, parsed)
             return
@@ -151,6 +161,9 @@ class Handler(BaseHTTPRequestHandler):
         if path == "/api/candidates":
             api_review.handle_get_candidates(self, parsed)
             return
+        if path == "/api/stills/status":
+            api_review.handle_get_stills_status(self)
+            return
         if path == "/api/review/label_stats":
             api_review.handle_get_label_stats(self)
             return
@@ -159,10 +172,54 @@ class Handler(BaseHTTPRequestHandler):
 
             api_crops.handle_get_crops(self, parsed)
             return
+        if path == "/api/mark":
+            json_response(
+                self,
+                200,
+                {
+                    "ok": True,
+                    "hint": "POST {url, mark} — Pathé asset URL + second mark; POST /api/mark/combine {url, times[]}",
+                },
+            )
+            return
+        if path == "/api/mark/combine":
+            json_response(
+                self,
+                200,
+                {
+                    "ok": True,
+                    "hint": "POST {url, times[], mark?} — stitch selected frames side by side at full res",
+                },
+            )
+            return
+        if path == "/api/clip/drive":
+            import api_clip
+
+            api_clip.handle_get_drive_status(self)
+            return
+        if path == "/api/clip/drive/auth":
+            json_response(
+                self,
+                200,
+                {"ok": True, "hint": "POST /api/clip/drive/auth — open browser to sign in with Google"},
+            )
+            return
+        if path in ("/api/clip", "/api/clip/load", "/api/clip/cut", "/api/clip/upload"):
+            json_response(
+                self,
+                200,
+                {
+                    "ok": True,
+                    "hint": "POST /api/clip/load {url}; /api/clip/cut {url,start,end}; /api/clip/upload {url,start,end}",
+                },
+            )
+            return
 
         if path.startswith("/media/sheet/"):
             name = Path(path.split("/media/sheet/", 1)[1]).name
-            self._file(CONTACT_DIR / name, "image/jpeg")
+            sheet = CONTACT_DIR / name
+            guessed = mimetypes.guess_type(name)[0] or "image/jpeg"
+            self._file(sheet, guessed)
             return
 
         if path.startswith("/media/video/"):
@@ -177,6 +234,36 @@ class Handler(BaseHTTPRequestHandler):
             self._bytes(200, data, ctype)
             return
 
+        if path.startswith("/media/trim/"):
+            name = Path(path.split("/media/trim/", 1)[1]).name
+            trim = OUTPUT_DIR / "trims" / name
+            if not trim.is_file():
+                self._json(404, {"error": "trim not found", "file": name})
+                return
+            ctype = mimetypes.guess_type(name)[0] or "video/mp4"
+            self._file(trim, ctype)
+            return
+
+        if path.startswith("/media/clip_ft/"):
+            rel = path.split("/media/clip_ft/", 1)[1]
+            rel = rel.replace("\\", "/").lstrip("/")
+            parts = rel.split("/")
+            if (
+                len(parts) != 2
+                or parts[0] not in ("keep", "pass")
+                or ".." in rel
+                or not parts[1].endswith((".jpg", ".jpeg", ".png", ".webp"))
+            ):
+                self._json(400, {"error": "bad clip_ft path"})
+                return
+            f = OUTPUT_DIR / "clip_ft" / "dataset" / parts[0] / parts[1]
+            if not f.is_file():
+                self._json(404, {"error": "frame not found", "path": rel})
+                return
+            ctype = mimetypes.guess_type(f.name)[0] or "image/jpeg"
+            self._file(f, ctype)
+            return
+
         if path in ("/", "/index.html"):
             self._file(WEB_DIR / "index.html", "text/html; charset=utf-8")
             return
@@ -186,11 +273,20 @@ class Handler(BaseHTTPRequestHandler):
         if path == "/crops" or path == "/crops.html":
             self._file(WEB_DIR / "crops.html", "text/html; charset=utf-8")
             return
+        if path == "/mark" or path == "/mark.html":
+            self._file(WEB_DIR / "mark.html", "text/html; charset=utf-8")
+            return
+        if path == "/clip" or path == "/clip.html":
+            self._file(WEB_DIR / "clip.html", "text/html; charset=utf-8")
+            return
         if path == "/pathe" or path == "/pathe.html":
             self._file(WEB_DIR / "pathe.html", "text/html; charset=utf-8")
             return
         if path == "/train" or path == "/train.html":
             self._file(WEB_DIR / "train.html", "text/html; charset=utf-8")
+            return
+        if path == "/probe" or path == "/probe.html":
+            self._file(WEB_DIR / "probe.html", "text/html; charset=utf-8")
             return
         if path == "/health" or path == "/health.html":
             self._file(WEB_DIR / "health.html", "text/html; charset=utf-8")
@@ -348,7 +444,13 @@ class Handler(BaseHTTPRequestHandler):
 
             api_train.handle_post_clip(self, body if isinstance(body, dict) else {})
             return
+        if path == "/api/clip_ft/exclude":
+            import api_probe_frames
 
+            api_probe_frames.handle_post_exclude(
+                self, body if isinstance(body, dict) else {}
+            )
+            return
         if path == "/api/console/refresh":
             try:
                 from console_dash import draw, is_enabled, refresh_from_jobs
@@ -389,6 +491,36 @@ class Handler(BaseHTTPRequestHandler):
             import api_crops
 
             api_crops.handle_post_crop(self, body if isinstance(body, dict) else {})
+            return
+        if path == "/api/mark":
+            import api_mark
+
+            api_mark.handle_post_mark(self, body if isinstance(body, dict) else {})
+            return
+        if path == "/api/mark/combine":
+            import api_mark
+
+            api_mark.handle_post_mark_combine(self, body if isinstance(body, dict) else {})
+            return
+        if path == "/api/clip/load":
+            import api_clip
+
+            api_clip.handle_post_clip_load(self, body if isinstance(body, dict) else {})
+            return
+        if path == "/api/clip/cut":
+            import api_clip
+
+            api_clip.handle_post_clip_cut(self, body if isinstance(body, dict) else {})
+            return
+        if path == "/api/clip/upload":
+            import api_clip
+
+            api_clip.handle_post_clip_upload(self, body if isinstance(body, dict) else {})
+            return
+        if path == "/api/clip/drive/auth":
+            import api_clip
+
+            api_clip.handle_post_drive_auth(self)
             return
         if path == "/api/review":
             api_review.handle_post_review(self, body)

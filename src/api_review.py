@@ -1,4 +1,4 @@
-"""GET /api/candidates, GET /api/review/label_stats, POST /api/review."""
+﻿"""GET /api/candidates, GET /api/review/label_stats, POST /api/review."""
 
 from __future__ import annotations
 
@@ -33,8 +33,11 @@ def handle_get_candidates(handler: BaseHTTPRequestHandler, parsed: ParseResult) 
     show_openai_keep = openai == "keep" or status == "openai_keep"
     show_openai_uncertain = openai == "uncertain" or status == "openai_uncertain"
     show_pending = status == "pending"
-    # Default: when OpenAI verify is on, Review shows keeps only.
-    # "To check" (pending) = needs human Keep/Pass — include OpenAI drops too.
+    show_human_accept = status == "accept"
+    show_human_reject = status == "reject"
+    # Default: when OpenAI verify is on, Review shows OpenAI keeps only.
+    # "To check" / Kept / Passed: human workflow — do not hide by OpenAI tag
+    # (a human Keep must appear under Kept even if notes say openai:drop).
     # openai=keep / openai=drop: explicit OpenAI pass / fail filters.
     try:
         from openai_verify import (
@@ -50,8 +53,7 @@ def handle_get_candidates(handler: BaseHTTPRequestHandler, parsed: ParseResult) 
             rows = [r for r in rows if notes_openai_approved(r.get("notes"))]
         elif show_openai_uncertain:
             rows = [r for r in rows if notes_openai_uncertain(r.get("notes"))]
-        elif show_pending:
-            # Do not hide OpenAI drops — human still may want to review them.
+        elif show_pending or show_human_accept or show_human_reject:
             pass
         elif openai_verify_enabled():
             rows = [r for r in rows if notes_openai_approved(r.get("notes"))]
@@ -61,9 +63,9 @@ def handle_get_candidates(handler: BaseHTTPRequestHandler, parsed: ParseResult) 
     if show_pending:
         rows = [r for r in rows if not (r.get("decision") or "").strip()]
     elif not show_openai_drop and not show_openai_keep and not show_openai_uncertain:
-        if status == "accept":
+        if show_human_accept:
             rows = [r for r in rows if r.get("decision") == "accept"]
-        elif status == "reject":
+        elif show_human_reject:
             rows = [r for r in rows if r.get("decision") == "reject"]
     if q:
         rows = [
@@ -74,6 +76,17 @@ def handle_get_candidates(handler: BaseHTTPRequestHandler, parsed: ParseResult) 
         ]
     limit = int((qs.get("limit") or ["2000"])[0])
     json_response(handler, 200, {"candidates": rows[:limit], "total": len(rows)})
+
+
+def handle_get_stills_status(handler: BaseHTTPRequestHandler) -> None:
+    """GET /api/stills/status — missing still count + backfill running flag."""
+    init_db()
+    try:
+        from still_ensure import stills_status
+
+        json_response(handler, 200, stills_status())
+    except Exception as e:
+        json_response(handler, 500, {"ok": False, "error": str(e)[:240]})
 
 
 def handle_post_stills_backfill(handler: BaseHTTPRequestHandler, body: dict) -> None:
@@ -109,6 +122,7 @@ def handle_post_stills_backfill(handler: BaseHTTPRequestHandler, body: dict) -> 
                 "ok": True,
                 "missing": len(missing),
                 "started": started,
+                "running": True,
                 "message": "backfill running in background"
                 if started
                 else "backfill already running",

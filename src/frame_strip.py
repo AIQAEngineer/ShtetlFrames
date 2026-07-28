@@ -1,7 +1,7 @@
 """Build labeled timeline strips around a Review hit.
 
-Long strip: ±10s @ 0.5s (overlay labels). Short crop: ±2s @ 0.5s with
-caption bar below each frame (no overlap), JPEG capped at 399KB.
+Long strip: ±10s @ 0.5s (overlay labels). Short crop: ±2s @ 1.0s
+(5 higher-res frames, caption under each), JPEG capped at 399KB.
 """
 
 from __future__ import annotations
@@ -24,11 +24,13 @@ THUMB_H = 144
 # ~41 frames × ~scaled width; keep JPEG readable in Review.
 JPEG_QUALITY = 85
 
-# Short Review crop: ±2s @ 0.5s, caption below frame, under 399KB.
+# Short Review crop: fewer frames, taller stills, under 399KB.
+# ±2s @ 1.0s → 5 frames (was 9 @ 0.5s / 280px) so each frame can stay sharper.
 CROP_PAD_SEC = 2.0
-CROP_THUMB_H = 280
+CROP_INTERVAL_SEC = 1.0
+CROP_THUMB_H = 480
 CROP_MAX_BYTES = 399_000
-CROP_JPEG_QUALITY = 92
+CROP_JPEG_QUALITY = 90
 
 _strip_lock = threading.Lock()
 _inflight: set[int] = set()
@@ -100,11 +102,13 @@ def _ffmpeg_extract_window(
     duration_sec: float,
     out_dir: Path,
     thumb_h: int = THUMB_H,
+    step: float = INTERVAL_SEC,
 ) -> list[Path]:
-    """Extract frames at INTERVAL_SEC over [start, start+duration) via fps filter."""
+    """Extract frames at ``step`` over [start, start+duration) via fps filter."""
     out_dir.mkdir(parents=True, exist_ok=True)
     pattern = out_dir / "f_%04d.jpg"
-    fps = 1.0 / INTERVAL_SEC
+    step = max(0.05, float(step))
+    fps = 1.0 / step
     vf = f"fps={fps:.6f},scale=-2:{int(thumb_h)}"
     cmd = [
         "ffmpeg",
@@ -121,7 +125,7 @@ def _ffmpeg_extract_window(
         "-vf",
         vf,
         "-q:v",
-        "3",
+        "2",
         str(pattern),
     ]
     try:
@@ -175,35 +179,42 @@ def _label_frame(
     from PIL import Image, ImageDraw, ImageFont
 
     frame = img.convert("RGB")
+    w, h = frame.size
+    # Scale caption with frame height so taller crop stills stay readable.
+    scale = max(1.0, min(2.2, float(h) / 280.0))
+    font_px = max(12, int(round(14 * scale)))
+    font_sm_px = max(11, int(round(12 * scale)))
+    bar_h = max(36, int(round(36 * scale)))
     try:
-        font = ImageFont.truetype("arial.ttf", 14)
-        font_sm = ImageFont.truetype("arial.ttf", 12)
+        font = ImageFont.truetype("arial.ttf", font_px)
+        font_sm = ImageFont.truetype("arial.ttf", font_sm_px)
     except Exception:
         font = ImageFont.load_default()
         font_sm = font
 
-    w, h = frame.size
-    bar_h = 36
     line1 = timestamp + (" ★" if mark else "")
     line2 = (source or "")[:70]
+    outline = max(2, int(round(3 * scale)))
 
     if caption_below:
         canvas = Image.new("RGB", (w, h + bar_h), (0, 0, 0))
         canvas.paste(frame, (0, 0))
         draw = ImageDraw.Draw(canvas)
         draw.text((6, h + 3), line1, fill=(255, 220, 120), font=font)
-        draw.text((6, h + 18), line2, fill=(230, 230, 230), font=font_sm)
+        draw.text((6, h + 3 + font_px + 2), line2, fill=(230, 230, 230), font=font_sm)
         if mark:
-            draw.rectangle([0, 0, w - 1, h - 1], outline=(255, 200, 80), width=3)
+            draw.rectangle([0, 0, w - 1, h - 1], outline=(255, 200, 80), width=outline)
         return canvas
 
     im = frame
     draw = ImageDraw.Draw(im)
     draw.rectangle([0, h - bar_h, w, h], fill=(0, 0, 0))
     draw.text((6, h - bar_h + 3), line1, fill=(255, 220, 120), font=font)
-    draw.text((6, h - bar_h + 18), line2, fill=(230, 230, 230), font=font_sm)
+    draw.text(
+        (6, h - bar_h + 3 + font_px + 2), line2, fill=(230, 230, 230), font=font_sm
+    )
     if mark:
-        draw.rectangle([0, 0, w - 1, h - 1], outline=(255, 200, 80), width=3)
+        draw.rectangle([0, 0, w - 1, h - 1], outline=(255, 200, 80), width=outline)
     return im
 
 
@@ -213,15 +224,17 @@ def stitch_labeled_strip(
     source: str,
     mid_sec: float,
     caption_below: bool = False,
+    step: float = INTERVAL_SEC,
 ) -> Any:
     """Horizontal stitch of labeled PIL images."""
     from PIL import Image
 
     if not frames:
         raise ValueError("no_frames")
+    mark_tol = max(0.05, float(step) / 2.0 + 0.05)
     labeled = []
     for t, im in frames:
-        mark = abs(float(t) - float(mid_sec)) <= (INTERVAL_SEC / 2 + 0.05)
+        mark = abs(float(t) - float(mid_sec)) <= mark_tol
         labeled.append(
             _label_frame(
                 im,
@@ -257,20 +270,23 @@ def _extract_labeled_frames(
     pad: float,
     thumb_h: int,
     work_dir: Path,
+    step: float = INTERVAL_SEC,
 ) -> list[tuple[float, Any]]:
     from PIL import Image
 
-    times = sample_times(mid_sec, pad=pad)
+    step = max(0.05, float(step))
+    times = sample_times(mid_sec, pad=pad, step=step)
     if not times:
         return []
     win_start = times[0]
-    duration = max(INTERVAL_SEC, times[-1] - times[0] + INTERVAL_SEC)
+    duration = max(step, times[-1] - times[0] + step)
     paths = _ffmpeg_extract_window(
         video,
         start_sec=win_start,
         duration_sec=duration,
         out_dir=work_dir,
         thumb_h=thumb_h,
+        step=step,
     )
     paired: list[tuple[float, Any]] = []
     if paths:
@@ -379,7 +395,7 @@ def build_crop_for_video(
     video_id: str = "",
     source_url: str = "",
 ) -> Path | None:
-    """Extract ±2s @ 0.5s, caption below frame, stitch → cand_{id}_crop.jpg ≤399KB."""
+    """Extract ±2s @ 1.0s (5 taller frames) → cand_{id}_crop.jpg ≤399KB."""
     mid = hit_mid_sec(start_sec, end_sec)
     source = _source_label(video_id, source_url)
 
@@ -390,11 +406,16 @@ def build_crop_for_video(
             pad=CROP_PAD_SEC,
             thumb_h=CROP_THUMB_H,
             work_dir=Path(td),
+            step=CROP_INTERVAL_SEC,
         )
         if len(paired) < 2:
             return None
         strip = stitch_labeled_strip(
-            paired, source=source, mid_sec=mid, caption_below=True
+            paired,
+            source=source,
+            mid_sec=mid,
+            caption_below=True,
+            step=CROP_INTERVAL_SEC,
         )
         dest = candidate_crop_path(cand_id)
         return _save_jpeg_under(
@@ -539,7 +560,7 @@ def generate_crop_for_candidate(
     delete_video_after: bool = True,
     force: bool = False,
 ) -> Path | None:
-    """Build short ±2s crop for one candidate dict."""
+    """Build short ±2s / 5-frame crop for one candidate dict."""
     cid = int(row["id"])
     dest = candidate_crop_path(cid)
     if not force and dest.is_file() and dest.stat().st_size > 500:
@@ -685,3 +706,332 @@ def list_crop_jobs() -> list[dict[str, Any]]:
         )
     out.sort(key=lambda r: (-1 if r["status"] == "queued" else 0, -int(r["id"])))
     return out
+
+
+MARK_PAD_SEC = 0.5
+MARK_THUMB_H = 320
+MARK_MAX_BYTES = 900_000
+# Dense pick grid around the mark (±0.5s) for multi-frame HQ stitch.
+MARK_SAMPLE_INTERVAL = 1.0 / 12.0
+MARK_MAX_PICK_FRAMES = 25
+MARK_COMBINE_SCALE = 1
+MARK_COMBINE_MAX_BYTES = 12_000_000
+
+
+def parse_mark_seconds(raw: Any) -> float | None:
+    """Accept seconds as float/int, or ``m:ss`` / ``h:mm:ss`` strings."""
+    if raw is None:
+        return None
+    if isinstance(raw, (int, float)):
+        return max(0.0, float(raw))
+    s = str(raw).strip().replace(",", ".")
+    if not s:
+        return None
+    if ":" in s:
+        parts = s.split(":")
+        try:
+            nums = [float(p) for p in parts]
+        except ValueError:
+            return None
+        if len(nums) == 2:
+            return max(0.0, nums[0] * 60.0 + nums[1])
+        if len(nums) == 3:
+            return max(0.0, nums[0] * 3600.0 + nums[1] * 60.0 + nums[2])
+        return None
+    try:
+        return max(0.0, float(s))
+    except ValueError:
+        return None
+
+
+def mark_sample_times(mark_sec: float, *, pad: float = MARK_PAD_SEC) -> list[float]:
+    """Dense times around mark (±pad), always including the exact mark."""
+    mark = max(0.0, float(mark_sec))
+    start = max(0.0, mark - float(pad))
+    end = mark + float(pad)
+    step = float(MARK_SAMPLE_INTERVAL)
+    raw: list[float] = []
+    t = start
+    while t <= end + 1e-9:
+        raw.append(round(t, 3))
+        t += step
+    if not raw or abs(raw[-1] - end) > 0.02:
+        raw.append(round(end, 3))
+    # Ensure exact mark is present.
+    if not any(abs(x - mark) < 1e-6 for x in raw):
+        raw.append(round(mark, 3))
+        raw.sort()
+    # Dedupe + cap while keeping endpoints and mark.
+    times: list[float] = []
+    for x in raw:
+        if not times or abs(times[-1] - x) > 1e-6:
+            times.append(x)
+    if len(times) <= MARK_MAX_PICK_FRAMES:
+        return times
+    # Keep mark + evenly spaced subset.
+    mid_i = min(range(len(times)), key=lambda i: abs(times[i] - mark))
+    keep = {0, mid_i, len(times) - 1}
+    need = MARK_MAX_PICK_FRAMES - len(keep)
+    if need > 0:
+        others = [i for i in range(len(times)) if i not in keep]
+        stride = max(1, len(others) / float(need))
+        picked = 0
+        acc = 0.0
+        for i in others:
+            if picked >= need:
+                break
+            if acc <= 0.0:
+                keep.add(i)
+                picked += 1
+                acc += stride
+            acc -= 1.0
+    return [times[i] for i in sorted(keep)]
+
+
+def _mark_delta_label(t: float, mark: float) -> str:
+    delta = float(t) - float(mark)
+    if abs(delta) < 0.001:
+        return "mark"
+    sign = "+" if delta > 0 else "−"
+    return f"{sign}{abs(delta):.2f}s"
+
+
+def _extract_mark_frames(
+    video: Path,
+    times: list[float],
+    work: Path,
+    *,
+    thumb_h: int,
+) -> list[tuple[float, Path]]:
+    """Extract one JPEG per time (opencv, ffmpeg fallback). thumb_h=0 → native res."""
+    from still_ensure import extract_frame
+
+    got = _opencv_extract_times(Path(video), times, work / "cv", thumb_h=thumb_h)
+    by_t = {round(float(t), 3): p for t, p in got}
+    out: list[tuple[float, Path]] = []
+    for t in times:
+        key = round(float(t), 3)
+        path = by_t.get(key)
+        if path is None or not Path(path).is_file():
+            dest = work / f"ff_{key:.3f}.jpg".replace(".", "p")
+            if extract_frame(Path(video), float(t), dest):
+                path = dest
+        if path and Path(path).is_file() and Path(path).stat().st_size > 200:
+            out.append((float(t), Path(path)))
+    return out
+
+
+def _stitch_hq_strip(
+    frames: list[tuple[float, Any]],
+    *,
+    source: str,
+    mark_sec: float,
+    scale: int = 1,
+) -> Any:
+    """Horizontally stitch full-res frames one after another (optional upscale)."""
+    from PIL import Image
+
+    if not frames:
+        raise ValueError("no_frames")
+
+    s = max(1, min(4, int(scale or 1)))
+    try:
+        resample = Image.Resampling.LANCZOS
+    except AttributeError:
+        resample = Image.LANCZOS
+
+    prepared: list[tuple[float, Any]] = []
+    for t, im in frames:
+        cur = im.convert("RGB") if hasattr(im, "convert") else im
+        if s > 1:
+            cur = cur.resize((cur.width * s, cur.height * s), resample)
+        prepared.append((float(t), cur))
+
+    return stitch_labeled_strip(
+        prepared, source=source, mid_sec=float(mark_sec), caption_below=True
+    )
+
+
+def build_mark_triplet(
+    video: Path,
+    mark_sec: float,
+    *,
+    asset_id: str,
+    source_url: str = "",
+) -> dict[str, Any] | None:
+    """Extract a dense ±0.5s pick grid around the mark and stitch a labeled strip.
+
+    Writes ``mark_{asset}_{mark}_strip.jpg`` plus selectable frame JPEGs under
+    ``CONTACT_DIR``. Returns media URLs for the UI.
+    """
+    from PIL import Image
+
+    mark = max(0.0, float(mark_sec))
+    aid = re.sub(r"[^\w.\-]", "_", (asset_id or "asset").strip())[:48] or "asset"
+    mark_tag = f"{mark:.2f}".replace(".", "p")
+    prefix = f"mark_{aid}_{mark_tag}"
+    source = _source_label(aid, source_url or f"https://www.britishpathe.com/asset/{aid}/")
+    times = mark_sample_times(mark)
+
+    CONTACT_DIR.mkdir(parents=True, exist_ok=True)
+    with tempfile.TemporaryDirectory(prefix=f"mark_{aid}_") as td:
+        work = Path(td)
+        extracted = _extract_mark_frames(
+            Path(video), times, work, thumb_h=MARK_THUMB_H
+        )
+
+        frames: list[tuple[float, Any]] = []
+        for t, path in extracted:
+            try:
+                im = Image.open(path).convert("RGB")
+            except Exception:
+                continue
+            if im.height != MARK_THUMB_H and im.height > 0:
+                try:
+                    resample = Image.Resampling.LANCZOS
+                except AttributeError:
+                    resample = Image.LANCZOS
+                nw = max(1, int(round(im.width * (MARK_THUMB_H / float(im.height)))))
+                im = im.resize((nw, MARK_THUMB_H), resample)
+            frames.append((t, im))
+
+        if not frames:
+            return None
+
+        # Strip uses mark ± endpoints + mark only (readable contact sheet).
+        strip_times = {
+            round(frames[0][0], 3),
+            round(mark, 3),
+            round(frames[-1][0], 3),
+        }
+        strip_frames = [(t, im) for t, im in frames if round(t, 3) in strip_times]
+        if len(strip_frames) < 2:
+            strip_frames = frames[:3] if len(frames) >= 3 else frames
+
+        strip = stitch_labeled_strip(
+            strip_frames, source=source, mid_sec=mark, caption_below=True
+        )
+        strip_path = CONTACT_DIR / f"{prefix}_strip.jpg"
+        saved = _save_jpeg_under(
+            strip, strip_path, max_bytes=MARK_MAX_BYTES, quality=CROP_JPEG_QUALITY
+        )
+        if not saved:
+            return None
+
+        frame_urls: list[dict[str, Any]] = []
+        for i, (t, im) in enumerate(frames):
+            label = _mark_delta_label(t, mark)
+            tag = f"t{i:02d}_{round(t, 3):.3f}".replace(".", "p")
+            fp = CONTACT_DIR / f"{prefix}_{tag}.jpg"
+            try:
+                im.convert("RGB").save(fp, format="JPEG", quality=90, optimize=True)
+            except Exception:
+                continue
+            if fp.is_file() and fp.stat().st_size > 200:
+                frame_urls.append(
+                    {
+                        "label": label,
+                        "time_sec": round(float(t), 3),
+                        "url": f"/media/sheet/{fp.name}",
+                        "bytes": int(fp.stat().st_size),
+                        "is_mark": abs(float(t) - mark) < 0.001,
+                    }
+                )
+
+        return {
+            "asset_id": aid,
+            "mark_sec": round(mark, 3),
+            "times": [round(float(t), 3) for t, _ in frames],
+            "strip_url": f"/media/sheet/{strip_path.name}",
+            "strip_bytes": int(strip_path.stat().st_size),
+            "frames": frame_urls,
+            "source_url": source_url or f"https://www.britishpathe.com/asset/{aid}/",
+        }
+
+
+def combine_mark_frames(
+    video: Path,
+    times: list[float],
+    *,
+    asset_id: str,
+    mark_sec: float | None = None,
+    source_url: str = "",
+    scale: int = 1,
+) -> dict[str, Any] | None:
+    """Full-res extract → stitch selected frames left-to-right into one HQ strip.
+
+    Writes ``mark_{asset}_{mark}_hq.jpg`` (and ``.png``) under CONTACT_DIR.
+    """
+    from PIL import Image
+
+    cleaned: list[float] = []
+    for raw in times:
+        try:
+            t = round(max(0.0, float(raw)), 3)
+        except (TypeError, ValueError):
+            continue
+        if not cleaned or abs(cleaned[-1] - t) > 1e-6:
+            cleaned.append(t)
+    if len(cleaned) < 2:
+        return None
+    if len(cleaned) > MARK_MAX_PICK_FRAMES:
+        cleaned = cleaned[:MARK_MAX_PICK_FRAMES]
+
+    mark = float(mark_sec) if mark_sec is not None else cleaned[len(cleaned) // 2]
+    aid = re.sub(r"[^\w.\-]", "_", (asset_id or "asset").strip())[:48] or "asset"
+    mark_tag = f"{mark:.2f}".replace(".", "p")
+    prefix = f"mark_{aid}_{mark_tag}"
+    scale_n = max(1, min(4, int(scale or 1)))
+    source = _source_label(aid, source_url or f"https://www.britishpathe.com/asset/{aid}/")
+
+    CONTACT_DIR.mkdir(parents=True, exist_ok=True)
+    with tempfile.TemporaryDirectory(prefix=f"markhq_{aid}_") as td:
+        work = Path(td)
+        extracted = _extract_mark_frames(Path(video), cleaned, work, thumb_h=0)
+        if len(extracted) < 2:
+            return None
+
+        paired: list[tuple[float, Any]] = []
+        for t, path in extracted:
+            try:
+                im = Image.open(path).convert("RGB")
+            except Exception:
+                continue
+            paired.append((round(float(t), 3), im))
+        if len(paired) < 2:
+            return None
+
+        hq = _stitch_hq_strip(paired, source=source, mark_sec=mark, scale=scale_n)
+        jpg_path = CONTACT_DIR / f"{prefix}_hq.jpg"
+        png_path = CONTACT_DIR / f"{prefix}_hq.png"
+        try:
+            hq.save(png_path, format="PNG", optimize=True)
+        except Exception:
+            png_path = None  # type: ignore[assignment]
+        saved = _save_jpeg_under(
+            hq, jpg_path, max_bytes=MARK_COMBINE_MAX_BYTES, quality=97
+        )
+        if not saved:
+            try:
+                hq.save(jpg_path, format="JPEG", quality=95, optimize=True)
+            except Exception:
+                return None
+            if not jpg_path.is_file() or jpg_path.stat().st_size < 500:
+                return None
+
+        out: dict[str, Any] = {
+            "asset_id": aid,
+            "mark_sec": round(mark, 3),
+            "times": [t for t, _ in paired],
+            "frame_count": len(paired),
+            "scale": scale_n,
+            "width": int(hq.width),
+            "height": int(hq.height),
+            "hq_url": f"/media/sheet/{jpg_path.name}",
+            "hq_bytes": int(jpg_path.stat().st_size),
+            "source_url": source_url or f"https://www.britishpathe.com/asset/{aid}/",
+        }
+        if png_path and Path(png_path).is_file() and Path(png_path).stat().st_size > 500:
+            out["hq_png_url"] = f"/media/sheet/{Path(png_path).name}"
+            out["hq_png_bytes"] = int(Path(png_path).stat().st_size)
+        return out

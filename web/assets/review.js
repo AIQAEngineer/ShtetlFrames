@@ -379,8 +379,9 @@ function renderHit() {
     cropBlock = `<div class="crop-action done">
       <span class="crop-action-label">
         <strong>Crop ready</strong>
-        <small>±2s · every 0.5s · under 400KB</small>
+        <small>±2s · every 1s · 5 frames · under 400KB</small>
       </span>
+      <button class="btn ghost small" id="genCrop" type="button" data-force="1">Regenerate</button>
       <a class="btn ghost small" href="/crops">Open Crops</a>
     </div>`;
   } else if (cropStatus === "queued") {
@@ -396,7 +397,7 @@ function renderHit() {
   } else {
     cropBlock = `<div class="crop-action">
       <button class="btn ghost" id="genCrop" type="button">Generate crop</button>
-      <small>±2s before/after · 0.5s steps · source + time watermark</small>
+      <small>±2s · 5 frames · every 1s · under 400KB</small>
     </div>`;
   }
 
@@ -542,18 +543,19 @@ function renderHit() {
   const genCrop = document.getElementById("genCrop");
   if (genCrop && !genCrop.disabled) {
     genCrop.addEventListener("click", async () => {
+      const force = genCrop.dataset.force === "1";
       genCrop.disabled = true;
       genCrop.textContent = "Queuing…";
       try {
         const res = await fetch("/api/crops", {
           method: "POST",
           headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({ id: Number(c.id || c.key) }),
+          body: JSON.stringify({ id: Number(c.id || c.key), force }),
         });
         const data = await res.json();
         if (!res.ok || !data.ok) {
           genCrop.disabled = false;
-          genCrop.textContent = "Retry crop";
+          genCrop.textContent = force ? "Regenerate" : "Retry crop";
           return;
         }
         const stayVideo = activeVideoId;
@@ -565,7 +567,7 @@ function renderHit() {
         selectSource(stayVideo, stayHit);
       } catch (_) {
         genCrop.disabled = false;
-        genCrop.textContent = "Retry crop";
+        genCrop.textContent = force ? "Regenerate" : "Retry crop";
       }
     });
   }
@@ -616,6 +618,99 @@ document.getElementById("reviewSort")?.addEventListener("change", (e) => {
   }
 });
 
+let backfillPoll = null;
+
+function setBackfillStatus(msg) {
+  const el = document.getElementById("backfillStillsStatus");
+  if (el) el.textContent = msg || "";
+}
+
+async function refreshBackfillStatus() {
+  try {
+    const res = await fetch("/api/stills/status");
+    const data = await res.json();
+    if (!data.ok) return data;
+    const btn = document.getElementById("backfillStillsBtn");
+    const n = Number(data.missing || 0);
+    const running = !!data.running;
+    if (btn) {
+      btn.disabled = running;
+      btn.textContent = running
+        ? "Backfilling…"
+        : n
+          ? `Backfill stills (${n})`
+          : "Backfill stills";
+    }
+    if (running) setBackfillStatus(`Filling ${n || "…"} missing still(s)…`);
+    else if (n) setBackfillStatus(`${n} moment(s) need a still`);
+    else setBackfillStatus("All stills saved");
+    return data;
+  } catch (_) {
+    return null;
+  }
+}
+
+async function startBackfillStills() {
+  const btn = document.getElementById("backfillStillsBtn");
+  if (btn) btn.disabled = true;
+  setBackfillStatus("Checking missing stills…");
+  try {
+    const res = await fetch("/api/stills/backfill", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ limit: 5000 }),
+    });
+    const data = await res.json();
+    if (!data.ok) {
+      setBackfillStatus(data.error || "Backfill failed");
+      if (btn) btn.disabled = false;
+      return;
+    }
+    const n = Number(data.missing || 0);
+    if (!n) {
+      setBackfillStatus("All stills saved");
+      if (btn) {
+        btn.disabled = false;
+        btn.textContent = "Backfill stills";
+      }
+      return;
+    }
+    setBackfillStatus(
+      data.started
+        ? `Backfilling ${n} still(s)…`
+        : data.message || `Backfill already running (${n})`
+    );
+    if (btn) btn.textContent = "Backfilling…";
+    if (backfillPoll) clearInterval(backfillPoll);
+    backfillPoll = setInterval(async () => {
+      const st = await refreshBackfillStatus();
+      if (!st) return;
+      if (!st.running) {
+        clearInterval(backfillPoll);
+        backfillPoll = null;
+        const stayVideo = activeVideoId;
+        const stayHit = hitIndex;
+        await fetchCandidates();
+        if (stayVideo && sources.find((s) => s.video_id === stayVideo)) {
+          selectSource(stayVideo, stayHit);
+        } else {
+          const visible = filteredSources();
+          if (visible.length) selectSource(visible[0].video_id, 0);
+          else renderEmptyDetail();
+        }
+        if (!Number(st.missing || 0)) setBackfillStatus("Backfill done — stills saved");
+      }
+    }, 2500);
+  } catch (_) {
+    setBackfillStatus("Could not start backfill");
+    if (btn) btn.disabled = false;
+  }
+}
+
+document.getElementById("backfillStillsBtn")?.addEventListener("click", () => {
+  startBackfillStills();
+});
+
 document.addEventListener("keydown", (e) => {
   if (e.target.matches("input, textarea")) return;
   const src = currentSource();
@@ -652,4 +747,5 @@ fetchCandidates().then(() => {
   const visible = filteredSources();
   if (visible.length) selectSource(visible[0].video_id, 0);
   else renderEmptyDetail();
+  refreshBackfillStatus();
 });

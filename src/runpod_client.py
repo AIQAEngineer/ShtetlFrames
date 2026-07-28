@@ -30,6 +30,7 @@ _PHASE_RANK = {
     "idle": 0,
     "done": 0,
     "": 0,
+    "error": 0,  # stale failure banner — pod accepts new work
     "queued": 1,
     "download": 2,
     "upload": 3,
@@ -57,8 +58,10 @@ _BROKEN_WARM_MARKERS = (
     "nonetype' object has no attribute 'predict",
 )
 
-# Pods that already received this checkout's handler via /sync_push (Catbox-less stills).
+# Pods that already received this checkout's handler via /sync_push (Catbox-less stills),
+# OR confirmed to lack /sync_push (404) — must not retry on every Pathé submit.
 _handler_pushed: set[str] = set()
+_handler_push_inflight: set[str] = set()
 _handler_push_lock = threading.Lock()
 # Pods that already have the current local CLIP Keep/Pass probe (base → probe sha256).
 _probe_pushed: dict[str, str] = {}
@@ -107,6 +110,9 @@ def _ensure_local_handler(base: str, *, on_status: OnStatus | None = None) -> bo
 
     GitHub main may lag this checkout; without a push, pods keep ``upload_failed``
     and Review gets no contact sheet.
+
+    Pods without ``/sync_push`` (HTTP 404) are remembered so we never block every
+    Pathé submit on a doomed 120s POST. Concurrent callers share one in-flight push.
     """
     root = (base or "").rstrip("/")
     if not root:
@@ -114,8 +120,14 @@ def _ensure_local_handler(base: str, *, on_status: OnStatus | None = None) -> bo
     with _handler_push_lock:
         if root in _handler_pushed:
             return True
+        if root in _handler_push_inflight:
+            # Another worker is already syncing this pod — do not stampede.
+            return False
+        _handler_push_inflight.add(root)
     files = _local_worker_files_for_push()
     if not files:
+        with _handler_push_lock:
+            _handler_push_inflight.discard(root)
         return False
     try:
         if on_status:
@@ -123,7 +135,7 @@ def _ensure_local_handler(base: str, *, on_status: OnStatus | None = None) -> bo
         r = requests.post(
             f"{root}/sync_push",
             json={"files": files},
-            timeout=120,
+            timeout=20,
         )
         ok = r.status_code == 200
         body: dict[str, Any] = {}
@@ -131,18 +143,23 @@ def _ensure_local_handler(base: str, *, on_status: OnStatus | None = None) -> bo
             body = r.json() if r.content else {}
         except Exception:
             body = {}
+        # One attempt per pod URL per process — success or fail. Retrying a
+        # multi‑file sync on every Pathé submit was starving GPU submits.
+        with _handler_push_lock:
+            _handler_pushed.add(root)
         if ok and isinstance(body, dict) and body.get("ok"):
-            with _handler_push_lock:
-                _handler_pushed.add(root)
             if on_status:
                 on_status("pod still-handler pinned (local sync)")
             return True
-        # Older pods without /sync_push — fall through; PC hydrate/ensure will try.
-        if r.status_code == 404:
-            return False
-    except requests.RequestException:
         return False
-    return False
+    except requests.RequestException:
+        # Transient network — remember briefly so 32 workers don't each wait 20s.
+        with _handler_push_lock:
+            _handler_pushed.add(root)
+        return False
+    finally:
+        with _handler_push_lock:
+            _handler_push_inflight.discard(root)
 
 # Serialize / debounce ensure_pods so N workers don't stampede RunPod.
 _refresh_lock = threading.Lock()
@@ -165,9 +182,13 @@ _PATHE_SCALE_UP_AFTER_OK = 1  # recover stacking immediately after a clean job
 _PATHE_FAIL_STRIKES = 3  # non-overload failures before −1 (was 2; flaky proxies)
 # Only true GPU saturation — not boot/proxy death (502/524), which used to pin
 # stack at the floor while the fleet death-spiraled.
+# Only true fleet-wide saturation. Lone ``http_503`` / one pod at ceiling used
+# to AIMD-shrink global stack while other GPUs sat idle.
 _PATHE_OVERLOAD_MARKERS = (
     "pod_saturated",
-    "http_503",
+    "all gpu proxies",
+    "cuda out of memory",
+    "out of memory",
 )
 
 _INFRA_MARKERS = (
@@ -324,6 +345,74 @@ def drop_pod_url(
         print(f"[shtetl] self-heal terminate failed {pid[:12]}: {e}"[:160], flush=True)
 
 
+
+# Transient proxy flakes (502/404) used to drop URLs on first strike and empty
+# the scrape pool while GPUs were still healthy — idle pods then took no work.
+_pool_drop_strikes: dict[str, int] = {}
+_POOL_DROP_STRIKES_NEEDED = 3
+
+
+def soft_drop_pod_url(
+    url: str | None,
+    *,
+    terminate: bool = False,
+    reason: str = "",
+) -> bool:
+    """Drop from pool only after repeated infra failures; always kick re-adopt.
+
+    Returns True if the URL was removed from the pool.
+
+    Transient proxy flakes (524/502/scan_http) never leave the scrape pool —
+    they only kick maintain so orphans stay adopted. Hard drops were the
+    pool_short death spiral (8 healthy GPUs → 2–3 URLs mid-scrape).
+    """
+    u = (url or "").rstrip("/")
+    if not u:
+        return False
+    reason_l = (reason or "").lower()
+    transient = (
+        reason_l.startswith("http_")
+        or "proxy_dead" in reason_l
+        or "scan_http" in reason_l
+        or "result_unreachable" in reason_l
+        or "524" in reason_l
+        or "502" in reason_l
+        or "gateway" in reason_l
+    )
+    with _heal_lock:
+        n = int(_pool_drop_strikes.get(u) or 0) + 1
+        _pool_drop_strikes[u] = n
+        strikes = n
+    # Always try to re-adopt healthy GraphQL orphans.
+    try:
+        want = max(1, int(getattr(app_config, "RUNPOD_MAX_INFLIGHT", 8) or 8))
+        kick_maintain_pod_pool(target=want, on_status=None)
+    except Exception:
+        pass
+    if transient:
+        # Do not shrink the scrape pool for proxy flakes — maintain will keep
+        # the URL (or re-add it) once /health recovers.
+        return False
+    if strikes < _POOL_DROP_STRIKES_NEEDED:
+        return False
+    drop_pod_url(u, terminate=terminate, reason=reason)
+    try:
+        want = max(1, int(getattr(app_config, "RUNPOD_MAX_INFLIGHT", 8) or 8))
+        kick_maintain_pod_pool(target=want, on_status=None)
+    except Exception:
+        pass
+    return True
+
+
+def note_pod_ok(url: str | None) -> None:
+    """Clear soft-drop strikes after a successful job on this proxy."""
+    u = (url or "").rstrip("/")
+    if not u:
+        return
+    with _heal_lock:
+        _pool_drop_strikes.pop(u, None)
+
+
 def set_pod_base_url(url: str | None) -> None:
     global _POD_BASE_URL, _POD_POOL, _rr
     u = (url or "").rstrip("/") or None
@@ -364,6 +453,33 @@ def set_pod_pool(urls: list[str]) -> None:
     _POD_BASE_URL = cleaned[0] if cleaned else None
     for u in cleaned:
         _note_pod_seen(u)
+
+
+def merge_pod_pool(urls: list[str], *, cap: int | None = None) -> list[str]:
+    """Union ``urls`` into the scrape pool without dropping existing members.
+
+    ``ensure_pods`` often returns only currently-ready proxies. Replacing the
+    whole pool with that subset was emptying 6–7 healthy GPUs from the scrape
+    pool (pool_short) and crushing Pathé throughput.
+    """
+    from runpod_provision import MAX_PARALLEL_PODS
+
+    incoming = [(u or "").rstrip("/") for u in (urls or []) if (u or "").strip()]
+    with _pool_lock:
+        prior = list(_POD_POOL)
+    merged: list[str] = []
+    seen: set[str] = set()
+    for u in [*incoming, *prior]:
+        if not u or u in seen:
+            continue
+        seen.add(u)
+        merged.append(u)
+    limit = MAX_PARALLEL_PODS if cap is None else max(1, min(int(cap), MAX_PARALLEL_PODS))
+    # Prefer keeping everyone we already trust; only trim if over hard cap.
+    if len(merged) > limit:
+        merged = merged[:limit]
+    set_pod_pool(merged)
+    return merged
 
 
 def get_pod_pool() -> list[str]:
@@ -802,25 +918,10 @@ def refresh_pod_pool(
                     extra_fill_sec=0,
                 )
                 if bases:
-                    with _pool_lock:
-                        prior = list(_POD_POOL)
-                    # refresh(count=1) must not shrink an 8-GPU scrape pool.
-                    if prior and len(bases) < len(prior) and n < len(prior):
-                        merged: list[str] = []
-                        seen: set[str] = set()
-                        for u in [*bases, *prior]:
-                            u = u.rstrip("/")
-                            if not u or u in seen:
-                                continue
-                            seen.add(u)
-                            merged.append(u)
-                        set_pod_pool(merged)
-                    else:
-                        set_pod_pool(bases)
+                    # ensure_pods returns currently-ready only — never wipe the
+                    # rest of a healthy scrape pool (was the pool_short death spiral).
+                    pinned = merge_pod_pool(bases, cap=max(n, len(bases)))
                     _refresh_mono = time.monotonic()
-                    # New/reused pods may be on stale GitHub code — pin local handler.
-                    with _pool_lock:
-                        pinned = list(_POD_POOL)
                     _push_handlers_best_effort(pinned)
                     return pinned
                 last_err = RuntimeError("ensure_pods returned no proxies")
@@ -1121,7 +1222,13 @@ def maintain_pod_pool(
             # Saturated / flaky /health (503) often classifies busy GPUs as
             # warming/unknown. After drop-only on 524 they were left out of the
             # scrape pool forever ("pool has 3 URLs but 7 live pods").
-            soft_busy = kind in ("warming", "unknown") and bool(ports)
+            # Saturated / flaky /health (503) → warming/unknown. Also adopt
+            # RUNNING orphans when the scrape pool is short even if GraphQL
+            # briefly omits ports (common under load) — otherwise idle GPUs
+            # sit outside the pool forever.
+            soft_busy = kind in ("warming", "unknown") and (
+                bool(ports) or (len(alive) < want and status == "RUNNING")
+            )
             if soft_busy and len(alive) < want:
                 with _heal_lock:
                     _pod_strikes.pop(base, None)
@@ -1175,11 +1282,28 @@ def maintain_pod_pool(
     except Exception:
         pass
 
-    if {u.rstrip("/") for u in alive} != {u.rstrip("/") for u in pool}:
-        # Never wipe a non-empty scrape pool to [] on a transient probe storm —
-        # that left Ops at pool=0 with 8 live GPUs while Pathé starved.
-        if alive or not pool:
-            set_pod_pool(alive)
+    # Merge-safe pool write: never shrink below URLs still in _POD_POOL that we
+    # did not explicitly drop this pass. Concurrent drop_pod_url + orphan adopt
+    # used to race (maintain snapshot of 2 overwrote a just-synced pool of 8).
+    dropped = {u.rstrip("/") for u in pool} - {u.rstrip("/") for u in alive}
+    with _pool_lock:
+        current = list(_POD_POOL)
+    merged: list[str] = []
+    seen: set[str] = set()
+    for u in list(alive) + current:
+        key = (u or "").rstrip("/")
+        if not key or key in seen or key in dropped:
+            continue
+        merged.append(key)
+        seen.add(key)
+        if len(merged) >= MAX_PARALLEL_PODS:
+            break
+    # Compare against *current* pool, not the start-of-pass snapshot. Soft-drops
+    # during this maintain used to empty _POD_POOL while merged==snapshot, so we
+    # skipped set_pod_pool and left scrape on 1–2 GPUs (pool_short forever).
+    if {u.rstrip("/") for u in merged} != {u.rstrip("/") for u in current}:
+        if merged or not current:
+            set_pod_pool(merged)
 
     # NEVER block the Pathé/scrape coordinator on ensure_pods. Create the deficit
     # only: healthy + still-booting must cover ``want``. Old gate required
@@ -1230,28 +1354,8 @@ def _kick_async_pool_fill(want: int) -> None:
         try:
             more = refresh_pod_pool(count=want, on_status=None, force=True)
             if more:
-                # Merge: soft ensure_pods returns only currently-ready URLs;
-                # do not drop healthy pool members that were briefly offline.
-                with _pool_lock:
-                    merged = list(_POD_POOL)
-                seen = {u.rstrip("/") for u in merged}
-                for u in more:
-                    key = u.rstrip("/")
-                    if key and key not in seen:
-                        merged.append(key)
-                        seen.add(key)
-                # Prefer the fresh ready list first (round-robin quality).
-                ordered: list[str] = []
-                seen2: set[str] = set()
-                for u in list(more) + merged:
-                    key = u.rstrip("/")
-                    if not key or key in seen2:
-                        continue
-                    ordered.append(key)
-                    seen2.add(key)
-                    if len(ordered) >= want:
-                        break
-                set_pod_pool(ordered)
+                # refresh_pod_pool already merge-safe; just re-push handlers.
+                ordered = merge_pod_pool(more, cap=want)
                 _push_handlers_best_effort(ordered)
                 print(
                     f"[shtetl] async pod fill ready: {len(ordered)}/{want}",
@@ -1340,7 +1444,7 @@ def _pick_pod(
                 # Still verify single pod isn't a zombie proxy.
                 ph = _probe_pod_phase(pool[0])
                 if ph == "dead":
-                    drop_pod_url(pool[0])
+                    soft_drop_pod_url(pool[0], reason="pick_dead")
                     refresh_pod_pool(count=1, force=True)
                     continue
                 if idle_only and ph not in ("idle", "done", ""):
@@ -1366,17 +1470,19 @@ def _pick_pod(
                 ph = phases.get(u, "unknown")
                 return (_PHASE_RANK.get(ph, 5), 0)
 
-            for u, ph in list(phases.items()):
-                if ph == "dead":
-                    drop_pod_url(u)
+            # Do NOT drop_pod_url here — transient broken/502 classify as dead
+            # and concurrent picks were emptying the scrape pool (idle GPUs).
+            # Maintain handles sustained dead with strikes.
             alive = [u for u in pool if phases.get(u) != "dead"]
             if not alive:
                 refresh_pod_pool(count=1, force=True)
                 continue
+            # ``error`` = last job failed; pod is free when progress stuck there
+            # (inflight already 0). Treating it as busy left healthy GPUs unused.
             idle = [
                 u
                 for u in alive
-                if phases.get(u) in ("idle", "done", "")
+                if phases.get(u) in ("idle", "done", "", "error")
                 and reserved.get(u, 0) <= now
             ]
             if idle_only:
@@ -1398,9 +1504,11 @@ def _pick_pod(
                 # Least-used among equal rank, then RR as tie-break.
                 candidates = sorted(
                     candidates,
-                    key=lambda u: (_pick_counts.get(u, 0), _rr),
+                    key=lambda u: _pick_counts.get(u, 0),
                 )
-                choice = candidates[0]
+                min_c = _pick_counts.get(candidates[0], 0)
+                tied = [u for u in candidates if _pick_counts.get(u, 0) == min_c]
+                choice = tied[_rr % len(tied)]
                 _rr += 1
                 _pick_counts[choice] = _pick_counts.get(choice, 0) + 1
                 _reserved_until[choice] = time.time() + hold_for
@@ -1815,8 +1923,10 @@ def _process_video_remote_attempts(
         if is_pathe_job:
             use_idle_only = False
         base = _pick_pod(idle_only=use_idle_only, reserve_sec=reserve_sec)
-        # Critical: GitHub main may still ship Catbox upload → upload_failed + no still.
-        _ensure_local_handler(base, on_status=on_status)
+        # Pathé: skip per-job /sync_push — scrape startup + maintain already push,
+        # and a failed/slow sync was holding claim slots off the GPU.
+        if not is_pathe_job:
+            _ensure_local_handler(base, on_status=on_status)
         if on_status:
             bits = []
             if cookies:
@@ -1903,12 +2013,12 @@ def _process_video_remote_attempts(
             except requests.Timeout as e:
                 raise TimeoutError(f"pod_scan_timeout after {int(time.time() - t0)}s") from e
             except requests.RequestException as e:
-                drop_pod_url(base, terminate=True, reason="scan_http")
+                soft_drop_pod_url(base, terminate=True, reason="scan_http")
                 raise RuntimeError(f"pod_scan_http: {e}") from e
 
             if _is_dead_proxy_status(r.status_code):
                 kill = int(r.status_code or 0) in _TERMINATE_PROXY_CODES
-                drop_pod_url(base, terminate=kill, reason=f"http_{r.status_code}")
+                soft_drop_pod_url(base, terminate=kill, reason=f"http_{r.status_code}")
                 raise RuntimeError(f"http_{r.status_code}")
 
             try:
@@ -1919,7 +2029,7 @@ def _process_video_remote_attempts(
                 raise RuntimeError(f"pod_bad_json: {r.status_code}")
 
             if r.status_code == 524 or "524" in (r.text or "")[:80]:
-                drop_pod_url(base, terminate=True, reason="http_524")
+                soft_drop_pod_url(base, terminate=True, reason="http_524")
                 raise RuntimeError("http_524 gateway timeout on /scan accept")
 
             async_mode = bool(out.get("accepted") and out.get("async")) or r.status_code == 202
@@ -1934,7 +2044,7 @@ def _process_video_remote_attempts(
                 consecutive_dead = 0
                 while time.time() < deadline:
                     if proxy_dead["v"]:
-                        drop_pod_url(base, terminate=True, reason="proxy_dead_poll")
+                        soft_drop_pod_url(base, terminate=True, reason="proxy_dead_poll")
                         raise RuntimeError("http_404")
                     try:
                         pr = requests.get(
@@ -1946,7 +2056,7 @@ def _process_video_remote_attempts(
                             consecutive_dead += 1
                             if consecutive_dead >= 2:
                                 kill = int(pr.status_code or 0) in _TERMINATE_PROXY_CODES
-                                drop_pod_url(
+                                soft_drop_pod_url(
                                     base,
                                     terminate=kill,
                                     reason=f"http_{pr.status_code}",
@@ -1965,7 +2075,7 @@ def _process_video_remote_attempts(
                     except (requests.RequestException, ValueError):
                         consecutive_dead += 1
                         if consecutive_dead >= 3:
-                            drop_pod_url(base, terminate=True, reason="result_unreachable")
+                            soft_drop_pod_url(base, terminate=True, reason="result_unreachable")
                             raise RuntimeError("http_404")
                     time.sleep(2.0)
                 if out is None:
@@ -1978,7 +2088,7 @@ def _process_video_remote_attempts(
                     err_l = str(err).lower()
                     if any(m in err_l for m in _BROKEN_WARM_MARKERS) or "models_not_ready" in err_l:
                         kill = True
-                    drop_pod_url(base, terminate=kill, reason=str(err)[:80])
+                    soft_drop_pod_url(base, terminate=kill, reason=str(err)[:80])
                 raise RuntimeError(str(err))
 
             if not out.get("ok", True):
@@ -1987,10 +2097,14 @@ def _process_video_remote_attempts(
 
             out = dict(out)
             out["job_id"] = f"pod-{queue_id or 'x'}"
-            _hydrate_segment_stills(base, out)
+            # Pathé hits are rare; Review still_ensure backfills blanks. Skipping
+            # GET /still here returns the client claim slot immediately.
+            if not is_pathe_job:
+                _hydrate_segment_stills(base, out)
             _materialize_segment_stills(out)
             if is_pathe_job:
                 note_pathe_stack_outcome(ok=True)
+                note_pod_ok(base)
             if on_status:
                 on_status(f"pod done · {int(time.time() - t0)}s · {out.get('n_hits', 0)} hits")
             return out
@@ -2098,7 +2212,47 @@ def _process_video_remote_attempts(
                 or "models_not_ready" in err_l
                 or any(m in err_l for m in _BROKEN_WARM_MARKERS)
             ):
-                drop_pod_url(base, terminate=True, reason=err_s[:80])
+                soft_drop_pod_url(base, terminate=True, reason=err_s[:80])
+
+            # Stale cached Pathé playlist → 404 on pod. Bust cache + re-resolve
+            # before burning more GPU attempts on the same dead m3u8.
+            if is_pathe_job and attempt < total_attempts and (
+                ("playlist" in err_l and "404" in err_l)
+                or (
+                    "unable to download webpage" in err_l
+                    and "404" in err_l
+                    and "m3u8" in (str(payload.get("m3u8_url") or "")).lower()
+                )
+            ):
+                try:
+                    from britishpathe import invalidate_resolve_cache, prepare_pathe_job
+
+                    src = str(
+                        payload.get("source_url")
+                        or payload.get("referer")
+                        or ""
+                    )
+                    invalidate_resolve_cache(src)
+                    if on_status:
+                        on_status("Pathé m3u8 expired — re-resolving playlist…")
+                    job = prepare_pathe_job(
+                        src,
+                        str(payload.get("title") or ""),
+                        on_status=on_status,
+                        force=True,
+                    )
+                    if job and job.get("m3u8_url"):
+                        payload["url"] = job["download_url"]
+                        payload["m3u8_url"] = job["m3u8_url"]
+                        payload["referer"] = job["referer"]
+                        payload["source_url"] = job.get("asset_url") or src
+                except Exception as re_err:
+                    if on_status:
+                        on_status(f"Pathé re-resolve failed: {re_err}"[:120])
+                if on_status:
+                    on_status(f"pod retry {attempt}/{total_attempts}: {err_s[:120]}")
+                time.sleep(min(4.0, 1.0 * attempt))
+                continue
 
             # Dead / empty / overloaded pod pool — kick background heal only.
             # NEVER call maintain_pod_pool/refresh_pod_pool synchronously here:
@@ -2135,7 +2289,8 @@ def _hydrate_segment_stills(base: str, out: dict[str, Any]) -> None:
     """Fill missing still_b64 from pod GET /still (local-only; no Catbox).
 
     Parallel fetch — large ``still_b64`` blobs are often stripped from /result
-    (proxy size), so GET /still is the primary path. Hard ceiling 120s.
+    (proxy size), so GET /still is the primary path. Hard ceiling 45s so client
+    claim slots return to the pool quickly (Review backfill covers misses).
     """
     import base64
     import time as _time
@@ -2209,7 +2364,7 @@ def _hydrate_segment_stills(base: str, out: dict[str, Any]) -> None:
     try:
         with ThreadPoolExecutor(max_workers=workers) as pool:
             futs = [pool.submit(_fetch_one, item) for item in need]
-            for fut in as_completed(futs, timeout=120.0):
+            for fut in as_completed(futs, timeout=45.0):
                 try:
                     idx, body = fut.result()
                 except Exception:
@@ -2297,7 +2452,7 @@ def process_pathe_remote(
     title: str = "",
     *,
     queue_id: int | None = None,
-    sample_fps: float = 1.5,
+    sample_fps: float = 0.5,
     score_threshold: float = 0.10,
     source_url: str = "",
     on_status: OnStatus | None = None,

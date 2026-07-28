@@ -77,11 +77,20 @@ function renderStats(data) {
   }
   const queueStats = document.getElementById("queueStats");
   if (queueStats) {
+    const doneAll = Number(q.n_done ?? 0);
+    const scrapeRunning =
+      scrape.status === "running" || scrape.status === "done" || scrape.status === "error";
+    const doneRun = scrapeRunning ? Number(scrape.completed ?? 0) : null;
+    const doneLabel =
+      doneRun != null
+        ? `This run ${doneRun} · all-time ${doneAll}`
+        : "Done (all-time)";
+    const doneStrong = doneRun != null ? doneRun : doneAll;
     queueStats.innerHTML = `
       <div class="stat"><strong>${q.n_queue ?? 0}</strong><span>In queue</span></div>
       <div class="stat"><strong>${q.n_pending ?? 0}</strong><span>Pending scrape</span></div>
       <div class="stat"><strong>${q.n_active ?? 0}</strong><span>Active now</span></div>
-      <div class="stat"><strong>${q.n_done ?? 0}</strong><span>Done</span></div>
+      <div class="stat"><strong>${doneStrong}</strong><span>${doneLabel}</span></div>
       <div class="stat"><strong>${q.n_error ?? 0}</strong><span>Errors</span></div>
     `;
   }

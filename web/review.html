@@ -1,26 +1,29 @@
-<!DOCTYPE html>
+﻿<!DOCTYPE html>
 <html lang="en">
 <head>
   <meta charset="utf-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1" />
-  <title>Review — ShtetlFrames</title>
+  <title>Review â€” ShtetlFrames</title>
   <link rel="preconnect" href="https://fonts.googleapis.com" />
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
   <link href="https://fonts.googleapis.com/css2?family=Figtree:wght@400;500;600&family=Fraunces:opsz,wght@9..144,500;9..144,560&display=swap" rel="stylesheet" />
-  <link rel="stylesheet" href="/assets/styles.css?v=10" />
+  <link rel="stylesheet" href="/assets/styles.css?v=11" />
 </head>
 <body>
   <div class="wrap">
     <nav class="site-nav">
       <div class="nav-left">
         <a class="brand-mark" href="/">Shtetl<span>Frames</span></a>
-        <a class="nav-pathe" href="/pathe">British Pathé</a>
+        <a class="nav-pathe" href="/pathe">British PathÃ©</a>
       </div>
       <div class="nav-links">
         <a href="/#scrape">Scrape</a>
         <a href="/#method">Method</a>
         <a class="active" href="/review">Review</a>
         <a href="/crops">Crops</a>
+        <a href="/mark">Mark</a>
+        <a href="/clip">Clip</a>
+        <a href="/probe">Probe</a>
         <a href="/health">Health</a>
       </div>
     </nav>
@@ -41,13 +44,17 @@
           <button class="chip" data-status="openai_keep">AI pass</button>
           <button class="chip" data-status="openai_drop">AI failed</button>
         </div>
-        <input id="search" type="search" placeholder="Search titles…" />
+        <input id="search" type="search" placeholder="Search titlesâ€¦" />
         <select id="reviewSort" aria-label="Sort hits">
-          <option value="scored:desc" selected>Scored · newest</option>
-          <option value="scored:asc">Scored · oldest</option>
-          <option value="score:desc">Score · high → low</option>
-          <option value="score:asc">Score · low → high</option>
+          <option value="scored:desc" selected>Scored Â· newest</option>
+          <option value="scored:asc">Scored Â· oldest</option>
+          <option value="score:desc">Score Â· high â†’ low</option>
+          <option value="score:asc">Score Â· low â†’ high</option>
         </select>
+        <button class="btn ghost small" id="backfillStillsBtn" type="button" title="Grab missing Review stills from PathÃ©">
+          Backfill stills
+        </button>
+        <span class="review-backfill-status" id="backfillStillsStatus" aria-live="polite"></span>
       </div>
     </header>
 
@@ -59,6 +66,6 @@
     </div>
   </div>
 
-  <script src="/assets/review.js?v=12"></script>
+  <script src="/assets/review.js?v=14"></script>
 </body>
 </html>

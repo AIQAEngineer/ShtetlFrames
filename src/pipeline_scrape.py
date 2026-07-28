@@ -458,7 +458,13 @@ def _scrape_job(items: list[dict], workers: int, backend: str = "local") -> None
                 min_ready=1,
                 extra_fill_sec=0,
             )
-            set_pod_pool(bases)
+            try:
+                from runpod_client import maintain_pod_pool, merge_pod_pool
+
+                merge_pod_pool(bases, cap=n_pods)
+                maintain_pod_pool(target=n_pods, on_status=pod_status)
+            except Exception:
+                set_pod_pool(bases)
             try:
                 from runpod_client import push_clip_probe_to_pods
 
@@ -487,7 +493,9 @@ def _scrape_job(items: list[dict], workers: int, backend: str = "local") -> None
                             min_ready=1,
                             extra_fill_sec=900,
                         )
-                        set_pod_pool(more)
+                        from runpod_client import merge_pod_pool, pool_size
+
+                        merge_pod_pool(more or [], cap=n_pods)
                         try:
                             from runpod_client import push_clip_probe_to_pods
 
@@ -495,7 +503,7 @@ def _scrape_job(items: list[dict], workers: int, backend: str = "local") -> None
                         except Exception:
                             pass
                         status(
-                            f"Pod pool expanded to {len(more)}/{n_pods}",
+                            f"Pod pool expanded to {pool_size()}/{n_pods}",
                             job="scrape",
                             persist=True,
                         )

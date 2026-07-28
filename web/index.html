@@ -1,9 +1,9 @@
-<!DOCTYPE html>
+﻿<!DOCTYPE html>
 <html lang="en">
 <head>
   <meta charset="utf-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1" />
-  <title>ShtetlFrames — archival visual candidates</title>
+  <title>ShtetlFrames â€” archival visual candidates</title>
   <link rel="preconnect" href="https://fonts.googleapis.com" />
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
   <link href="https://fonts.googleapis.com/css2?family=Figtree:wght@400;500;600&family=Fraunces:opsz,wght@9..144,500;9..144,560&display=swap" rel="stylesheet" />
@@ -14,13 +14,16 @@
     <nav class="site-nav">
       <div class="nav-left">
         <a class="brand-mark" href="/">Shtetl<span>Frames</span></a>
-        <a class="nav-pathe" href="/pathe">British Pathé</a>
+        <a class="nav-pathe" href="/pathe">British PathÃ©</a>
       </div>
       <div class="nav-links">
         <a href="#scrape">Scrape</a>
         <a href="#method">Method</a>
         <a href="/review">Review</a>
         <a href="/crops">Crops</a>
+        <a href="/mark">Mark</a>
+        <a href="/clip">Clip</a>
+        <a href="/probe">Probe</a>
         <a href="/health">Health</a>
       </div>
     </nav>
@@ -32,7 +35,7 @@
       <h1>ShtetlFrames</h1>
       <p class="lede">
         Discover public videos first, then scrape with parallel workers.
-        Find traditional Orthodox dress — Hasidic and Litvish alike — in ~1900–1950 film.
+        Find traditional Orthodox dress â€” Hasidic and Litvish alike â€” in ~1900â€“1950 film.
         Stills go to free cloud hosting; only timestamps and source links stay local.
       </p>
       <div class="cta-row">
@@ -47,26 +50,26 @@
       <div class="wrap">
         <h2>This scan at a glance</h2>
         <p class="section-lede" style="margin-top:0">
-          Updates live while scrape runs — videos finished, even with zero hits.
+          Updates live while scrape runs â€” videos finished, even with zero hits.
         </p>
         <div class="stats" id="stats">
-          <div class="stat"><strong>—</strong><span>Candidates</span></div>
-          <div class="stat"><strong>—</strong><span>Videos scanned</span></div>
-          <div class="stat"><strong>—</strong><span>Pending review</span></div>
-          <div class="stat"><strong>—</strong><span>Accepted</span></div>
+          <div class="stat"><strong>â€”</strong><span>Candidates</span></div>
+          <div class="stat"><strong>â€”</strong><span>Videos scanned</span></div>
+          <div class="stat"><strong>â€”</strong><span>Pending review</span></div>
+          <div class="stat"><strong>â€”</strong><span>Accepted</span></div>
         </div>
       </div>
     </section>
 
     <section id="scrape">
       <div class="wrap">
-        <h2>1 · Discover</h2>
+        <h2>1 Â· Discover</h2>
         <p class="section-lede">
-          Paste a video, playlist, channel (<code>…/@name/videos</code>), or Archive.org / Commons search.
-          Discovery lists videos into the queue — nothing downloads yet.
+          Paste a video, playlist, channel (<code>â€¦/@name/videos</code>), or Archive.org / Commons search.
+          Discovery lists videos into the queue â€” nothing downloads yet.
         </p>
         <form class="add-source-form discover-form" id="discoverForm" novalidate>
-          <input id="sourceUrl" type="url" required placeholder="https://…" />
+          <input id="sourceUrl" type="url" required placeholder="https://â€¦" />
           <label class="run-max-label discover-max-label">
             Max
             <input
@@ -90,12 +93,12 @@
         <p id="sourceFormMsg" class="job-hint" style="min-height:1.2em"></p>
 
         <div class="stats" id="queueStats" style="margin:1.5rem 0">
-          <div class="stat"><strong>—</strong><span>In queue</span></div>
-          <div class="stat"><strong>—</strong><span>Pending scrape</span></div>
-          <div class="stat"><strong>—</strong><span>Done</span></div>
+          <div class="stat"><strong>â€”</strong><span>In queue</span></div>
+          <div class="stat"><strong>â€”</strong><span>Pending scrape</span></div>
+          <div class="stat"><strong>â€”</strong><span>Done</span></div>
         </div>
 
-        <h2 style="margin-top:2rem">2 · Scrape</h2>
+        <h2 style="margin-top:2rem">2 Â· Scrape</h2>
         <p class="section-lede">
           After discovery finishes, choose how many videos and how many parallel workers.
           <span id="scanBackendHint" class="job-hint"></span>
@@ -114,8 +117,8 @@
               <span id="settingsMsg" class="job-hint"></span>
             </div>
             <p class="settings-help cookies-har-help">
-              Edge locks cookies while open. Workaround: open youtube.com signed in → F12 → Network → reload →
-              right-click → Save all as HAR with content → Upload HAR cookies.
+              Edge locks cookies while open. Workaround: open youtube.com signed in â†’ F12 â†’ Network â†’ reload â†’
+              right-click â†’ Save all as HAR with content â†’ Upload HAR cookies.
             </p>
           </form>
           <pre id="runpodSetupLog" class="job-log runpod-build-log" hidden></pre>
@@ -136,7 +139,7 @@
           <button class="btn ghost small" type="button" id="clearQueueBtn">Clear queue</button>
         </div>
         <p id="scrapeHint" class="job-hint" style="margin-top:0.35rem">
-          Paste your RunPod API key, then Start scrape spins a cloud GPU — no Docker on this PC.
+          Paste your RunPod API key, then Start scrape spins a cloud GPU â€” no Docker on this PC.
         </p>
         <div id="scrapeProgress" class="job-status" hidden>
           <div class="job-bar"><span id="scrapeBar" style="width:0%"></span></div>
@@ -145,7 +148,7 @@
 
         <h2 style="margin-top:2rem">Discovered</h2>
         <div class="queue-toolbar">
-          <input id="queueSearch" type="search" placeholder="Search title, URL, error…" autocomplete="off" />
+          <input id="queueSearch" type="search" placeholder="Search title, URL, errorâ€¦" autocomplete="off" />
           <select id="queueStatus" aria-label="Filter status">
             <option value="">All statuses</option>
             <option value="downloading">downloading</option>
@@ -164,7 +167,7 @@
               <option value="500">500</option>
             </select>
           </label>
-          <span id="queuePageMeta" class="queue-meta">—</span>
+          <span id="queuePageMeta" class="queue-meta">â€”</span>
           <button type="button" class="btn ghost small" id="queuePrev" disabled>Prev</button>
           <button type="button" class="btn ghost small" id="queueNext" disabled>Next</button>
         </div>
@@ -181,7 +184,7 @@
               </tr>
             </thead>
             <tbody id="queueTableBody">
-              <tr><td colspan="6" class="empty-cell">Queue empty — discover a URL first.</td></tr>
+              <tr><td colspan="6" class="empty-cell">Queue empty â€” discover a URL first.</td></tr>
             </tbody>
           </table>
         </div>
@@ -193,7 +196,7 @@
         <h2>Detection method</h2>
         <p class="section-lede">
           Zero-shot CLIP against dress prompts for <strong>Hasidic and Litvish (non-Hasidic) Orthodox</strong> men.
-          Non-Hasidic Orthodox (Litvish etc.) look nearly identical in B&amp;W newsreels — both are intentional hits,
+          Non-Hasidic Orthodox (Litvish etc.) look nearly identical in B&amp;W newsreels â€” both are intentional hits,
           not false positives. Hit stills upload to Catbox; videos are deleted after scan.
         </p>
         <div class="method-steps">
@@ -219,7 +222,7 @@
 
   <footer class="site-footer">
     <div class="wrap">
-      ShtetlFrames · SQLite · cloud stills · local timestamps only
+      ShtetlFrames Â· SQLite Â· cloud stills Â· local timestamps only
     </div>
   </footer>
 

@@ -11,13 +11,23 @@
 
   function renderPatheStats(data) {
     const q = data.queue || {};
+    const s = data.scrape || {};
     const el = document.getElementById("patheStats");
     if (!el) return;
+    const doneAll = Number(q.n_done ?? 0);
+    const scrapeRunning =
+      s.status === "running" || s.status === "done" || s.status === "error";
+    const doneRun = scrapeRunning ? Number(s.completed ?? 0) : null;
+    const doneLabel =
+      doneRun != null
+        ? `This run ${doneRun} · all-time ${doneAll}`
+        : "Done (all-time)";
+    const doneStrong = doneRun != null ? doneRun : doneAll;
     el.innerHTML = `
       <div class="stat"><strong>${q.n_queue ?? 0}</strong><span>In queue</span></div>
       <div class="stat"><strong>${q.n_pending ?? 0}</strong><span>Pending</span></div>
       <div class="stat"><strong>${q.n_active ?? 0}</strong><span>Active</span></div>
-      <div class="stat"><strong>${q.n_done ?? 0}</strong><span>Done</span></div>
+      <div class="stat"><strong>${doneStrong}</strong><span>${doneLabel}</span></div>
       <div class="stat"><strong>${q.n_error ?? 0}</strong><span>Errors</span></div>
     `;
   }

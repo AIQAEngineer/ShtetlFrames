@@ -93,8 +93,12 @@ def probe_pod(pod: dict) -> dict[str, Any]:
 
     phase = (entry.get("phase") or "idle").strip().lower()
     inf = entry.get("inflight")
-    entry["busy"] = phase not in ("", "idle", "done") or (
+    # Stale ``error`` progress with no workers is an idle GPU.
+    entry["busy"] = (
         isinstance(inf, int) and inf > 0
+    ) or (
+        phase not in ("", "idle", "done", "error")
+        and not (isinstance(inf, int) and inf == 0)
     )
     if entry["phase"] is None:
         entry["phase"] = "idle" if entry["healthy"] else "unknown"
@@ -131,7 +135,31 @@ def build_health_snapshot(*, force: bool = False) -> dict[str, Any]:
     load_env()
     t0 = time.time()
 
-    pods_raw = find_shtetl_pods()
+    graphql_err = ""
+    try:
+        pods_raw = find_shtetl_pods()
+    except Exception as e:
+        graphql_err = str(e)[:160]
+        with _HEALTH_CACHE_LOCK:
+            pods_raw = list(_HEALTH_CACHE.get("pods_raw") or [])
+        if not pods_raw:
+            # No cached pod list — synthesize from scrape pool URLs so the page
+            # still probes real workers instead of 500ing.
+            try:
+                from runpod_client import get_pod_pool
+                from runpod_provision import pod_id_from_proxy_url
+
+                pods_raw = [
+                    {"id": pod_id_from_proxy_url(u), "name": f"pool-{i+1}"}
+                    for i, u in enumerate(get_pod_pool())
+                ]
+                pods_raw = [p for p in pods_raw if p.get("id")]
+            except Exception:
+                pods_raw = []
+    else:
+        with _HEALTH_CACHE_LOCK:
+            _HEALTH_CACHE["pods_raw"] = list(pods_raw)
+
     probes: list[dict] = []
     with ThreadPoolExecutor(max_workers=max(1, min(12, len(pods_raw) or 1))) as ex:
         futs = [ex.submit(probe_pod, p) for p in pods_raw if p.get("id")]
@@ -177,6 +205,9 @@ def build_health_snapshot(*, force: bool = False) -> dict[str, Any]:
 
     def alert(level: str, code: str, msg: str) -> None:
         alerts.append({"level": level, "code": code, "message": msg})
+
+    if graphql_err:
+        alert("amber", "graphql_flake", f"RunPod API blip — showing cached pods ({graphql_err[:80]})")
 
     for p in dead:
         nm = p.get("name") or "?"
@@ -303,6 +334,16 @@ def handle_get_health(handler: BaseHTTPRequestHandler, parsed: ParseResult) -> N
         snap = build_health_snapshot()
         json_response(handler, 200, snap)
     except Exception as e:
+        # Serve the last good snapshot rather than a bare 500 — probe loops flake
+        # often enough that an empty error page hides a working scrape.
+        with _HEALTH_CACHE_LOCK:
+            stale = _HEALTH_CACHE.get("snap")
+        if isinstance(stale, dict) and stale.get("ok"):
+            snap = dict(stale)
+            snap["stale"] = True
+            snap["build_error"] = str(e)[:200]
+            json_response(handler, 200, snap)
+            return
         json_response(
             handler,
             500,

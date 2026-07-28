@@ -261,10 +261,31 @@ def clip_probe(payload: dict) -> dict:
         return {"ok": False, "error": str(e)[:300]}
 
 
+@app.post("/clip_ft_train")
+def clip_ft_train(payload: dict) -> dict:
+    """Stage Keep/Pass JPEGs and train the linear probe on this GPU."""
+    try:
+        import clip_ft_remote_train as tr
+
+        inp = dict(payload) if isinstance(payload, dict) else {}
+        op = str(inp.get("op") or "train").strip().lower()
+        if op == "reset":
+            return tr.reset_stage()
+        if op == "add":
+            return tr.add_items(list(inp.get("items") or []))
+        if op == "train":
+            epochs = int(inp.get("epochs") or 80)
+            return tr.train(epochs=epochs)
+        return {"ok": False, "error": f"unknown_op:{op}"}
+    except Exception as e:
+        return {"ok": False, "error": str(e)[:400]}
+
+
 @app.post("/sync_push")
 def sync_push(payload: dict) -> dict:
     """Accept file bodies from the PC (bypass stale GitHub CDN) and hot-reload."""
     import base64
+    import os
     import traceback
     import worker_sync
     from pathlib import Path
@@ -291,6 +312,7 @@ def sync_push(payload: dict) -> dict:
                         "worker_sync.py",
                         "openai_verify.py",
                         "label_feedback.py",
+                        "clip_ft_remote_train.py",
                     }
                     or name.startswith("shtetl_core/")
                 )

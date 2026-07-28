@@ -196,18 +196,39 @@ def _api_key() -> str:
 
 
 def _gql(query: str, variables: dict | None = None) -> dict[str, Any]:
-    r = requests.post(
-        f"{GRAPHQL}?api_key={_api_key()}",
-        headers={"Content-Type": "application/json"},
-        json={"query": query, "variables": variables or {}},
-        timeout=120,
-    )
-    if r.status_code >= 400:
-        raise RuntimeError(f"runpod_graphql_http_{r.status_code}: {r.text[:500]}")
-    data = r.json()
-    if data.get("errors"):
-        raise RuntimeError(f"runpod_graphql: {data['errors']}")
-    return data.get("data") or {}
+    """RunPod GraphQL with transient retry — one SSLError used to 500 /api/health
+    and flake pod provisioning. Retries network blips + 5xx, never 4xx/GraphQL
+    errors."""
+    import time as _time
+
+    last_exc: BaseException | None = None
+    for attempt in range(1, 4):
+        try:
+            r = requests.post(
+                f"{GRAPHQL}?api_key={_api_key()}",
+                headers={"Content-Type": "application/json"},
+                json={"query": query, "variables": variables or {}},
+                timeout=30,
+            )
+        except requests.RequestException as e:
+            last_exc = e
+            _time.sleep(min(4.0, 0.8 * attempt))
+            continue
+        if r.status_code >= 500:
+            last_exc = RuntimeError(
+                f"runpod_graphql_http_{r.status_code}: {r.text[:200]}"
+            )
+            _time.sleep(min(4.0, 0.8 * attempt))
+            continue
+        if r.status_code >= 400:
+            raise RuntimeError(
+                f"runpod_graphql_http_{r.status_code}: {r.text[:500]}"
+            )
+        data = r.json()
+        if data.get("errors"):
+            raise RuntimeError(f"runpod_graphql: {data['errors']}")
+        return data.get("data") or {}
+    raise RuntimeError(f"runpod_graphql_flake: {last_exc}") from last_exc
 
 
 def _err_is_capacity(exc: BaseException) -> bool:
@@ -1326,11 +1347,11 @@ def ensure_pods(
                 # healthy set into the scrape pool once bg-fill finishes.
                 if filled:
                     try:
-                        from runpod_client import set_pod_pool
+                        from runpod_client import merge_pod_pool
 
                         bases = [base for _, base in filled]
-                        set_pod_pool(bases)
-                        _bg_status(f"pool updated → {len(bases)}/{n} ready")
+                        merge_pod_pool(bases, cap=n)
+                        _bg_status(f"pool updated → {len(bases)}/{n} ready (merge-safe)")
                     except Exception as e:
                         _bg_status(f"pool update skipped: {e}"[:120])
             except Exception as e:

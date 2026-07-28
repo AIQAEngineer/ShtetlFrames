@@ -27,6 +27,15 @@ def test_sample_times_span():
     assert len(times) == 41
 
 
+def test_crop_sample_times_fewer_frames():
+    from frame_strip import CROP_INTERVAL_SEC, CROP_PAD_SEC
+
+    times = sample_times(20.0, pad=CROP_PAD_SEC, step=CROP_INTERVAL_SEC)
+    assert times[0] == 18.0
+    assert times[-1] == 22.0
+    assert times == [18.0, 19.0, 20.0, 21.0, 22.0]
+
+
 def test_fmt_ts():
     assert _fmt_ts(65) == "1:05"
     assert _fmt_ts(3661) == "1:01:01"

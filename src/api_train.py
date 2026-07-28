@@ -376,10 +376,24 @@ def handle_post_scan(handler: BaseHTTPRequestHandler, body: dict) -> None:
 
 
 def handle_post_clip(handler: BaseHTTPRequestHandler, body: dict) -> None:
-    """Export Keep/Pass stills and train frozen-CLIP linear probe."""
-    del body  # reserved for future options
+    """Export Keep/Pass stills and train frozen-CLIP linear probe.
+
+    Body:
+      ``{"deep": true}`` deep-sample then train (default when export).
+      ``{"export": false}`` train existing dataset only (respects exclusions).
+    """
     from clip_ft import start_clip_ft_job
 
-    result = start_clip_ft_job()
+    deep = True
+    export = True
+    if isinstance(body, dict):
+        if "deep" in body:
+            deep = bool(body.get("deep"))
+        if "export" in body:
+            export = bool(body.get("export"))
+        # Probe UI sends deep:false meaning "don't re-export"
+        if body.get("deep") is False and "export" not in body:
+            export = False
+    result = start_clip_ft_job(deep=deep, export=export)
     code = 200 if result.get("ok") else 409
     json_response(handler, code, result)

@@ -22,8 +22,11 @@ from config import DATA_DIR, load_env
 
 BP_ORIGIN = "https://www.britishpathe.com"
 # Discover + many scrape workers share Scrapfly — cap concurrent asset HTML fetches.
-_RESOLVE_SLOTS = threading.Semaphore(4)
+_RESOLVE_SLOTS = threading.Semaphore(16)
 _RESOLVE_MAX_ATTEMPTS = 3
+_cache_dirty = False
+_cache_last_flush = 0.0
+_CACHE_FLUSH_MIN_SEC = 8.0
 ASSET_RE = re.compile(r"britishpathe\.com/asset/(\d+)", re.I)
 M3U8_RE = re.compile(r"https://[^\s\"'<>]+\.m3u8", re.I)
 ASSET_HREF_RE = re.compile(r"/asset/(\d+)/?", re.I)
@@ -238,12 +241,30 @@ def _load_cache() -> dict[str, Any]:
         return _cache
 
 
-def _save_cache() -> None:
+def _save_cache(*, force: bool = False) -> None:
+    """Persist resolve cache. Debounced — a pretty-printed rewrite of multi‑MB
+    JSON under the global lock was serializing all Scrapfly resolvers.
+    """
+    global _cache_dirty, _cache_last_flush
     with _cache_lock:
+        _cache_dirty = True
+        now = time.monotonic()
+        if not force and (now - _cache_last_flush) < _CACHE_FLUSH_MIN_SEC:
+            return
+        snapshot = dict(_cache or {})
+        _cache_last_flush = now
+        _cache_dirty = False
+    try:
         DATA_DIR.mkdir(parents=True, exist_ok=True)
         tmp = _CACHE_PATH.with_suffix(".tmp")
-        tmp.write_text(json.dumps(_cache or {}, indent=2), encoding="utf-8")
+        tmp.write_text(
+            json.dumps(snapshot, separators=(",", ":"), ensure_ascii=False),
+            encoding="utf-8",
+        )
         tmp.replace(_CACHE_PATH)
+    except Exception:
+        with _cache_lock:
+            _cache_dirty = True
 
 
 def _scrapfly_api_key() -> str:
@@ -729,11 +750,30 @@ def discover_from_youtube_titles(
     }
 
 
+def invalidate_resolve_cache(url_or_id: str) -> bool:
+    """Drop a cached m3u8 (stale playlist URLs 404 on the pod)."""
+    raw = (url_or_id or "").strip()
+    if not raw:
+        return False
+    aid = asset_id_from_url(raw) if "://" in raw else raw
+    if not aid or not str(aid).isdigit():
+        return False
+    aid = str(int(aid))
+    cache = _load_cache()
+    with _cache_lock:
+        if aid not in cache:
+            return False
+        cache.pop(aid, None)
+    _save_cache(force=True)
+    return True
+
+
 def prepare_pathe_job(
     url: str,
     title: str = "",
     *,
     on_status: OnStatus | None = None,
+    force: bool = False,
 ) -> dict[str, Any] | None:
     """Resolve a britishpathe.com/asset URL to HLS download fields (asset pages only)."""
     url = (url or "").strip()
@@ -753,9 +793,13 @@ def prepare_pathe_job(
 
     aid = asset_id_from_url(url)
     asset_url = asset_page_url(aid or "0")
-    _note("Resolving British Pathé preview HLS…")
+    _note(
+        "Re-resolving British Pathé preview HLS…"
+        if force
+        else "Resolving British Pathé preview HLS…"
+    )
     try:
-        resolved = resolve_asset(asset_url)
+        resolved = resolve_asset(asset_url, force=force)
     except Exception as e:
         _note(f"Pathé resolve failed: {e}"[:160])
         raise RuntimeError(f"britishpathe_resolve_failed: {e}") from e

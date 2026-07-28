@@ -143,6 +143,20 @@ SETTING_DEFS: dict[str, dict[str, Any]] = {
         "section": "Vision verify",
         "help": "GPT vision model used for Keep/Pass on CLIP hits.",
     },
+    "GOOGLE_DRIVE_FOLDER_ID": {
+        "label": "Google Drive folder ID",
+        "type": "text",
+        "default": "",
+        "section": "Google Drive",
+        "help": "Destination folder for Clip uploads. Share this folder with the service-account email.",
+    },
+    "GOOGLE_DRIVE_CREDENTIALS": {
+        "label": "Drive credentials path",
+        "type": "text",
+        "default": "",
+        "section": "Google Drive",
+        "help": "Path to service-account JSON (or OAuth client JSON). Default: secrets/google_drive_service_account.json",
+    },
 }
 
 # Still applied from .env / advanced use, but not shown in UI

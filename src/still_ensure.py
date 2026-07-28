@@ -71,6 +71,99 @@ def extract_frame(video: Path, time_sec: float, out: Path) -> bool:
         return False
 
 
+def extract_frame_from_url(
+    media_url: str,
+    time_sec: float,
+    out: Path,
+    *,
+    referer: str | None = None,
+    timeout_sec: float = 90.0,
+) -> bool:
+    """Grab one JPEG from an HLS/HTTP media URL without downloading the full file."""
+    src = (media_url or "").strip()
+    if not src:
+        return False
+    out.parent.mkdir(parents=True, exist_ok=True)
+    t = max(0.0, float(time_sec))
+    cmd = [
+        "ffmpeg",
+        "-hide_banner",
+        "-loglevel",
+        "error",
+        "-y",
+        "-rw_timeout",
+        "30000000",
+    ]
+    if referer:
+        # ffmpeg headers need CRLF between fields.
+        ua = "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36"
+        cmd.extend(["-headers", f"Referer: {referer}\r\nUser-Agent: {ua}\r\n"])
+    cmd.extend(
+        [
+            "-ss",
+            f"{t:.3f}",
+            "-i",
+            src,
+            "-frames:v",
+            "1",
+            "-q:v",
+            "2",
+            str(out),
+        ]
+    )
+    try:
+        r = subprocess.run(cmd, capture_output=True, timeout=max(15.0, float(timeout_sec)))
+        if r.returncode == 0 and out.is_file() and out.stat().st_size > 200:
+            return True
+    except (FileNotFoundError, subprocess.TimeoutExpired):
+        pass
+
+    # OpenCV fallback (common on Windows when ffmpeg isn't on PATH).
+    try:
+        import cv2
+
+        cap = cv2.VideoCapture(src)
+        if not cap.isOpened():
+            return False
+        try:
+            if t > 0:
+                cap.set(cv2.CAP_PROP_POS_MSEC, t * 1000.0)
+            ok, frame = cap.read()
+        finally:
+            cap.release()
+        if not ok or frame is None:
+            return False
+        return bool(cv2.imwrite(str(out), frame)) and out.is_file() and out.stat().st_size > 200
+    except Exception:
+        return False
+
+
+def _pathe_hls_frame(source_url: str, time_sec: float, out: Path) -> bool:
+    """Resolve British Pathé asset → seek one frame from HLS (fast still backfill)."""
+    if "britishpathe.com" not in (source_url or "").lower():
+        return False
+    try:
+        from britishpathe import prepare_pathe_job
+    except Exception:
+        return False
+    try:
+        job = prepare_pathe_job(source_url, "")
+    except Exception as e:
+        print(f"[still-ensure] pathe resolve fail: {e}"[:160], flush=True)
+        return False
+    if not job:
+        return False
+    m3u8 = (job.get("m3u8_url") or job.get("download_url") or "").strip()
+    if not m3u8:
+        return False
+    return extract_frame_from_url(
+        m3u8,
+        time_sec,
+        out,
+        referer=(job.get("referer") or job.get("asset_url") or source_url),
+    )
+
+
 def _download_source(url: str, video_id: str) -> Path | None:
     from download import download_britishpathe, download_entry
     from serve import find_video_file
@@ -124,6 +217,16 @@ def ensure_candidate_still(
     t0 = float(start_sec or 0.0)
     t1 = float(end_sec if end_sec is not None else t0)
     mid = t0 if t1 <= t0 else (t0 + t1) / 2.0
+
+    # Pathé: seek one HLS frame — much faster than yt-dlp full download.
+    if "britishpathe.com" in src.lower():
+        with tempfile.TemporaryDirectory(prefix=f"still_{cid}_") as td:
+            tmp = Path(td) / f"{cid}.jpg"
+            if _pathe_hls_frame(src, mid, tmp):
+                saved = save_candidate_still(cid, path=tmp)
+                if saved:
+                    print(f"[still-ensure] #{cid} hls-frame {saved.name}", flush=True)
+                    return saved
 
     from serve import find_video_file
 
@@ -260,6 +363,7 @@ def backfill_missing_stills(
 
     Groups by (video_id, source_url) so Pathé assets are not re-downloaded
     per candidate. Safe to call from the serve process (background thread).
+    Pathé prefers HLS single-frame seeks (no full yt-dlp download).
     """
     rows = missing_still_rows(limit=limit)
     if not rows:
@@ -282,6 +386,77 @@ def backfill_missing_stills(
     ok_n = 0
     fail_n = 0
     for (vid, url), group in by_key.items():
+        is_pathe = "britishpathe.com" in url.lower()
+        # Fast path: Pathé HLS seek one frame per candidate (no full download).
+        if is_pathe:
+            m3u8 = ""
+            referer = url
+            try:
+                from britishpathe import prepare_pathe_job
+
+                job = prepare_pathe_job(url, vid)
+                if job:
+                    m3u8 = (job.get("m3u8_url") or job.get("download_url") or "").strip()
+                    referer = (job.get("referer") or job.get("asset_url") or url)
+            except Exception as e:
+                print(f"[still-backfill] pathe resolve fail {vid}: {e}"[:160], flush=True)
+            if m3u8:
+                with tempfile.TemporaryDirectory(prefix="shtetl_backfill_") as tmp:
+                    tmpdir = Path(tmp)
+                    # Reuse one OpenCV capture across timestamps on the same Pathé reel.
+                    cap = None
+                    try:
+                        try:
+                            import cv2
+
+                            cap = cv2.VideoCapture(m3u8)
+                            if not cap.isOpened():
+                                cap.release()
+                                cap = None
+                        except Exception:
+                            cap = None
+                        for r in group:
+                            cid = int(r["id"])
+                            if local_still_url(cid):
+                                ok_n += 1
+                                continue
+                            t0 = float(r.get("start_sec") or 0.0)
+                            t1 = float(r.get("end_sec") or t0)
+                            t = t0 if t1 <= t0 else (t0 + t1) / 2.0
+                            tmp_jpg = tmpdir / f"{cid}.jpg"
+                            got = False
+                            if cap is not None:
+                                try:
+                                    if t > 0:
+                                        cap.set(cv2.CAP_PROP_POS_MSEC, t * 1000.0)
+                                    ok_f, frame = cap.read()
+                                    if ok_f and frame is not None:
+                                        got = bool(cv2.imwrite(str(tmp_jpg), frame)) and (
+                                            tmp_jpg.is_file() and tmp_jpg.stat().st_size > 200
+                                        )
+                                except Exception:
+                                    got = False
+                            if not got:
+                                got = extract_frame_from_url(
+                                    m3u8, t, tmp_jpg, referer=referer
+                                )
+                            if not got:
+                                fail_n += 1
+                                print(f"[still-backfill] #{cid} hls-frame fail", flush=True)
+                                continue
+                            if save_candidate_still(cid, path=tmp_jpg):
+                                ok_n += 1
+                                print(f"[still-backfill] #{cid} hls-frame ok", flush=True)
+                            else:
+                                fail_n += 1
+                    finally:
+                        if cap is not None:
+                            try:
+                                cap.release()
+                            except Exception:
+                                pass
+                continue
+
         path = _download_source(url, vid)
         if not path:
             fail_n += len(group)
@@ -330,6 +505,22 @@ def backfill_missing_stills(
         "saved": ok_n,
         "failed": fail_n,
         "still_missing": left,
+    }
+
+
+def backfill_running() -> bool:
+    with _backfill_lock:
+        return bool(_backfill_active)
+
+
+def stills_status(*, limit: int = 5000) -> dict[str, Any]:
+    """Missing still count + whether a background backfill is active."""
+    missing = missing_still_ids(limit=limit)
+    return {
+        "ok": True,
+        "missing": len(missing),
+        "running": backfill_running(),
+        "sample_ids": missing[:12],
     }
 
 
