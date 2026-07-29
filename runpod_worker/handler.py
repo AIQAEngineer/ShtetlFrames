@@ -633,7 +633,9 @@ def download_video(
                 "bv*[height<=360][tbr<=800]+ba/b[height<=360][tbr<=800]/"
                 "bv*[height<=480]+ba/b[height<=480]/worst"
             ),
-            concurrent_fragments=6,
+            # 6/pod × full fleet tripped CDN throttling (~4/min); 3 keeps
+            # aggregate pressure near the level that sustained ~24/min.
+            concurrent_fragments=3,
             sleep_requests="0",
         )
 
