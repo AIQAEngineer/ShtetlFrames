@@ -92,6 +92,7 @@ except ValueError:
     PATHE_STACK_MAX = 3
 PATHE_STACK_MAX = max(1, min(6, PATHE_STACK_MAX))
 RUNPOD_JOB_TIMEOUT_SEC = int(os.environ.get("RUNPOD_JOB_TIMEOUT_SEC") or "1800")
+RUNPOD_PROGRESS_STALL_SEC = int(os.environ.get("RUNPOD_PROGRESS_STALL_SEC") or "1200")
 RUNPOD_POLL_SEC = float(os.environ.get("RUNPOD_POLL_SEC") or "2.5")
 # Deprecated — kept so old .env keys do not crash; ignored
 RUNPOD_ENDPOINT_ID = (os.environ.get("RUNPOD_ENDPOINT_ID") or "").strip()
@@ -107,6 +108,7 @@ def load_env() -> None:
     global SCAN_BACKEND, RUNPOD_API_KEY, RUNPOD_DOCKER_IMAGE, RUNPOD_GPU_TYPE
     global RUNPOD_POD_ID, RUNPOD_STOP_WHEN_DONE, RUNPOD_ENDPOINT_ID
     global RUNPOD_MAX_INFLIGHT, PATHE_STACK_MAX, RUNPOD_JOB_TIMEOUT_SEC, RUNPOD_POLL_SEC
+    global RUNPOD_PROGRESS_STALL_SEC
     global SCORE_THRESHOLD, YT_COOKIES_BROWSER, YT_COOKIES_FILE
     global PROXY_PROVIDER, SCRAPFLY_API_KEY, SCRAPINGDOG_API_KEY
     global SPARSE_SECTION_SEC, SPARSE_STRIDE_SEC, DENSE_PAD_SEC, MAX_DENSE_SEC
@@ -156,6 +158,10 @@ def load_env() -> None:
         RUNPOD_JOB_TIMEOUT_SEC = int(os.environ.get("RUNPOD_JOB_TIMEOUT_SEC") or "1800")
     except ValueError:
         RUNPOD_JOB_TIMEOUT_SEC = 1800
+    try:
+        RUNPOD_PROGRESS_STALL_SEC = int(os.environ.get("RUNPOD_PROGRESS_STALL_SEC") or "1200")
+    except ValueError:
+        RUNPOD_PROGRESS_STALL_SEC = 1200
     try:
         RUNPOD_POLL_SEC = float(os.environ.get("RUNPOD_POLL_SEC") or "2.5")
     except ValueError:

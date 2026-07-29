@@ -515,8 +515,39 @@ def _download_once(
     log_tail: list[str] = []
     t0 = time.time()
     last_ui = 0.0
+    # Timeouts must live outside the read loop: a hung CDN connection prints
+    # nothing, so an in-loop check never fires and readline blocks forever.
+    stall_s = float(os.environ.get("YTDLP_STALL_TIMEOUT_SEC") or 240)
+    activity = {"t": t0, "killed": ""}
+    wd_qid = getattr(_tls, "queue_id", None)
+
+    def _ytdlp_watchdog() -> None:
+        while proc.poll() is None:
+            now = time.time()
+            reason = ""
+            if now - activity["t"] > stall_s:
+                reason = f"yt-dlp stalled — no output {int(now - activity['t'])}s"
+            elif now - t0 > 1800:
+                reason = "yt-dlp timeout after 1800s"
+            if reason:
+                activity["killed"] = reason
+                set_progress(
+                    "download",
+                    f"{reason} — killing yt-dlp",
+                    detail=url[:120],
+                    queue_id=wd_qid,
+                )
+                try:
+                    proc.kill()
+                except OSError:
+                    pass
+                return
+            time.sleep(2.0)
+
+    threading.Thread(target=_ytdlp_watchdog, daemon=True, name=f"ytdlp-wd-{vid}").start()
     try:
         for raw in proc.stdout:
+            activity["t"] = time.time()
             line = (raw or "").rstrip()
             if not line:
                 continue
@@ -555,9 +586,6 @@ def _download_once(
                     detail=detail,
                 )
                 last_ui = now
-            if now - t0 > 1800:
-                proc.kill()
-                raise TimeoutError("yt-dlp timeout after 1800s")
         rc = proc.wait(timeout=60)
     except Exception:
         try:
@@ -565,6 +593,10 @@ def _download_once(
         except OSError:
             pass
         raise
+    if activity["killed"]:
+        # Stalled partials (fragmented HLS without a moov atom) fail to open in
+        # the scanner — surface as a retriable download failure instead.
+        raise TimeoutError(activity["killed"])
     candidates = [
         p
         for p in VIDEOS.glob(f"{vid}.*")

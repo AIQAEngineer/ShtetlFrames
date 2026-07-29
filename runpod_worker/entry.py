@@ -2,9 +2,12 @@
 
 from __future__ import annotations
 
+import base64
+import os
 import tempfile
 import threading
 import time
+import traceback
 import uuid
 from pathlib import Path
 

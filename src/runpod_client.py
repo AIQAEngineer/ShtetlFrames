@@ -2017,6 +2017,9 @@ def _process_video_remote_attempts(
 
         stop = threading.Event()
         last_line = {"v": ""}
+        # Last moment the pod's progress line changed — a frozen line means the
+        # pod-side job is wedged (e.g. silent yt-dlp stall), not just slow.
+        last_change = {"t": time.time()}
 
         proxy_dead = {"v": False}
         proxy_dead_strikes = {"n": 0}
@@ -2039,9 +2042,11 @@ def _process_video_remote_attempts(
                         continue
                     data = r.json() if r.content else {}
                     line = _format_progress(data if isinstance(data, dict) else {}, queue_id)
-                    if line and line != last_line["v"] and on_status:
+                    if line and line != last_line["v"]:
                         last_line["v"] = line
-                        on_status(line)
+                        last_change["t"] = time.time()
+                        if on_status:
+                            on_status(line)
                 except requests.RequestException:
                     proxy_dead_strikes["n"] += 1
                     if proxy_dead_strikes["n"] >= 3:
@@ -2113,12 +2118,20 @@ def _process_video_remote_attempts(
                 if on_status and not adopted:
                     on_status("pod accepted · polling result…")
                 deadline = t0 + timeout
+                stall_limit = float(
+                    getattr(app_config, "RUNPOD_PROGRESS_STALL_SEC", None) or 1200
+                )
                 out = None
                 consecutive_dead = 0
                 while time.time() < deadline:
                     if proxy_dead["v"]:
                         soft_drop_pod_url(base, terminate=True, reason="proxy_dead_poll")
                         raise RuntimeError("http_404")
+                    stall_s = time.time() - last_change["t"]
+                    if stall_s > stall_limit:
+                        # Fail this attempt so the job retries on a healthy pod
+                        # instead of waiting out the full per-attempt timeout.
+                        raise RuntimeError(f"pod_progress_stall_{int(stall_s)}s")
                     try:
                         pr = _http().get(
                             f"{base}/result",
