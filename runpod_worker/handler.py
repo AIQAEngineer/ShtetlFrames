@@ -7,6 +7,7 @@ Catbox / cloud hosts are not used — stills go on disk + inline still_b64.
 from __future__ import annotations
 
 import os
+import queue
 import re
 import shutil
 import subprocess
@@ -578,6 +579,24 @@ def _download_once(
     raise RuntimeError(f"yt-dlp failed ({client_label}): {err}")
 
 
+def _is_pathe_download(
+    source: str | None,
+    m3u8_url: str | None,
+    referer: str | None,
+    url: str,
+) -> bool:
+    src = (source or "").strip().lower()
+    download_url = (m3u8_url or url or "").strip()
+    ref = (referer or "").strip() or None
+    return (
+        src == "britishpathe"
+        or bool(m3u8_url)
+        or "britishpathe.com" in download_url.lower()
+        or (ref and "britishpathe.com" in ref.lower())
+        or download_url.lower().endswith(".m3u8")
+    )
+
+
 def download_video(
     url: str,
     title: str,
@@ -597,17 +616,10 @@ def download_video(
     VIDEOS.mkdir(parents=True, exist_ok=True)
     WORKDIR.mkdir(parents=True, exist_ok=True)
     vid = (work_id or "").strip() or _work_slug(title, url=url, queue_id=queue_id)
-    src = (source or "").strip().lower()
     download_url = (m3u8_url or url or "").strip()
     ref = (referer or "").strip() or None
     # British Pathé preview HLS — no YouTube cookies / residential proxy.
-    is_pathe = (
-        src == "britishpathe"
-        or bool(m3u8_url)
-        or "britishpathe.com" in download_url.lower()
-        or (ref and "britishpathe.com" in ref.lower())
-        or download_url.lower().endswith(".m3u8")
-    )
+    is_pathe = _is_pathe_download(source, m3u8_url, referer, url)
     if is_pathe:
         set_progress(
             "download",
@@ -753,6 +765,73 @@ def download_video(
                 pass
 
 
+# GPU scans are serialized pod-wide by _gpu_lock, so throughput is set by how
+# steadily the scanner is fed — not by how many downloads run at once. Pathé
+# downloads route through a small worker pool: at most _DL_WORKERS yt-dlp
+# processes per pod (bounded CDN/proxy pressure) while finished videos buffer
+# ahead of the scanner.
+_DL_WORKERS = 2
+_dl_queue: queue.Queue = queue.Queue()
+_dl_start_lock = threading.Lock()
+_dl_started = False
+
+
+def _dl_worker_main() -> None:
+    while True:
+        task = _dl_queue.get()
+        if task is None:
+            return
+        (args, kwargs), done_evt, box = task
+        # Download progress calls use the thread-local queue id — attribute
+        # this task's progress to the right job.
+        _tls.queue_id = kwargs.get("queue_id")
+        try:
+            box["path"] = download_video(*args, **kwargs)
+        except Exception as e:  # re-raised in the job thread
+            box["error"] = e
+        finally:
+            _tls.queue_id = None
+            done_evt.set()
+
+
+def _ensure_dl_workers() -> None:
+    global _dl_started
+    with _dl_start_lock:
+        if _dl_started:
+            return
+        for i in range(_DL_WORKERS):
+            threading.Thread(
+                target=_dl_worker_main, daemon=True, name=f"pathe-dl-{i}"
+            ).start()
+        _dl_started = True
+
+
+def download_video_prefetched(*args, **kwargs) -> Path:
+    """Pathé downloads go through the pod-wide prefetch workers; others direct."""
+    url = args[0] if args else kwargs.get("url")
+    if not _is_pathe_download(
+        kwargs.get("source"), kwargs.get("m3u8_url"), kwargs.get("referer"), url or ""
+    ):
+        return download_video(*args, **kwargs)
+    _ensure_dl_workers()
+    done_evt = threading.Event()
+    box: dict[str, Any] = {}
+    set_progress(
+        "download",
+        "queued for a download slot",
+        detail="prefetch pipeline",
+        queue_id=kwargs.get("queue_id"),
+    )
+    _dl_queue.put(((args, kwargs), done_evt, box))
+    # A throttled long preview can take many minutes; don't wait forever.
+    if not done_evt.wait(timeout=1800):
+        raise RuntimeError("prefetch_download_timeout")
+    err = box.get("error")
+    if err is not None:
+        raise err
+    return box["path"]
+
+
 def _scan_with_progress(
     video_path: Path,
     video_id: str,
@@ -890,9 +969,9 @@ def process_job(inp: dict) -> dict:
                         raise RuntimeError(f"preloaded_video_missing: {preloaded}")
                     set_progress("download", "using uploaded video", pct=100, detail=path.name)
                 else:
-                    # Downloads may overlap across concurrent /scan requests.
-                    # Always on this GPU pod (cookies / residential proxy) — never the user's PC.
-                    path = download_video(
+                    # Pathé jobs route through the pod-wide prefetch workers
+                    # (bounded parallel downloads, buffer ahead of the GPU).
+                    path = download_video_prefetched(
                         url,
                         title,
                         download_sections=download_sections or None,
