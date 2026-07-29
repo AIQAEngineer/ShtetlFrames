@@ -3,6 +3,7 @@
 from __future__ import annotations
 
 import json
+import random
 import re
 import threading
 import time
@@ -16,6 +17,54 @@ import config as app_config
 from config import load_env
 
 OnStatus = Callable[[str], None]
+
+# Per-thread keep-alive sessions. Raw requests.* opens a fresh TLS connection per
+# call; progress pollers (2s cadence per job) + health probes were churning
+# hundreds of connections/min into TIME_WAIT until the proxy edge slowed to 7s+
+# and /scan POSTs died mid-flight (pod_scan_http retry storms).
+_http_tls = threading.local()
+
+
+def _http() -> requests.Session:
+    s = getattr(_http_tls, "session", None)
+    if s is None:
+        from requests.adapters import HTTPAdapter
+
+        s = requests.Session()
+        adapter = HTTPAdapter(pool_connections=8, pool_maxsize=8, max_retries=0)
+        s.mount("https://", adapter)
+        s.mount("http://", adapter)
+        _http_tls.session = s
+    return s
+
+
+def _adopt_scan_if_running(base: str, queue_id: Any) -> bool:
+    """True if this pod already accepted ``queue_id`` (running or done).
+
+    RunPod's proxy often 524s the /scan ACK even after the worker started the
+    job. Retrying on another pod then duplicates work and starves completions.
+    """
+    if queue_id is None:
+        return False
+    try:
+        rr = _http().get(
+            f"{base}/result",
+            params={"queue_id": queue_id},
+            timeout=15,
+        )
+        if rr.status_code != 200 or not rr.content:
+            return False
+        data = rr.json()
+        if not isinstance(data, dict):
+            return False
+        err = str(data.get("error") or "").lower()
+        if err == "worker_died":
+            return False
+        # pending=True → thread alive; pending=False with no worker_died → done.
+        return True
+    except Exception:
+        return False
+
 
 _POD_BASE_URL: str | None = None
 _POD_POOL: list[str] = []
@@ -941,7 +990,9 @@ def _classify_pod(base: str) -> str:
     if not root:
         return "dead"
     try:
-        r = requests.get(f"{root}/health", timeout=2.5)
+        # Healthy-but-loaded pods answer /health in 7s+ under stack; 2.5s marked
+        # the whole fleet "unknown" and broke idle-first picking + heal probes.
+        r = _http().get(f"{root}/health", timeout=12)
     except requests.RequestException:
         # Boot / proxy flake — not a confirmed dead GPU.
         return "warming"
@@ -977,7 +1028,7 @@ def _classify_pod(base: str) -> str:
     # Transient 502/timeout on progress used to return "dead" and our heal loop
     # terminated warm GPUs — that was the main "most pods dead" death spiral.
     try:
-        r2 = requests.get(f"{root}/progress", timeout=2.5)
+        r2 = _http().get(f"{root}/progress", timeout=12)
     except requests.RequestException:
         return "idle"
     if int(r2.status_code or 0) in _TERMINATE_PROXY_CODES or r2.status_code != 200:
@@ -1974,7 +2025,7 @@ def _process_video_remote_attempts(
             while not stop.wait(2.0):
                 try:
                     q = f"?queue_id={queue_id}" if queue_id is not None else ""
-                    r = requests.get(f"{base}/progress{q}", timeout=8)
+                    r = _http().get(f"{base}/progress{q}", timeout=15)
                     if _is_dead_proxy_status(r.status_code):
                         proxy_dead_strikes["n"] += 1
                         # Single 502/524 blip during cold proxy is common — need
@@ -2004,40 +2055,62 @@ def _process_video_remote_attempts(
         t0 = time.time()
         try:
             # Short POST: worker accepts async (202) so RunPod's ~100s proxy does not 524.
+            # Keep-alive session — raw requests.post was opening a fresh TLS conn
+            # per submit and amplifying proxy 524 storms under stack load.
+            r = None
+            post_err: Exception | None = None
             try:
-                r = requests.post(
+                r = _http().post(
                     f"{base}/scan",
                     json=payload,
                     timeout=90,
                 )
             except requests.Timeout as e:
-                raise TimeoutError(f"pod_scan_timeout after {int(time.time() - t0)}s") from e
+                post_err = e
             except requests.RequestException as e:
-                soft_drop_pod_url(base, terminate=True, reason="scan_http")
-                raise RuntimeError(f"pod_scan_http: {e}") from e
+                post_err = e
 
-            if _is_dead_proxy_status(r.status_code):
-                kill = int(r.status_code or 0) in _TERMINATE_PROXY_CODES
-                soft_drop_pod_url(base, terminate=kill, reason=f"http_{r.status_code}")
-                raise RuntimeError(f"http_{r.status_code}")
+            adopted = False
+            if post_err is not None or (
+                r is not None and (_is_dead_proxy_status(r.status_code) or r.status_code == 524)
+            ):
+                # Proxy often drops the ACK after the pod already started the job.
+                # Stay on this pod instead of duplicating onto another.
+                if _adopt_scan_if_running(base, queue_id):
+                    adopted = True
+                    if on_status:
+                        on_status("pod accepted (recovered after gateway blip) · polling…")
+                elif isinstance(post_err, requests.Timeout):
+                    raise TimeoutError(
+                        f"pod_scan_timeout after {int(time.time() - t0)}s"
+                    ) from post_err
+                elif isinstance(post_err, requests.RequestException):
+                    soft_drop_pod_url(base, terminate=True, reason="scan_http")
+                    raise RuntimeError(f"pod_scan_http: {post_err}") from post_err
+                else:
+                    code = int(r.status_code or 0) if r is not None else 0
+                    kill = code in _TERMINATE_PROXY_CODES
+                    soft_drop_pod_url(base, terminate=kill, reason=f"http_{code}")
+                    raise RuntimeError(f"http_{code}")
 
-            try:
-                out = r.json() if r.content else {}
-            except Exception as e:
-                raise RuntimeError(f"pod_bad_json: {r.status_code} {r.text[:400]}") from e
-            if not isinstance(out, dict):
-                raise RuntimeError(f"pod_bad_json: {r.status_code}")
+            out: dict[str, Any] = {}
+            if not adopted:
+                assert r is not None
+                try:
+                    out = r.json() if r.content else {}
+                except Exception as e:
+                    raise RuntimeError(f"pod_bad_json: {r.status_code} {r.text[:400]}") from e
+                if not isinstance(out, dict):
+                    raise RuntimeError(f"pod_bad_json: {r.status_code}")
 
-            if r.status_code == 524 or "524" in (r.text or "")[:80]:
-                soft_drop_pod_url(base, terminate=True, reason="http_524")
-                raise RuntimeError("http_524 gateway timeout on /scan accept")
-
-            async_mode = bool(out.get("accepted") and out.get("async")) or r.status_code == 202
+            async_mode = adopted or bool(out.get("accepted") and out.get("async")) or (
+                r is not None and r.status_code == 202
+            )
             if async_mode:
                 result_qid = out.get("queue_id") if out.get("queue_id") is not None else queue_id
                 if result_qid is None:
                     raise RuntimeError("pod_scan_accepted_without_queue_id")
-                if on_status:
+                if on_status and not adopted:
                     on_status("pod accepted · polling result…")
                 deadline = t0 + timeout
                 out = None
@@ -2047,7 +2120,7 @@ def _process_video_remote_attempts(
                         soft_drop_pod_url(base, terminate=True, reason="proxy_dead_poll")
                         raise RuntimeError("http_404")
                     try:
-                        pr = requests.get(
+                        pr = _http().get(
                             f"{base}/result",
                             params={"queue_id": result_qid},
                             timeout=45,
@@ -2268,7 +2341,9 @@ def _process_video_remote_attempts(
                 if attempt < total_attempts:
                     if on_status:
                         on_status(f"pod retry {attempt}/{total_attempts}: {err_s[:120]}")
-                    time.sleep(min(8.0, 1.5 * attempt))
+                    # Jittered backoff — synchronized retries from many workers
+                    # re-stampede the proxy edge and reproduce the storm.
+                    time.sleep(min(30.0, 3.0 * attempt) * (0.5 + random.random()))
                     continue
                 break
             if attempt < total_attempts and _is_retryable_remote_error(err_s):

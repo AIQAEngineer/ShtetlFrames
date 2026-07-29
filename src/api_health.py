@@ -48,8 +48,19 @@ def probe_pod(pod: dict) -> dict[str, Any]:
         entry["error"] = "no_proxy_url"
         return entry
 
+    hr = None
+    last_health_exc: Exception | None = None
+    for _attempt in range(3):
+        try:
+            hr = requests.get(f"{base.rstrip('/')}/health", timeout=8)
+            break
+        except Exception as e:
+            # One SSL/proxy blip used to flag 4 live GPUs pod_dead at once.
+            last_health_exc = e
+            time.sleep(0.7 * (_attempt + 1))
     try:
-        hr = requests.get(f"{base.rstrip('/')}/health", timeout=8)
+        if hr is None:
+            raise (last_health_exc or RuntimeError("health_probe_failed"))
         if hr.status_code == 200 and hr.content:
             data = hr.json() if hr.content else {}
             if not isinstance(data, dict):

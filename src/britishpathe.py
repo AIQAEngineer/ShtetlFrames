@@ -24,6 +24,8 @@ BP_ORIGIN = "https://www.britishpathe.com"
 # Discover + many scrape workers share Scrapfly — cap concurrent asset HTML fetches.
 _RESOLVE_SLOTS = threading.Semaphore(16)
 _RESOLVE_MAX_ATTEMPTS = 3
+_scrapfly_cooldown_until = 0.0
+_scrapfly_cooldown_lock = threading.Lock()
 _cache_dirty = False
 _cache_last_flush = 0.0
 _CACHE_FLUSH_MIN_SEC = 8.0
@@ -274,6 +276,25 @@ def _scrapfly_api_key() -> str:
     ).strip()
 
 
+def _wait_scrapfly_cooldown() -> None:
+    with _scrapfly_cooldown_lock:
+        until = _scrapfly_cooldown_until
+    delay = until - time.monotonic()
+    if delay > 0:
+        time.sleep(min(delay, 180.0))
+
+
+def _note_scrapfly_429(retry_after: float | None = None) -> None:
+    """Pause all Scrapfly page fetches after an API 429."""
+    global _scrapfly_cooldown_until
+    wait = float(retry_after) if retry_after and retry_after > 0 else 90.0
+    wait = max(30.0, min(wait, 300.0))
+    with _scrapfly_cooldown_lock:
+        _scrapfly_cooldown_until = max(
+            _scrapfly_cooldown_until, time.monotonic() + wait
+        )
+
+
 def scrapfly_fetch_html(
     url: str,
     *,
@@ -285,6 +306,7 @@ def scrapfly_fetch_html(
     key = _scrapfly_api_key()
     if not key:
         raise RuntimeError("SCRAPFLY_API_KEY required for British Pathé pages")
+    _wait_scrapfly_cooldown()
     params: dict[str, str] = {
         "key": key,
         "url": url,
@@ -304,8 +326,19 @@ def scrapfly_fetch_html(
     )
     # Search pages need long JS wait — allow up to 3 minutes.
     timeout = 180 if (render_js and (rendering_wait or 0) >= 8000) else 120
-    with urllib.request.urlopen(req, timeout=timeout) as resp:
-        data = json.loads(resp.read().decode("utf-8", "replace"))
+    try:
+        with urllib.request.urlopen(req, timeout=timeout) as resp:
+            data = json.loads(resp.read().decode("utf-8", "replace"))
+    except urllib.error.HTTPError as e:
+        if int(e.code or 0) == 429:
+            ra = None
+            try:
+                ra = float(e.headers.get("Retry-After") or "")
+            except Exception:
+                ra = None
+            _note_scrapfly_429(ra)
+            raise RuntimeError("scrapfly_pathe_page_http_429") from e
+        raise
     result = data.get("result") or {}
     if not result.get("success"):
         reason = (
@@ -314,9 +347,15 @@ def scrapfly_fetch_html(
             or data.get("message")
             or "scrape_failed"
         )
+        reason_l = str(reason).lower()
+        if "429" in reason_l or "too many" in reason_l or "rate" in reason_l:
+            _note_scrapfly_429(None)
         raise RuntimeError(f"scrapfly_pathe_page: {reason}")
     status = int(result.get("status_code") or 0)
     html = result.get("content") or ""
+    if status == 429:
+        _note_scrapfly_429(None)
+        raise RuntimeError("scrapfly_pathe_page_http_429")
     if status >= 400 or not html:
         raise RuntimeError(f"scrapfly_pathe_page_http_{status}")
     return html
@@ -384,7 +423,13 @@ def resolve_asset(
                 return entry
             except Exception as e:
                 last_err = e
-                if attempt < _RESOLVE_MAX_ATTEMPTS:
+                err_l = str(e).lower()
+                if attempt >= _RESOLVE_MAX_ATTEMPTS:
+                    break
+                if "429" in err_l or "too many" in err_l:
+                    # Cooldown already armed in scrapfly_fetch_html.
+                    _wait_scrapfly_cooldown()
+                else:
                     time.sleep(min(12.0, 1.5 * attempt))
     raise RuntimeError(
         f"pathe_resolve_failed asset={aid}: {last_err}"
