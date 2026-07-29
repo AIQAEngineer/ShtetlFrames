@@ -435,6 +435,8 @@ def _download_once(
     proxy_insecure: bool = False,
     referer: str | None = None,
     format_selector: str | None = None,
+    concurrent_fragments: int = 0,
+    sleep_requests: str = "1",
 ) -> Path:
     out_tmpl = str(VIDEOS / f"{vid}.%(ext)s")
     fmt = format_selector or "bv*[height<=720]+ba/b[height<=720]/b"
@@ -453,11 +455,17 @@ def _download_once(
         "--fragment-retries",
         "5",
         "--sleep-requests",
-        "1",
+        # YouTube bot-check hedge. Pathé HLS passes 0 — 1s/segment was adding
+        # ~100s of dead time on long previews.
+        sleep_requests,
         "--newline",
         # Prefer IPv4 — some pod IPv6 routes trip YouTube bot checks harder.
         "-4",
     ]
+    if concurrent_fragments and concurrent_fragments > 1:
+        # HLS previews are dozens of small .ts segments; yt-dlp defaults to
+        # serial fetches, which dominates per-job time on long clips.
+        cmd.extend(["--concurrent-fragments", str(int(concurrent_fragments))])
     if proxy_url:
         cmd.extend(["--proxy", proxy_url])
         # Scrapfly proxy mode terminates TLS; ScrapingDog keeps normal verify.
@@ -625,6 +633,8 @@ def download_video(
                 "bv*[height<=360][tbr<=800]+ba/b[height<=360][tbr<=800]/"
                 "bv*[height<=480]+ba/b[height<=480]/worst"
             ),
+            concurrent_fragments=6,
+            sleep_requests="0",
         )
 
     is_youtube = "youtube.com" in url.lower() or "youtu.be" in url.lower()
