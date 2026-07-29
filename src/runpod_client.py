@@ -1741,6 +1741,14 @@ def _is_retryable_remote_error(msg: str) -> bool:
     low = (msg or "").lower()
     if is_permanent_youtube_skip(low):
         return False
+    # Dead Pathé CDN playlists / removed assets — not transient.
+    if "404" in low and (
+        "playlist" in low
+        or "unable to download webpage" in low
+        or "pathe_playlist_gone" in low
+        or "pathe_still_image" in low
+    ):
+        return False
     if is_infra_error(low):
         return True
     retryable = (
@@ -1929,6 +1937,9 @@ def _process_video_remote_attempts(
     active_provider = (provider or "none").strip().lower() or "none"
     active_proxy = proxy
     scrapfly_fail_count = 0
+    # Pathé playlist URLs expire; re-resolve at most once per submit. Burning all
+    # 6 attempts on the same dead CDN object was parking every worker for minutes.
+    pathe_reresolved = False
 
     def _failover_to_scrapingdog(reason: str) -> bool:
         nonlocal active_provider, active_proxy
@@ -2301,8 +2312,8 @@ def _process_video_remote_attempts(
                 soft_drop_pod_url(base, terminate=True, reason=err_s[:80])
 
             # Stale cached Pathé playlist → 404 on pod. Bust cache + re-resolve
-            # before burning more GPU attempts on the same dead m3u8.
-            if is_pathe_job and attempt < total_attempts and (
+            # once, then treat further 404s as a dead asset (not infra).
+            if is_pathe_job and (
                 ("playlist" in err_l and "404" in err_l)
                 or (
                     "unable to download webpage" in err_l
@@ -2310,6 +2321,12 @@ def _process_video_remote_attempts(
                     and "m3u8" in (str(payload.get("m3u8_url") or "")).lower()
                 )
             ):
+                if pathe_reresolved or attempt >= total_attempts:
+                    if on_status:
+                        on_status(f"Pathé playlist gone — skipping: {err_s[:100]}")
+                    last_err = RuntimeError(f"pathe_playlist_gone: {err_s[:240]}")
+                    break
+                pathe_reresolved = True
                 try:
                     from britishpathe import invalidate_resolve_cache, prepare_pathe_job
 
@@ -2335,6 +2352,8 @@ def _process_video_remote_attempts(
                 except Exception as re_err:
                     if on_status:
                         on_status(f"Pathé re-resolve failed: {re_err}"[:120])
+                    last_err = RuntimeError(f"pathe_playlist_gone: {re_err}"[:240])
+                    break
                 if on_status:
                     on_status(f"pod retry {attempt}/{total_attempts}: {err_s[:120]}")
                 time.sleep(min(4.0, 1.0 * attempt))

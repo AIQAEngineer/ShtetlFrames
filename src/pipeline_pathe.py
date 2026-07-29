@@ -962,19 +962,36 @@ def _pathe_scrape_job(workers: int, backend: str, limit: int | None) -> None:
                             err_s = str(e)
                             from runpod_client import is_infra_error
 
-                            soft = is_infra_error(err_s) or any(
-                                x in err_s.lower()
-                                for x in (
-                                    "britishpathe_resolve",
-                                    "pathe_resolve",
-                                    "scrapfly",
-                                    "pathe_no_m3u8",
-                                    "pathe_item_deadline",
-                                    "pod_scan_timeout",
-                                    "errno 2",
-                                    "no such file",
+                            err_l = err_s.lower()
+                            # Definitive Pathé misses — never soft-retry into the queue head.
+                            permanent_pathe = (
+                                "pathe_still_image" in err_l
+                                or "pathe_playlist_gone" in err_l
+                                or (
+                                    "yt-dlp" in err_l
+                                    and "404" in err_l
+                                    and (
+                                        "playlist" in err_l
+                                        or "unable to download webpage" in err_l
+                                    )
                                 )
                             )
+                            if permanent_pathe:
+                                soft = False
+                            else:
+                                soft = is_infra_error(err_s) or any(
+                                    x in err_l
+                                    for x in (
+                                        "britishpathe_resolve",
+                                        "pathe_resolve",
+                                        "scrapfly",
+                                        "pathe_no_m3u8",
+                                        "pathe_item_deadline",
+                                        "pod_scan_timeout",
+                                        "errno 2",
+                                        "no such file",
+                                    )
+                                )
                             if soft:
                                 # Pod blip or Scrapfly resolve contention — retry later.
                                 set_queue_status(
@@ -1111,6 +1128,37 @@ def _process_one_pathe(row: dict, backend: str) -> int:
             }
         _touch_pathe_live_dash()
 
+    try:
+        return _process_one_pathe_body(
+            row=row,
+            backend=backend,
+            qid=qid,
+            title=title,
+            url=url,
+            thr=thr,
+            t_start=t_start,
+            on_status=on_status,
+        )
+    finally:
+        with _lock:
+            _pathe_live.pop(qid, None)
+        _touch_pathe_live_dash()
+
+
+def _process_one_pathe_body(
+    *,
+    row: dict,
+    backend: str,
+    qid: int,
+    title: str,
+    url: str,
+    thr: float,
+    t_start: float,
+    on_status,
+) -> int:
+    from runpod_client import process_pathe_remote, segments_to_candidate_rows
+    from shtetl_core.textutil import slugify
+
     set_queue_status(qid, "scanning", detail="pathe")
     on_status("Pathé HLS download + scan…")
 
@@ -1225,8 +1273,6 @@ def _process_one_pathe(row: dict, backend: str) -> int:
         # still_b64 / _local_still (if present) are saved by insert_candidates
         insert_candidates(rows)
     set_queue_status(qid, "done", detail=f"hits={len(rows)}")
-    with _lock:
-        _pathe_live.pop(qid, None)
     return len(rows)
 
 

@@ -916,6 +916,11 @@ def _is_retryable_job_error(msg: str) -> bool:
     low = (msg or "").lower()
     if _is_permanent_ytdlp_error(low):
         return False
+    # Expired / deleted Pathé playlists return webpage 404 — not transient.
+    if "404" in low and (
+        "playlist" in low or "unable to download webpage" in low
+    ):
+        return False
     markers = (
         "numpy is not available",
         "no module named 'numpy",

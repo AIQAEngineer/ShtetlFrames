@@ -361,6 +361,11 @@ def scrapfly_fetch_html(
     return html
 
 
+# Photo-only assets declare an image preview; they never yield an m3u8, so
+# fail them in one fetch instead of JS-rendering + retrying (~3 min each).
+_STILL_IMAGE_MARK = '"preview":{"exists":true,"mimetype":"image'
+
+
 def resolve_asset(
     url_or_id: str,
     *,
@@ -398,12 +403,16 @@ def resolve_asset(
                 # Playlist URL is usually in static HTML — skip JS render (faster).
                 html = scrapfly_fetch_html(asset_url, render_js=False)
                 m3u8 = extract_m3u8(html)
+                if not m3u8 and _STILL_IMAGE_MARK in html:
+                    raise RuntimeError(f"pathe_still_image asset={aid}")
                 if not m3u8:
                     html = scrapfly_fetch_html(
                         asset_url, render_js=True, rendering_wait=2000
                     )
                     m3u8 = extract_m3u8(html)
                 if not m3u8:
+                    if _STILL_IMAGE_MARK in html:
+                        raise RuntimeError(f"pathe_still_image asset={aid}")
                     raise RuntimeError(f"pathe_no_m3u8 asset={aid}")
                 title = extract_og_title(html)
                 entry = {
@@ -422,6 +431,9 @@ def resolve_asset(
                 entry["cached"] = False
                 return entry
             except Exception as e:
+                if "pathe_still_image" in str(e):
+                    # Definitive — never retried or soft-requeued.
+                    raise
                 last_err = e
                 err_l = str(e).lower()
                 if attempt >= _RESOLVE_MAX_ATTEMPTS:
