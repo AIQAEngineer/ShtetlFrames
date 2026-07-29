@@ -496,12 +496,16 @@ def requeue_pathe_errors() -> int:
 
 
 def requeue_pathe_stuck() -> int:
-    """Reset Pathé in-flight / error rows to pending (dead pod / crashed scrape)."""
+    """Reset Pathé in-flight rows to pending (dead pod / crashed scrape).
+
+    Does not touch ``error`` — those may be definitive (still-image, gone playlist).
+    Use ``requeue_pathe_errors`` when intentionally retrying failures.
+    """
     with db(write=True) as conn:
         cur = conn.execute(
             f"UPDATE queue_items SET status='pending', error='', detail='' "
             f"WHERE {_PATHE_URL_SQL} AND status IN "
-            f"('queued','scanning','downloading','uploading','error')"
+            f"('queued','scanning','downloading','uploading')"
         )
         return int(cur.rowcount or 0)
 
