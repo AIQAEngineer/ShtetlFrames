@@ -302,18 +302,13 @@ def _hit_sample_times(
 def _resolve_labeled_video(video_id: str, source_url: str) -> Path | None:
     """Local cache first, then download Pathé/source if needed."""
     from config import VIDEOS_DIR
+    from media_files import VIDEO_EXTS
 
     vid = (video_id or "").strip()
     url = (source_url or "").strip()
     if vid and VIDEOS_DIR.is_dir():
         for p in VIDEOS_DIR.iterdir():
-            if p.stem == vid and p.suffix.lower() in {
-                ".mp4",
-                ".webm",
-                ".mkv",
-                ".avi",
-                ".mov",
-            }:
+            if p.stem == vid and p.suffix.lower() in VIDEO_EXTS:
                 return p
     if url:
         try:

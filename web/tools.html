@@ -1,0 +1,153 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>Tools — ShtetlFrames</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link href="https://fonts.googleapis.com/css2?family=Figtree:wght@400;500;600&family=Fraunces:opsz,wght@9..144,500;9..144,560&display=swap" rel="stylesheet" />
+  <link rel="stylesheet" href="/assets/styles.css" />
+</head>
+<body>
+  <div class="wrap">
+    <nav id="siteNav"></nav>
+
+    <div class="tabs" role="tablist">
+      <button type="button" data-tab="mark" class="active">Mark &amp; stitch</button>
+      <button type="button" data-tab="clip">Cut &amp; upload</button>
+    </div>
+
+    <div class="tab-pane" data-tab="mark">
+      <header class="review-head">
+        <div>
+          <h1>Mark</h1>
+          <p class="section-lede" style="margin:0">
+            Paste a Pathé asset URL and a second mark — pick frames around ±0.5s, then stitch them into one high-quality strip.
+          </p>
+        </div>
+      </header>
+
+      <form class="mark-form" id="markForm">
+        <label class="mark-field">
+          <span>British Pathé URL</span>
+          <input
+            id="markUrl"
+            type="url"
+            required
+            placeholder="https://www.britishpathe.com/asset/187521/"
+            autocomplete="off"
+          />
+        </label>
+        <label class="mark-field mark-field-mark">
+          <span>Second mark</span>
+          <input
+            id="markSec"
+            type="text"
+            required
+            inputmode="decimal"
+            placeholder="42.5 or 1:12"
+            autocomplete="off"
+          />
+        </label>
+        <button class="btn ok" id="markGo" type="submit">Load frames</button>
+      </form>
+
+      <p class="crops-summary" id="markStatus">Paste a URL and mark to begin.</p>
+
+      <div class="mark-result" id="markResult" hidden>
+        <div class="mark-strip-wrap">
+          <img id="markStrip" alt="Mark strip preview" />
+        </div>
+
+        <div class="mark-toolbar">
+          <p class="mark-hint" id="markHint">Select frames, then stitch them side by side at full resolution.</p>
+          <div class="mark-toolbar-actions">
+            <button type="button" class="btn ghost small" id="markSelectAll">Select all</button>
+            <button type="button" class="btn ghost small" id="markSelectNone">Clear</button>
+            <button type="button" class="btn ghost small" id="markSelectMark">Mark ± neighbors</button>
+            <button type="button" class="btn ok" id="markCombine" disabled>Stitch strip</button>
+          </div>
+        </div>
+
+        <div class="frame-grid" id="markFrames"></div>
+        <p class="mark-meta" id="markMeta"></p>
+
+        <div class="mark-hq" id="markHq" hidden>
+          <h2 class="mark-hq-title">Stitched strip</h2>
+          <img id="markHqImg" alt="Combined high-quality still" />
+          <p class="mark-meta" id="markHqMeta"></p>
+        </div>
+      </div>
+    </div>
+
+    <div class="tab-pane" data-tab="clip" hidden>
+      <header class="review-head">
+        <div>
+          <h1>Clip</h1>
+          <p class="section-lede" style="margin:0">
+            Load a Pathé reel, set start and end, then cut and upload the clip to Google Drive.
+          </p>
+        </div>
+      </header>
+
+      <form class="mark-form" id="clipForm">
+        <label class="mark-field">
+          <span>British Pathé URL</span>
+          <input
+            id="clipUrl"
+            type="url"
+            required
+            placeholder="https://www.britishpathe.com/asset/187521/"
+            autocomplete="off"
+          />
+        </label>
+        <button class="btn ok" id="clipLoad" type="submit">Load video</button>
+      </form>
+
+      <p class="crops-summary" id="clipStatus">Paste a Pathé asset URL to begin.</p>
+      <p class="clip-drive" id="clipDriveStatus"></p>
+      <div class="clip-drive-actions">
+        <button type="button" class="btn ghost small" id="clipDriveAuth" hidden>Connect Google account</button>
+      </div>
+
+      <div class="clip-result" id="clipResult" hidden>
+        <div class="clip-player-wrap">
+          <video id="clipVideo" controls playsinline></video>
+        </div>
+
+        <form class="mark-form clip-times" id="clipTimes">
+          <label class="mark-field mark-field-mark">
+            <span>Start</span>
+            <input id="clipStart" type="text" required inputmode="decimal" placeholder="0:00" autocomplete="off" />
+          </label>
+          <button type="button" class="btn ghost small" id="clipSetStart">Set from playhead</button>
+          <label class="mark-field mark-field-mark">
+            <span>End</span>
+            <input id="clipEnd" type="text" required inputmode="decimal" placeholder="0:10" autocomplete="off" />
+          </label>
+          <button type="button" class="btn ghost small" id="clipSetEnd">Set from playhead</button>
+          <label class="mark-field">
+            <span>Drive filename (optional)</span>
+            <input id="clipName" type="text" placeholder="pathe_187521_clip.mp4" autocomplete="off" />
+          </label>
+          <div class="clip-actions">
+            <button type="button" class="btn ghost" id="clipPreview">Preview range</button>
+            <button type="button" class="btn ghost" id="clipCut">Cut only</button>
+            <button type="submit" class="btn ok" id="clipUpload">Cut &amp; upload to Drive</button>
+          </div>
+        </form>
+
+        <p class="mark-meta" id="clipMeta"></p>
+        <div class="clip-done" id="clipDone" hidden>
+          <p class="mark-meta" id="clipDoneMeta"></p>
+          <video id="clipOut" controls playsinline hidden></video>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <script src="/assets/common.js"></script>
+  <script src="/assets/tools.js"></script>
+</body>
+</html>

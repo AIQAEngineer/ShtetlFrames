@@ -5,51 +5,13 @@ from __future__ import annotations
 from http.server import BaseHTTPRequestHandler
 
 from api_http import json_response
-
-
-def _resolve_pathe_video(body: dict) -> tuple[dict | None, dict | None]:
-    """Return (ctx, error_payload). ctx has url, aid, video."""
-    from britishpathe import (
-        asset_id_from_url,
-        is_britishpathe_asset_url,
-        normalize_asset_url,
-    )
-    from frame_strip import _download_source
-
-    if not isinstance(body, dict):
-        return None, {"ok": False, "error": "json_body_required"}
-
-    raw_url = (body.get("url") or body.get("asset_url") or "").strip()
-    if not raw_url:
-        return None, {"ok": False, "error": "url_required"}
-    if not is_britishpathe_asset_url(raw_url):
-        return None, {
-            "ok": False,
-            "error": "britishpathe_asset_url_required",
-            "hint": "Paste a URL like https://www.britishpathe.com/asset/187521/",
-        }
-
-    url = normalize_asset_url(raw_url)
-    aid = asset_id_from_url(url)
-    if not aid:
-        return None, {"ok": False, "error": "asset_id_parse_failed"}
-
-    video_id = f"pathe_{aid}"
-    video = _download_source(url, video_id, video_id)
-    if not video:
-        return None, {
-            "ok": False,
-            "error": "download_failed",
-            "asset_id": aid,
-            "url": url,
-        }
-    return {"url": url, "aid": str(aid), "video": video}, None
+from frame_strip import resolve_pathe_video
 
 
 def handle_post_mark(handler: BaseHTTPRequestHandler, body: dict) -> None:
     from frame_strip import build_mark_triplet, parse_mark_seconds
 
-    ctx, err = _resolve_pathe_video(body)
+    ctx, err = resolve_pathe_video(body, allow_video_id=False)
     if err:
         code = 502 if err.get("error") == "download_failed" else 400
         json_response(handler, code, err)
@@ -86,7 +48,7 @@ def handle_post_mark(handler: BaseHTTPRequestHandler, body: dict) -> None:
 def handle_post_mark_combine(handler: BaseHTTPRequestHandler, body: dict) -> None:
     from frame_strip import combine_mark_frames, parse_mark_seconds
 
-    ctx, err = _resolve_pathe_video(body)
+    ctx, err = resolve_pathe_video(body, allow_video_id=False)
     if err:
         code = 502 if err.get("error") == "download_failed" else 400
         json_response(handler, code, err)

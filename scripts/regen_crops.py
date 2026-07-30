@@ -10,7 +10,7 @@ from pathlib import Path
 ROOT = Path(__file__).resolve().parents[1]
 sys.path.insert(0, str(ROOT / "src"))
 
-from config import CONTACT_DIR, load_env  # noqa: E402
+from config import CONTACT_DIR, VIDEOS_DIR, load_env  # noqa: E402
 
 load_env()
 
@@ -21,7 +21,7 @@ from frame_strip import (  # noqa: E402
     _download_source,
     generate_crop_for_candidate,
 )
-from serve import find_video_file  # noqa: E402
+from media_files import find_video_file  # noqa: E402
 from still_store import candidate_crop_path  # noqa: E402
 
 
@@ -53,7 +53,7 @@ def main() -> int:
     ok = fail = 0
     for vid, group in by_vid.items():
         url = (group[0].get("source_url") or "").strip()
-        video = find_video_file(vid)
+        video = find_video_file(VIDEOS_DIR, vid)
         owned = False
         if not video or not Path(video).is_file():
             video = _download_source(url, vid, vid)

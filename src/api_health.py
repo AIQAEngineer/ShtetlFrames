@@ -157,8 +157,7 @@ def build_health_snapshot(*, force: bool = False) -> dict[str, Any]:
             # No cached pod list — synthesize from scrape pool URLs so the page
             # still probes real workers instead of 500ing.
             try:
-                from runpod_client import get_pod_pool
-                from runpod_provision import pod_id_from_proxy_url
+                from runpod_client import get_pod_pool, pod_id_from_proxy_url
 
                 pods_raw = [
                     {"id": pod_id_from_proxy_url(u), "name": f"pool-{i+1}"}

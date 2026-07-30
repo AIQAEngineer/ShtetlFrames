@@ -12,6 +12,7 @@ from urllib.parse import urlparse
 import requests
 
 from config import DATA_DIR, VIDEOS_DIR, YT_COOKIES_BROWSER, YT_PLAYER_CLIENTS
+from media_files import VIDEO_EXTS
 from shtetl_core.textutil import slugify
 
 USER_AGENT = "ShtetlFrames/1.0 (research; respectful archival use)"
@@ -140,7 +141,7 @@ def _ytdlp_try_attempts(
         matches = [
             p
             for p in dest_dir.glob(f"{out_name}.*")
-            if p.suffix.lower() in {".mp4", ".webm", ".mkv", ".avi", ".mov"} and p.stat().st_size > 0
+            if p.suffix.lower() in VIDEO_EXTS and p.stat().st_size > 0
         ]
         if proc.returncode == 0 and matches:
             return matches[0], ""
@@ -241,7 +242,7 @@ def download_ytdlp(
     """Download via yt-dlp; residential proxy only if Google/YouTube bot-blocks."""
     dest_dir.mkdir(parents=True, exist_ok=True)
     existing = list(dest_dir.glob(f"{out_name}.*"))
-    existing = [p for p in existing if p.suffix.lower() in {".mp4", ".webm", ".mkv", ".avi", ".mov"}]
+    existing = [p for p in existing if p.suffix.lower() in VIDEO_EXTS]
     if existing:
         return existing[0]
 
@@ -280,12 +281,11 @@ def download_archive_org(identifier: str, dest_dir: Path) -> Path | None:
     r.raise_for_status()
     meta = r.json()
     files = meta.get("files") or []
-    video_exts = {".mp4", ".webm", ".ogv", ".avi", ".mkv", ".mpg", ".mpeg"}
     candidates = []
     for f in files:
         name = f.get("name", "")
         ext = Path(name).suffix.lower()
-        if ext in video_exts and not name.endswith(".thumbs"):
+        if ext in VIDEO_EXTS and not name.endswith(".thumbs"):
             size = int(f.get("size") or 0)
             candidates.append((size, name))
     if not candidates:
@@ -299,7 +299,7 @@ def download_archive_org(identifier: str, dest_dir: Path) -> Path | None:
 
 def is_direct_video_url(url: str) -> bool:
     path = urlparse(url).path.lower()
-    return any(path.endswith(ext) for ext in (".webm", ".mp4", ".ogv", ".mkv", ".avi", ".mov"))
+    return any(path.endswith(ext) for ext in VIDEO_EXTS)
 
 
 def download_britishpathe(
@@ -316,7 +316,7 @@ def download_britishpathe(
     existing = [
         p
         for p in dest_dir.glob(f"{out_name}.*")
-        if p.suffix.lower() in {".mp4", ".webm", ".mkv", ".avi", ".mov"}
+        if p.suffix.lower() in VIDEO_EXTS
     ]
     if existing:
         return existing[0]

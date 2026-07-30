@@ -178,9 +178,29 @@ def list_jobs() -> dict[str, dict]:
     return {r["id"]: dict(r) for r in rows}
 
 
-def clear_queue() -> None:
+_PATHE_URL_SQL = "url LIKE '%britishpathe.com%'"
+_NON_PATHE_URL_SQL = "url NOT LIKE '%britishpathe.com%'"
+
+
+def _source_sql(source: str) -> str:
+    """Map a queue source filter to a WHERE fragment ('' = no filter)."""
+    s = (source or "").strip().lower()
+    if s in ("pathe", "britishpathe", "british_pathe", "british-pathe"):
+        return _PATHE_URL_SQL
+    if s in ("youtube", "yt", "web", "non_pathe", "non-pathe"):
+        return _NON_PATHE_URL_SQL
+    return ""
+
+
+def clear_queue(source: str = "") -> int:
+    """Delete queue rows (all, or scoped to one source). Returns rows deleted."""
+    frag = _source_sql(source)
     with db(write=True) as conn:
-        conn.execute("DELETE FROM queue_items")
+        if frag:
+            cur = conn.execute(f"DELETE FROM queue_items WHERE {frag}")
+        else:
+            cur = conn.execute("DELETE FROM queue_items")
+        return int(cur.rowcount or 0)
 
 
 def insert_queue_items(items: list[dict], hub_url: str = "") -> dict:
@@ -259,12 +279,16 @@ def list_queue_page(
     limit: int = 100,
     status: str = "",
     q: str = "",
+    source: str = "",
 ) -> dict:
     """Paginated queue for large discovers — returns items + total matching."""
     offset = max(0, int(offset))
     limit = max(1, min(int(limit), 500))
     clauses = ["1=1"]
     params: list = []
+    frag = _source_sql(source)
+    if frag:
+        clauses.append(frag)
     if status:
         clauses.append("status=?")
         params.append(status)
@@ -332,36 +356,39 @@ def reclaim_inflight_queue() -> int:
         return int(cur.rowcount or 0)
 
 
-def queue_stats() -> dict:
+def _queue_aggregate(frag: str = "") -> dict:
+    """One aggregate pass over queue_items; both stats views format from this."""
+    where = f" WHERE {frag}" if frag else ""
     with db() as conn:
-        total = conn.execute("SELECT COUNT(*) AS n FROM queue_items").fetchone()["n"]
-        dl = conn.execute(
-            "SELECT COUNT(*) AS n FROM queue_items WHERE downloadable='yes'"
-        ).fetchone()["n"]
-        pending = conn.execute(
-            "SELECT COUNT(*) AS n FROM queue_items "
-            "WHERE status IN ('pending','queued','scanning','downloading','uploading') "
-            "AND downloadable='yes'"
-        ).fetchone()["n"]
-        done = conn.execute(
-            "SELECT COUNT(*) AS n FROM queue_items WHERE status='done'"
-        ).fetchone()["n"]
-        active = conn.execute(
-            "SELECT COUNT(*) AS n FROM queue_items "
-            "WHERE status IN ('scanning','downloading','uploading')"
-        ).fetchone()["n"]
-        errn = conn.execute(
-            "SELECT COUNT(*) AS n FROM queue_items WHERE status='error'"
-        ).fetchone()["n"]
+        row = conn.execute(
+            f"""
+            SELECT
+              COUNT(*) AS n_queue,
+              SUM(CASE WHEN downloadable='yes' THEN 1 ELSE 0 END) AS n_downloadable,
+              SUM(CASE WHEN status='pending' THEN 1 ELSE 0 END) AS n_pending_fresh,
+              SUM(CASE WHEN status IN ('pending','queued','scanning','downloading','uploading')
+                        AND downloadable='yes' THEN 1 ELSE 0 END) AS n_pending,
+              SUM(CASE WHEN status IN ('scanning','downloading','uploading') THEN 1 ELSE 0 END) AS n_active,
+              SUM(CASE WHEN status IN ('queued','scanning','downloading','uploading') THEN 1 ELSE 0 END) AS n_active_q,
+              SUM(CASE WHEN status='done' THEN 1 ELSE 0 END) AS n_done,
+              SUM(CASE WHEN status='error' THEN 1 ELSE 0 END) AS n_error
+            FROM queue_items{where}
+            """
+        ).fetchone()
+    return {k: int(row[k] or 0) for k in row.keys()}
+
+
+def queue_stats(source: str = "") -> dict:
+    agg = _queue_aggregate(_source_sql(source))
     return {
-        "n_queue": total,
-        "n_downloadable": dl,
-        "n_pending": pending,
+        "n_queue": agg["n_queue"],
+        "n_downloadable": agg["n_downloadable"],
+        "n_pending": agg["n_pending"],
         # Errors are cleared and retried when Start scrape runs again.
-        "n_retryable": errn,
-        "n_done": done,
-        "n_active": active,
-        "n_error": errn,
+        "n_retryable": agg["n_error"],
+        "n_done": agg["n_done"],
+        "n_active": agg["n_active"],
+        "n_error": agg["n_error"],
     }
 
 
@@ -399,65 +426,31 @@ def _queue_id_dir() -> str:
     return "DESC" if queue_claim_from_end() else "ASC"
 
 
-def take_pending(limit: int | None) -> list[dict]:
+def take_pending(
+    limit: int | None,
+    *,
+    source: str = "youtube",
+    only_pending: bool = False,
+) -> list[dict]:
     """Fetch claimable downloadable rows; optionally cap. Marks them 'queued'.
 
-    Reclaims stuck in-flight rows and previous errors so Start scrape retries them.
-    British Pathé URLs are excluded — use the dedicated Pathé page scrape.
+    ``source='youtube'`` (default) excludes British Pathé URLs — use the dedicated
+    Pathé scrape for those; ``source='pathe'`` claims Pathé rows only.
+    Default mode also reclaims stuck in-flight rows and previous errors so Start
+    scrape retries them; ``only_pending=True`` claims fresh ``pending`` rows only,
+    so a continuous discover+scrape never double-claims in-flight work.
     Order follows Settings ``QUEUE_CLAIM_ORDER`` (start=oldest id, end=newest id).
     """
-    claim = (
-        "status IN ('pending','queued','scanning','downloading','uploading','error') "
-        "AND downloadable='yes' "
-        "AND url NOT LIKE '%britishpathe.com%'"
-    )
-    id_dir = _queue_id_dir()
-    order = (
-        "ORDER BY CASE status "
-        "WHEN 'pending' THEN 0 "
-        "WHEN 'queued' THEN 1 "
-        "WHEN 'error' THEN 2 "
-        f"ELSE 3 END, id {id_dir}"
-    )
-    with db(write=True) as conn:
-        if limit is None:
-            rows = conn.execute(
-                f"SELECT * FROM queue_items WHERE {claim} {order}"
-            ).fetchall()
-        else:
-            # Prefer fresh pending first, then retry errors / stuck jobs.
-            rows = conn.execute(
-                f"SELECT * FROM queue_items WHERE {claim} {order} LIMIT ?",
-                (limit,),
-            ).fetchall()
-        ids = [r["id"] for r in rows]
-        if ids:
-            conn.executemany(
-                "UPDATE queue_items SET status='queued', error='', detail='' WHERE id=?",
-                [(i,) for i in ids],
-            )
-    return [dict(r) for r in rows]
-
-
-_PATHE_URL_SQL = "url LIKE '%britishpathe.com%'"
-
-
-def take_pending_pathe(limit: int | None, *, only_pending: bool = True) -> list[dict]:
-    """Claim British Pathé rows for scrape. Default: only fresh ``pending``.
-
-    Use ``only_pending=False`` to also reclaim stuck in-flight / error rows
-    (manual cold start). Continuous discover+scrape must keep ``only_pending=True``
-    so in-flight work is never double-claimed.
-    Order follows Settings ``QUEUE_CLAIM_ORDER`` (start=oldest id, end=newest id).
-    """
+    frag = _source_sql(source)
+    and_frag = f" AND {frag}" if frag else ""
     id_dir = _queue_id_dir()
     if only_pending:
-        claim = f"status='pending' AND downloadable='yes' AND {_PATHE_URL_SQL}"
+        claim = f"status='pending' AND downloadable='yes'{and_frag}"
         order = f"ORDER BY id {id_dir}"
     else:
         claim = (
             "status IN ('pending','queued','scanning','downloading','uploading','error') "
-            f"AND downloadable='yes' AND {_PATHE_URL_SQL}"
+            f"AND downloadable='yes'{and_frag}"
         )
         order = (
             "ORDER BY CASE status "
@@ -472,6 +465,7 @@ def take_pending_pathe(limit: int | None, *, only_pending: bool = True) -> list[
                 f"SELECT * FROM queue_items WHERE {claim} {order}"
             ).fetchall()
         else:
+            # Prefer fresh pending first, then retry errors / stuck jobs.
             rows = conn.execute(
                 f"SELECT * FROM queue_items WHERE {claim} {order} LIMIT ?",
                 (int(limit),),
@@ -483,6 +477,16 @@ def take_pending_pathe(limit: int | None, *, only_pending: bool = True) -> list[
                 [(i,) for i in ids],
             )
     return [dict(r) for r in rows]
+
+
+def take_pending_pathe(limit: int | None, *, only_pending: bool = True) -> list[dict]:
+    """Claim British Pathé rows for scrape. Default: only fresh ``pending``.
+
+    Use ``only_pending=False`` to also reclaim stuck in-flight / error rows
+    (manual cold start). Continuous discover+scrape must keep ``only_pending=True``
+    so in-flight work is never double-claimed.
+    """
+    return take_pending(limit, source="pathe", only_pending=only_pending)
 
 
 def requeue_pathe_errors() -> int:
@@ -534,9 +538,7 @@ def reclaim_orphan_pathe_scanning(active_ids: set[int] | list[int]) -> int:
 
 def clear_queue_pathe() -> int:
     """Delete only British Pathé rows from the queue. Returns rows deleted."""
-    with db(write=True) as conn:
-        cur = conn.execute(f"DELETE FROM queue_items WHERE {_PATHE_URL_SQL}")
-        n = int(cur.rowcount or 0)
+    n = clear_queue(source="pathe")
     try:
         from britishpathe import clear_discover_cursor
 
@@ -577,26 +579,14 @@ def list_youtube_pathe_titles(*, limit: int = 5000) -> list[str]:
 
 
 def queue_stats_pathe() -> dict:
-    """Queue counters scoped to britishpathe.com URLs."""
-    with db() as conn:
-        row = conn.execute(
-            f"""
-            SELECT
-              COUNT(*) AS n_queue,
-              SUM(CASE WHEN status='pending' THEN 1 ELSE 0 END) AS n_pending,
-              SUM(CASE WHEN status IN ('queued','scanning','downloading','uploading') THEN 1 ELSE 0 END) AS n_active,
-              SUM(CASE WHEN status='done' THEN 1 ELSE 0 END) AS n_done,
-              SUM(CASE WHEN status='error' THEN 1 ELSE 0 END) AS n_error
-            FROM queue_items
-            WHERE {_PATHE_URL_SQL}
-            """
-        ).fetchone()
+    """Queue counters scoped to britishpathe.com URLs (fresh-pending semantics)."""
+    agg = _queue_aggregate(_PATHE_URL_SQL)
     return {
-        "n_queue": int(row["n_queue"] or 0),
-        "n_pending": int(row["n_pending"] or 0),
-        "n_active": int(row["n_active"] or 0),
-        "n_done": int(row["n_done"] or 0),
-        "n_error": int(row["n_error"] or 0),
+        "n_queue": agg["n_queue"],
+        "n_pending": agg["n_pending_fresh"],
+        "n_active": agg["n_active_q"],
+        "n_done": agg["n_done"],
+        "n_error": agg["n_error"],
     }
 
 
@@ -607,70 +597,29 @@ def list_queue_page_pathe(
     status: str = "",
     q: str = "",
 ) -> dict:
-    offset = max(0, int(offset))
-    limit = max(1, min(int(limit), 500))
-    where = [_PATHE_URL_SQL]
-    args: list = []
-    if status:
-        where.append("status=?")
-        args.append(status)
-    if q:
-        where.append("(title LIKE ? OR url LIKE ?)")
-        like = f"%{q}%"
-        args.extend([like, like])
-    clause = " AND ".join(where)
-    with db() as conn:
-        total = conn.execute(
-            f"SELECT COUNT(*) AS n FROM queue_items WHERE {clause}", args
-        ).fetchone()["n"]
-        rows = conn.execute(
-            f"""SELECT id, url, title, year, source, downloadable, status, error, detail, hub_url, created_at
-                FROM queue_items WHERE {clause}
-                ORDER BY id DESC LIMIT ? OFFSET ?""",
-            [*args, limit, offset],
-        ).fetchall()
-    return {
-        "items": [dict(r) for r in rows],
-        "offset": offset,
-        "limit": limit,
-        "total": int(total or 0),
-    }
+    return list_queue_page(offset=offset, limit=limit, status=status, q=q, source="pathe")
 
 
 def set_queue_status(item_id: int, status: str, error: str = "", detail: str = "") -> None:
     # #region agent log
-    import json
-    import threading
-    from pathlib import Path
+    from logutil import agent_dbg
 
     t0 = time.time()
     got_lock = _DB_WRITE_LOCK.acquire(timeout=0.0)
     if got_lock:
         _DB_WRITE_LOCK.release()
-    try:
-        logp = Path(__file__).resolve().parents[1] / "debug-30525a.log"
-        with logp.open("a", encoding="utf-8") as f:
-            f.write(
-                json.dumps(
-                    {
-                        "sessionId": "30525a",
-                        "hypothesisId": "D",
-                        "location": "db.py:set_queue_status",
-                        "message": "enter set_queue_status",
-                        "data": {
-                            "item_id": item_id,
-                            "status": status,
-                            "detail": (detail or "")[:80],
-                            "lock_free": bool(got_lock),
-                            "tid": threading.get_ident(),
-                        },
-                        "timestamp": int(time.time() * 1000),
-                    }
-                )
-                + "\n"
-            )
-    except Exception:
-        pass
+    agent_dbg(
+        "D",
+        "db.py:set_queue_status",
+        "enter set_queue_status",
+        {
+            "item_id": item_id,
+            "status": status,
+            "detail": (detail or "")[:80],
+            "lock_free": bool(got_lock),
+        },
+        tid=True,
+    )
     # #endregion
     last_err: Exception | None = None
     for attempt in range(1, 4):
@@ -688,29 +637,19 @@ def set_queue_status(item_id: int, status: str, error: str = "", detail: str = "
     if last_err is not None:
         raise RuntimeError(f"set_queue_status_failed:{last_err}") from last_err
     # #region agent log
-    try:
-        logp = Path(__file__).resolve().parents[1] / "debug-30525a.log"
-        with logp.open("a", encoding="utf-8") as f:
-            f.write(
-                json.dumps(
-                    {
-                        "sessionId": "30525a",
-                        "hypothesisId": "D",
-                        "location": "db.py:set_queue_status",
-                        "message": "exit set_queue_status",
-                        "data": {
-                            "item_id": item_id,
-                            "status": status,
-                            "elapsed_ms": int((time.time() - t0) * 1000),
-                            "tid": threading.get_ident(),
-                        },
-                        "timestamp": int(time.time() * 1000),
-                    }
-                )
-                + "\n"
-            )
-    except Exception:
-        pass
+    from logutil import agent_dbg
+
+    agent_dbg(
+        "D",
+        "db.py:set_queue_status",
+        "exit set_queue_status",
+        {
+            "item_id": item_id,
+            "status": status,
+            "elapsed_ms": int((time.time() - t0) * 1000),
+        },
+        tid=True,
+    )
     # #endregion
 
 

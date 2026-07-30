@@ -2,59 +2,152 @@
 
 from __future__ import annotations
 
+import importlib
+import inspect
 import mimetypes
 import re
 from http.server import BaseHTTPRequestHandler, ThreadingHTTPServer
 from pathlib import Path
 from urllib.parse import unquote, urlparse
 
-import api_health
-import api_jobs
-import api_queue
-import api_review
-import api_runpod
-import api_summary
 from api_http import bytes_response, cors, file_response, json_response, parse_json_body
-from config import (
-    CONTACT_DIR,
-    OUTPUT_DIR,
-    ROOT,
-    VIDEOS_DIR,
-    effective_scan_backend,
-    load_env,
-    runpod_configured,
-)
-import config as app_config
+from config import CONTACT_DIR, OUTPUT_DIR, ROOT, VIDEOS_DIR, load_env
 from db import init_db, reset_stale_jobs
+from media_files import find_video_file
 
 WEB_DIR = ROOT / "web"
 PORT = 8787
 
+# —— Page hubs (old single-purpose pages 302-redirect into these) ——
+PAGES = {
+    "/": "index.html",
+    "/index.html": "index.html",
+    "/review": "review.html",
+    "/review.html": "review.html",
+    "/train": "train.html",
+    "/train.html": "train.html",
+    "/tools": "tools.html",
+    "/tools.html": "tools.html",
+    "/pathe": "pathe.html",
+    "/pathe.html": "pathe.html",
+}
 
-def find_video_file(video_id: str) -> Path | None:
-    if not VIDEOS_DIR.exists():
-        return None
-    for p in VIDEOS_DIR.iterdir():
-        if p.stem == video_id and p.suffix.lower() in {
-            ".mp4",
-            ".webm",
-            ".mkv",
-            ".avi",
-            ".mov",
-            ".ogv",
-        }:
-            return p
-    for p in VIDEOS_DIR.iterdir():
-        if video_id in p.stem and p.suffix.lower() in {
-            ".mp4",
-            ".webm",
-            ".mkv",
-            ".avi",
-            ".mov",
-            ".ogv",
-        }:
-            return p
-    return None
+PAGE_REDIRECTS = {
+    "/health": "/?tab=ops",
+    "/health.html": "/?tab=ops",
+    "/probe": "/train?tab=frames",
+    "/probe.html": "/train?tab=frames",
+    "/crops": "/review?tab=crops",
+    "/crops.html": "/review?tab=crops",
+    "/mark": "/tools?tab=mark",
+    "/mark.html": "/tools?tab=mark",
+    "/clip": "/tools?tab=clip",
+    "/clip.html": "/tools?tab=clip",
+}
+
+# —— API route tables: path → "module:function" (lazy-imported once, cached) ——
+GET_ROUTES = {
+    "/api/summary": "api_summary:handle_get_summary",
+    "/api/health": "api_health:handle_get_health",
+    "/api/settings": "api_settings:handle_get_settings",
+    "/api/runpod/build": "api_runpod:handle_get_build",
+    "/api/runpod/go": "api_runpod:handle_get_go",
+    "/api/runpod/pod": "api_runpod:handle_get_pod",
+    "/api/queue": "api_queue:handle_get_queue",
+    "/api/queue/items": "api_queue:handle_get_queue",
+    "/api/pathe/summary": "api_pathe:handle_get_summary",
+    "/api/pathe/queue": "api_pathe:handle_get_queue",
+    "/api/train/summary": "api_train:handle_get_summary",
+    "/api/train/clips": "api_train:handle_get_clips",
+    "/api/train/youtube": "api_train:handle_get_youtube",
+    "/api/clip_ft/frames": "api_probe_frames:handle_get_frames",
+    "/api/clip_ft/summary": "api_probe_frames:handle_get_summary",
+    "/api/errors": "api_jobs:handle_get_errors",
+    "/api/jobs": "api_jobs:handle_get_jobs",
+    "/api/candidates": "api_review:handle_get_candidates",
+    "/api/stills/status": "api_review:handle_get_stills_status",
+    "/api/review/label_stats": "api_review:handle_get_label_stats",
+    "/api/crops": "api_crops:handle_get_crops",
+    "/api/clip/drive": "api_clip:handle_get_drive_status",
+}
+
+# Static JSON hints for POST-only endpoints hit with GET.
+GET_HINTS = {
+    "/api/mark": "POST {url, mark} — Pathé asset URL + second mark; POST /api/mark/combine {url, times[]}",
+    "/api/mark/combine": "POST {url, times[], mark?} — stitch selected frames side by side at full res",
+    "/api/clip/drive/auth": "POST /api/clip/drive/auth — open browser to sign in with Google",
+    "/api/clip": "POST /api/clip/load {url}; /api/clip/cut {url,start,end}; /api/clip/upload {url,start,end}",
+    "/api/clip/load": "POST /api/clip/load {url}; /api/clip/cut {url,start,end}; /api/clip/upload {url,start,end}",
+    "/api/clip/cut": "POST /api/clip/load {url}; /api/clip/cut {url,start,end}; /api/clip/upload {url,start,end}",
+    "/api/clip/upload": "POST /api/clip/load {url}; /api/clip/cut {url,start,end}; /api/clip/upload {url,start,end}",
+}
+
+POST_ROUTES = {
+    "/api/youtube/cookies": "yt_cookies:handle_post_cookies",
+    "/api/youtube/cookies/har": "yt_cookies:handle_post_cookies_har",
+    "/api/settings": "api_settings:handle_post_settings",
+    "/api/runpod/build": "api_runpod:handle_post_build",
+    "/api/runpod/go": "api_runpod:handle_post_go",
+    "/api/runpod/pod/start": "api_runpod:handle_post_pod_start",
+    "/api/runpod/pod/stop": "api_runpod:handle_post_pod_stop",
+    "/api/runpod/pod/reload": "api_runpod:handle_post_pod_reload",
+    "/api/runpod/pool/sync": "api_runpod:handle_post_pool_sync",
+    "/api/discover": "api_queue:handle_post_discover",
+    "/api/pathe/discover": "api_pathe:handle_post_discover",
+    "/api/pathe/scrape": "api_pathe:handle_post_scrape",
+    "/api/pathe/scrape/stop": "api_pathe:handle_post_scrape_stop",
+    "/api/train/seed": "api_train:handle_post_seed",
+    "/api/train/youtube": "api_train:handle_post_youtube",
+    "/api/train/clear": "api_train:handle_post_clear",
+    "/api/train/label": "api_train:handle_post_label",
+    "/api/train/thumbs": "api_train:handle_post_thumbs",
+    "/api/train/scan": "api_train:handle_post_scan",
+    "/api/train/clip": "api_train:handle_post_clip",
+    "/api/clip_ft/exclude": "api_probe_frames:handle_post_exclude",
+    "/api/console/refresh": "api_jobs:handle_post_console_refresh",
+    "/api/pathe/queue/clear": "api_pathe:handle_post_queue_clear",
+    "/api/queue/clear": "api_queue:handle_post_queue_clear",
+    "/api/scrape": "api_queue:handle_post_scrape",
+    "/api/queue/delete": "api_queue:handle_post_queue_delete",
+    "/api/queue/priority": "api_queue:handle_post_queue_priority",
+    "/api/crops": "api_crops:handle_post_crop",
+    "/api/mark": "api_mark:handle_post_mark",
+    "/api/mark/combine": "api_mark:handle_post_mark_combine",
+    "/api/clip/load": "api_clip:handle_post_clip_load",
+    "/api/clip/cut": "api_clip:handle_post_clip_cut",
+    "/api/clip/upload": "api_clip:handle_post_clip_upload",
+    "/api/clip/drive/auth": "api_clip:handle_post_drive_auth",
+    "/api/review": "api_review:handle_post_review",
+    "/api/stills/backfill": "api_review:handle_post_stills_backfill",
+}
+
+_modules: dict[str, object] = {}
+
+
+def load_route_module(name: str):
+    mod = _modules.get(name)
+    if mod is None:
+        mod = importlib.import_module(name)
+        _modules[name] = mod
+    return mod
+
+
+def resolve_route(spec: str):
+    """Resolve a "module:function" route spec to a callable (used by tests too)."""
+    mod_name, func_name = spec.split(":", 1)
+    return getattr(load_route_module(mod_name), func_name)
+
+
+def call_route(func, handler, arg) -> None:
+    """Dispatch to handlers that take (handler, arg) or just (handler)."""
+    try:
+        arity = len(inspect.signature(func).parameters)
+    except (TypeError, ValueError):
+        arity = 2
+    if arity >= 2:
+        func(handler, arg)
+    else:
+        func(handler)
 
 
 class Handler(BaseHTTPRequestHandler):
@@ -80,6 +173,14 @@ class Handler(BaseHTTPRequestHandler):
     def _file(self, path: Path, content_type: str | None = None) -> None:
         file_response(self, path, content_type)
 
+    def _redirect(self, target: str, query: str = "") -> None:
+        if query:
+            target += ("&" if "?" in target else "?") + query
+        self.send_response(302)
+        self.send_header("Location", target)
+        self._cors()
+        self.end_headers()
+
     def do_OPTIONS(self) -> None:
         self.send_response(204)
         self._cors()
@@ -89,130 +190,19 @@ class Handler(BaseHTTPRequestHandler):
         parsed = urlparse(self.path)
         path = unquote(parsed.path)
 
-        if path == "/api/summary":
-            api_summary.handle_get_summary(self, parsed)
+        page = PAGES.get(path)
+        if page:
+            self._file(WEB_DIR / page, "text/html; charset=utf-8")
             return
-        if path == "/api/health":
-            api_health.handle_get_health(self, parsed)
-            return
-        if path == "/api/settings":
-            from settings_store import settings_public_view
 
-            load_env()
-            self._json(200, settings_public_view())
+        target = PAGE_REDIRECTS.get(path)
+        if target:
+            self._redirect(target, parsed.query)
             return
-        if path == "/api/runpod/build":
-            api_runpod.handle_get_build(self, parsed)
-            return
-        if path == "/api/runpod/go":
-            api_runpod.handle_get_go(self, parsed)
-            return
-        if path == "/api/runpod/pod":
-            api_runpod.handle_get_pod(self, parsed)
-            return
-        if path == "/api/queue" or path == "/api/queue/items":
-            api_queue.handle_get_queue(self, parsed)
-            return
-        if path == "/api/pathe/summary":
-            import api_pathe
 
-            api_pathe.handle_get_summary(self, parsed)
-            return
-        if path == "/api/pathe/queue":
-            import api_pathe
-
-            api_pathe.handle_get_queue(self, parsed)
-            return
-        if path == "/api/train/summary":
-            import api_train
-
-            api_train.handle_get_summary(self, parsed)
-            return
-        if path == "/api/train/clips":
-            import api_train
-
-            api_train.handle_get_clips(self, parsed)
-            return
-        if path == "/api/train/youtube":
-            import api_train
-
-            api_train.handle_get_youtube(self, parsed)
-            return
-        if path == "/api/clip_ft/frames":
-            import api_probe_frames
-
-            api_probe_frames.handle_get_frames(self, parsed)
-            return
-        if path == "/api/clip_ft/summary":
-            import api_probe_frames
-
-            api_probe_frames.handle_get_summary(self)
-            return
-        if path == "/api/errors":
-            api_jobs.handle_get_errors(self, parsed)
-            return
-        if path == "/api/jobs":
-            api_jobs.handle_get_jobs(self, parsed)
-            return
-        if path.startswith("/api/jobs/"):
-            jid = path.split("/api/jobs/", 1)[1].strip("/")
-            api_jobs.handle_get_job(self, jid)
-            return
-        if path == "/api/candidates":
-            api_review.handle_get_candidates(self, parsed)
-            return
-        if path == "/api/stills/status":
-            api_review.handle_get_stills_status(self)
-            return
-        if path == "/api/review/label_stats":
-            api_review.handle_get_label_stats(self)
-            return
-        if path == "/api/crops":
-            import api_crops
-
-            api_crops.handle_get_crops(self, parsed)
-            return
-        if path == "/api/mark":
-            json_response(
-                self,
-                200,
-                {
-                    "ok": True,
-                    "hint": "POST {url, mark} — Pathé asset URL + second mark; POST /api/mark/combine {url, times[]}",
-                },
-            )
-            return
-        if path == "/api/mark/combine":
-            json_response(
-                self,
-                200,
-                {
-                    "ok": True,
-                    "hint": "POST {url, times[], mark?} — stitch selected frames side by side at full res",
-                },
-            )
-            return
-        if path == "/api/clip/drive":
-            import api_clip
-
-            api_clip.handle_get_drive_status(self)
-            return
-        if path == "/api/clip/drive/auth":
-            json_response(
-                self,
-                200,
-                {"ok": True, "hint": "POST /api/clip/drive/auth — open browser to sign in with Google"},
-            )
-            return
-        if path in ("/api/clip", "/api/clip/load", "/api/clip/cut", "/api/clip/upload"):
-            json_response(
-                self,
-                200,
-                {
-                    "ok": True,
-                    "hint": "POST /api/clip/load {url}; /api/clip/cut {url,start,end}; /api/clip/upload {url,start,end}",
-                },
-            )
+        if path.startswith("/assets/"):
+            name = Path(path.split("/assets/", 1)[1]).name
+            self._file(WEB_DIR / "assets" / name)
             return
 
         if path.startswith("/media/sheet/"):
@@ -225,13 +215,12 @@ class Handler(BaseHTTPRequestHandler):
         if path.startswith("/media/video/"):
             vid = path.split("/media/video/", 1)[1]
             vid = re.sub(r"[^\w.\-\[\] (),]", "", vid)
-            f = find_video_file(vid)
+            f = find_video_file(VIDEOS_DIR, vid)
             if not f:
                 self._json(404, {"error": "video not found", "video_id": vid})
                 return
             ctype = mimetypes.guess_type(str(f))[0] or "video/mp4"
-            data = f.read_bytes()
-            self._bytes(200, data, ctype)
+            self._file(f, ctype)
             return
 
         if path.startswith("/media/trim/"):
@@ -264,36 +253,20 @@ class Handler(BaseHTTPRequestHandler):
             self._file(f, ctype)
             return
 
-        if path in ("/", "/index.html"):
-            self._file(WEB_DIR / "index.html", "text/html; charset=utf-8")
+        if path.startswith("/api/jobs/"):
+            jid = path.split("/api/jobs/", 1)[1].strip("/")
+            api_jobs = load_route_module("api_jobs")
+            api_jobs.handle_get_job(self, jid)
             return
-        if path == "/review" or path == "/review.html":
-            self._file(WEB_DIR / "review.html", "text/html; charset=utf-8")
+
+        hint = GET_HINTS.get(path)
+        if hint:
+            self._json(200, {"ok": True, "hint": hint})
             return
-        if path == "/crops" or path == "/crops.html":
-            self._file(WEB_DIR / "crops.html", "text/html; charset=utf-8")
-            return
-        if path == "/mark" or path == "/mark.html":
-            self._file(WEB_DIR / "mark.html", "text/html; charset=utf-8")
-            return
-        if path == "/clip" or path == "/clip.html":
-            self._file(WEB_DIR / "clip.html", "text/html; charset=utf-8")
-            return
-        if path == "/pathe" or path == "/pathe.html":
-            self._file(WEB_DIR / "pathe.html", "text/html; charset=utf-8")
-            return
-        if path == "/train" or path == "/train.html":
-            self._file(WEB_DIR / "train.html", "text/html; charset=utf-8")
-            return
-        if path == "/probe" or path == "/probe.html":
-            self._file(WEB_DIR / "probe.html", "text/html; charset=utf-8")
-            return
-        if path == "/health" or path == "/health.html":
-            self._file(WEB_DIR / "health.html", "text/html; charset=utf-8")
-            return
-        if path.startswith("/assets/"):
-            name = Path(path.split("/assets/", 1)[1]).name
-            self._file(WEB_DIR / "assets" / name)
+
+        spec = GET_ROUTES.get(path)
+        if spec:
+            call_route(resolve_route(spec), self, parsed)
             return
 
         self._json(404, {"error": "not found"})
@@ -305,229 +278,12 @@ class Handler(BaseHTTPRequestHandler):
         if body is None:
             return
 
-        if path in ("/api/youtube/cookies", "/api/youtube/cookies/har"):
-            from yt_cookies import export_youtube_cookies, import_cookies_from_har
-
-            payload = body if isinstance(body, dict) else {}
-            har = payload.get("har") or payload.get("har_text") or payload.get("har_json")
-            # Allow posting the HAR document itself as the JSON body.
-            if har is None and path.endswith("/har") and isinstance(payload.get("log"), dict):
-                har = payload
-            if har is not None or path.endswith("/har"):
-                if har is None:
-                    self._json(
-                        400,
-                        {"ok": False, "error": "missing har field (upload via the UI or POST {\"har\": ...})"},
-                    )
-                    return
-                result = import_cookies_from_har(har)
-                self._json(200 if result.get("ok") else 400, {"ok": bool(result.get("ok")), **result})
-                return
-            force = bool(payload.get("force", True))
-            result = export_youtube_cookies(force=force)
-            self._json(200 if result.get("ok") else 400, {"ok": bool(result.get("ok")), **result})
-            return
-
-        if path == "/api/settings":
-            from settings_store import set_settings, settings_public_view
-
-            try:
-                values = set_settings(body if isinstance(body, dict) else {})
-            except ValueError as e:
-                self._json(400, {"ok": False, "error": str(e)})
-                return
-            load_env()
-            self._json(
-                200,
-                {
-                    "ok": True,
-                    **settings_public_view(values),
-                    "scan": {
-                        "backend": effective_scan_backend(),
-                        "requested": app_config.SCAN_BACKEND,
-                        "runpod_configured": runpod_configured(),
-                        "image_set": bool(app_config.RUNPOD_DOCKER_IMAGE),
-                        "pod_id": (app_config.RUNPOD_POD_ID or "")[:12],
-                        "gpu_type": app_config.RUNPOD_GPU_TYPE,
-                        "max_inflight": app_config.RUNPOD_MAX_INFLIGHT,
-                        "stop_when_done": app_config.RUNPOD_STOP_WHEN_DONE,
-                    },
-                },
-            )
-            return
-
-        if path == "/api/runpod/build":
-            api_runpod.handle_post_build(self, body)
-            return
-
-        if path == "/api/runpod/go":
-            api_runpod.handle_post_go(self, body)
-            return
-
-        if path == "/api/runpod/pod/start":
-            api_runpod.handle_post_pod_start(self, body)
-            return
-
-        if path == "/api/runpod/pod/stop":
-            api_runpod.handle_post_pod_stop(self, body)
-            return
-
-        if path == "/api/runpod/pod/reload":
-            api_runpod.handle_post_pod_reload(self, body)
-            return
-        if path == "/api/runpod/pool/sync":
-            api_runpod.handle_post_pool_sync(self, body)
-            return
-
-        if path == "/api/discover":
-            api_queue.handle_post_discover(self, body)
-            return
-
-        if path == "/api/pathe/discover":
-            import api_pathe
-
-            api_pathe.handle_post_discover(self, body)
-            return
-
-        if path == "/api/pathe/scrape":
-            import api_pathe
-
-            api_pathe.handle_post_scrape(self, body)
-            return
-
-        if path == "/api/pathe/scrape/stop":
-            import api_pathe
-
-            api_pathe.handle_post_scrape_stop(
-                self, body if isinstance(body, dict) else {}
-            )
-            return
-
-        if path == "/api/train/seed":
-            import api_train
-
-            api_train.handle_post_seed(self, body if isinstance(body, dict) else {})
-            return
-
-        if path == "/api/train/youtube":
-            import api_train
-
-            api_train.handle_post_youtube(self, body if isinstance(body, dict) else {})
-            return
-
-        if path == "/api/train/clear":
-            import api_train
-
-            api_train.handle_post_clear(self, body if isinstance(body, dict) else {})
-            return
-
-        if path == "/api/train/label":
-            import api_train
-
-            api_train.handle_post_label(self, body if isinstance(body, dict) else {})
-            return
-
-        if path == "/api/train/thumbs":
-            import api_train
-
-            api_train.handle_post_thumbs(self, body if isinstance(body, dict) else {})
-            return
-
-        if path == "/api/train/scan":
-            import api_train
-
-            api_train.handle_post_scan(self, body if isinstance(body, dict) else {})
-            return
-
-        if path == "/api/train/clip":
-            import api_train
-
-            api_train.handle_post_clip(self, body if isinstance(body, dict) else {})
-            return
-        if path == "/api/clip_ft/exclude":
-            import api_probe_frames
-
-            api_probe_frames.handle_post_exclude(
-                self, body if isinstance(body, dict) else {}
-            )
-            return
-        if path == "/api/console/refresh":
-            try:
-                from console_dash import draw, is_enabled, refresh_from_jobs
-
-                if not is_enabled():
-                    json_response(self, 200, {"ok": False, "error": "console_disabled"})
-                    return
-                synced = refresh_from_jobs()
-                draw(force=True)
-                json_response(self, 200, {"ok": True, "synced": synced})
-            except Exception as e:
-                json_response(self, 500, {"ok": False, "error": str(e)[:200]})
-            return
-
-        if path == "/api/pathe/queue/clear":
-            import api_pathe
-
-            api_pathe.handle_post_queue_clear(self, body)
-            return
-
-        if path == "/api/queue/clear":
-            api_queue.handle_post_queue_clear(self, body)
-            return
-
-        if path == "/api/scrape":
-            api_queue.handle_post_scrape(self, body)
-            return
-
-        if path == "/api/queue/delete":
-            api_queue.handle_post_queue_delete(self, body)
-            return
-
-        if path == "/api/queue/priority":
-            api_queue.handle_post_queue_priority(self, body)
-            return
-
-        if path == "/api/crops":
-            import api_crops
-
-            api_crops.handle_post_crop(self, body if isinstance(body, dict) else {})
-            return
-        if path == "/api/mark":
-            import api_mark
-
-            api_mark.handle_post_mark(self, body if isinstance(body, dict) else {})
-            return
-        if path == "/api/mark/combine":
-            import api_mark
-
-            api_mark.handle_post_mark_combine(self, body if isinstance(body, dict) else {})
-            return
-        if path == "/api/clip/load":
-            import api_clip
-
-            api_clip.handle_post_clip_load(self, body if isinstance(body, dict) else {})
-            return
-        if path == "/api/clip/cut":
-            import api_clip
-
-            api_clip.handle_post_clip_cut(self, body if isinstance(body, dict) else {})
-            return
-        if path == "/api/clip/upload":
-            import api_clip
-
-            api_clip.handle_post_clip_upload(self, body if isinstance(body, dict) else {})
-            return
-        if path == "/api/clip/drive/auth":
-            import api_clip
-
-            api_clip.handle_post_drive_auth(self)
-            return
-        if path == "/api/review":
-            api_review.handle_post_review(self, body)
-            return
-        if path == "/api/stills/backfill":
-            api_review.handle_post_stills_backfill(
-                self, body if isinstance(body, dict) else {}
+        spec = POST_ROUTES.get(path)
+        if spec:
+            call_route(
+                resolve_route(spec),
+                self,
+                body if isinstance(body, dict) else {},
             )
             return
 

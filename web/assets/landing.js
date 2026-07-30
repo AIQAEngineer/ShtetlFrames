@@ -1,5 +1,4 @@
-let pollTimer = null;
-let searchTimer = null;
+/* Scan hub: discover → scrape → queue, plus the Ops (health) tab. */
 let settingsLoaded = false;
 let buildPollTimer = null;
 let queueState = {
@@ -10,8 +9,11 @@ let queueState = {
   total: 0,
 };
 
+const landingPoller = new Poller(loadLanding, 2000);
+const healthPoller = new Poller(loadHealth, 3000);
+
 async function loadLanding() {
-  const data = await fetch("/api/summary").then((r) => r.json());
+  const data = await apiGet("/api/summary");
   applyDiscoverDefaults(data);
   renderStats(data);
   renderJobs(data);
@@ -22,7 +24,7 @@ async function loadLanding() {
 
 function applyDiscoverDefaults(data) {
   const d = data.discover_defaults || {};
-  const maxEl = document.getElementById("discoverMax");
+  const maxEl = $("discoverMax");
   if (maxEl) {
     maxEl.min = "1";
     maxEl.max = String(d.hard_cap ?? 1_000_000);
@@ -32,14 +34,14 @@ function applyDiscoverDefaults(data) {
       maxEl.dataset.ready = "1";
     }
   }
-  const scrapeMax = document.getElementById("maxN");
+  const scrapeMax = $("maxN");
   if (scrapeMax) {
     scrapeMax.min = "1";
     scrapeMax.max = String(d.hard_cap ?? 1_000_000);
     scrapeMax.step = "1";
   }
-  if (d.page_size && !document.getElementById("queuePageSize")?.dataset.ready) {
-    const ps = document.getElementById("queuePageSize");
+  if (d.page_size && !$("queuePageSize")?.dataset.ready) {
+    const ps = $("queuePageSize");
     if (ps) {
       ps.value = String(d.page_size);
       ps.dataset.ready = "1";
@@ -58,7 +60,7 @@ function renderStats(data) {
   const hitSegs = Number(data.n_candidates ?? 0);
   const scrapeHits = Number(scrape.hits ?? 0);
   const scrapeTotal = Number(scrape.total ?? q.n_queue ?? 0);
-  const stats = document.getElementById("stats");
+  const stats = $("stats");
   if (stats) {
     const scannedLabel =
       scrape.status === "running" && scrapeTotal > 0
@@ -75,7 +77,7 @@ function renderStats(data) {
       <div class="stat"><strong>${data.n_accepted ?? 0}</strong><span>Accepted</span></div>
     `;
   }
-  const queueStats = document.getElementById("queueStats");
+  const queueStats = $("queueStats");
   if (queueStats) {
     const doneAll = Number(q.n_done ?? 0);
     const scrapeRunning =
@@ -94,7 +96,7 @@ function renderStats(data) {
       <div class="stat"><strong>${q.n_error ?? 0}</strong><span>Errors</span></div>
     `;
   }
-  const hint = document.getElementById("scanBackendHint");
+  const hint = $("scanBackendHint");
   if (hint) {
     const s = data.scan || {};
     if (s.backend === "runpod") {
@@ -106,7 +108,7 @@ function renderStats(data) {
       hint.textContent = "Scan backend: RunPod — paste API key in Settings.";
     }
   }
-  const workersEl = document.getElementById("workers");
+  const workersEl = $("workers");
   if (workersEl && data.scan) {
     const maxW = data.scan.backend === "runpod" ? Number(data.scan.max_inflight) || 8 : 8;
     workersEl.max = String(maxW);
@@ -120,9 +122,9 @@ function renderStats(data) {
 function renderJobs(data) {
   const d = data.discover || {};
   const s = data.scrape || {};
-  const dProg = document.getElementById("discoverProgress");
-  const dBar = document.getElementById("discoverBar");
-  const dMsg = document.getElementById("discoverMsg");
+  const dProg = $("discoverProgress");
+  const dBar = $("discoverBar");
+  const dMsg = $("discoverMsg");
   const discovering = d.status === "running";
   if (dProg) {
     dProg.hidden = !(discovering || d.status === "done" || d.status === "error");
@@ -130,12 +132,12 @@ function renderJobs(data) {
     if (dMsg) dMsg.textContent = d.message || d.status || "";
     dProg.className = `job-status ${d.status || "idle"}`;
   }
-  const discoverBtn = document.getElementById("discoverBtn");
+  const discoverBtn = $("discoverBtn");
   if (discoverBtn) discoverBtn.disabled = discovering || s.status === "running";
 
-  const sProg = document.getElementById("scrapeProgress");
-  const sBar = document.getElementById("scrapeBar");
-  const sMsg = document.getElementById("scrapeMsg");
+  const sProg = $("scrapeProgress");
+  const sBar = $("scrapeBar");
+  const sMsg = $("scrapeMsg");
   const scraping = s.status === "running";
   if (sProg) {
     sProg.hidden = !(scraping || s.status === "done" || s.status === "error");
@@ -146,12 +148,12 @@ function renderJobs(data) {
     sProg.className = `job-status ${s.status || "idle"}`;
   }
 
-  if (discovering || scraping) startPolling(scraping ? 1000 : 2000);
-  else stopPolling();
+  if (discovering || scraping) landingPoller.start(scraping ? 1000 : 2000);
+  else landingPoller.stop();
 }
 
 function updateScrapeEnabled(data) {
-  const btn = document.getElementById("scrapeBtn");
+  const btn = $("scrapeBtn");
   if (!btn) return;
   const pending = (data.queue && data.queue.n_pending) || 0;
   const errors = (data.queue && data.queue.n_error) || 0;
@@ -188,12 +190,12 @@ function queueQuery() {
 }
 
 async function loadQueuePage() {
-  const el = document.getElementById("queueTableBody");
-  const meta = document.getElementById("queuePageMeta");
+  const el = $("queueTableBody");
+  const meta = $("queuePageMeta");
   if (!el) return;
   let data;
   try {
-    data = await fetch(`/api/queue?${queueQuery()}`).then((r) => r.json());
+    data = await apiGet(`/api/queue?${queueQuery()}`);
   } catch {
     el.innerHTML = `<tr><td colspan="6" class="empty-cell">Could not load queue</td></tr>`;
     return;
@@ -212,7 +214,7 @@ async function loadQueuePage() {
         (r) => `
       <tr>
         <td class="col-id">${r.id}</td>
-        <td><span class="status-pill status-${escapeAttr(r.status || "pending")}">${escapeHtml(r.status || "—")}</span></td>
+        <td>${statusChip(r.status)}</td>
         <td class="col-title">
           <a href="${escapeAttr(r.url)}" target="_blank" rel="noopener">${escapeHtml(r.title || r.url)}</a>
           ${r.detail ? `<div class="row-detail">${escapeHtml(String(r.detail).slice(0, 220))}</div>` : ""}
@@ -230,67 +232,51 @@ async function loadQueuePage() {
       btn.addEventListener("click", () => deleteSource(btn.dataset.url));
     });
   }
-  const start = queueState.total ? queueState.offset + 1 : 0;
-  const end = Math.min(queueState.offset + queueState.limit, queueState.total);
-  if (meta) {
-    meta.textContent = queueState.total
-      ? `Showing ${start.toLocaleString()}–${end.toLocaleString()} of ${queueState.total.toLocaleString()}`
-      : "0 discovered";
-  }
-  const prev = document.getElementById("queuePrev");
-  const next = document.getElementById("queueNext");
-  if (prev) prev.disabled = queueState.offset <= 0;
-  if (next) next.disabled = queueState.offset + queueState.limit >= queueState.total;
+  const pg = pagerText(queueState.offset, queueState.limit, queueState.total);
+  if (meta) meta.textContent = pg.text;
+  const prev = $("queuePrev");
+  const next = $("queueNext");
+  if (prev) prev.disabled = pg.prevDisabled;
+  if (next) next.disabled = pg.nextDisabled;
 }
 
 async function discover(ev) {
   ev.preventDefault();
-  const url = document.getElementById("sourceUrl").value.trim();
-  let max_items = Number(document.getElementById("discoverMax")?.value);
+  const url = $("sourceUrl").value.trim();
+  let max_items = Number($("discoverMax")?.value);
   if (!Number.isFinite(max_items) || max_items < 1) max_items = 5000;
   max_items = Math.min(1_000_000, Math.floor(max_items));
-  const msg = document.getElementById("sourceFormMsg");
+  const msg = $("sourceFormMsg");
   msg.textContent = "Starting discovery…";
-  let res;
+  let data;
   try {
-    res = await fetch("/api/discover", {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ url, max_items }),
-    });
+    data = await apiPost("/api/discover", { url, max_items });
   } catch (e) {
     msg.textContent = "Cannot reach server — is start_web.bat running?";
     return;
   }
-  let data = {};
-  try {
-    data = await res.json();
-  } catch {
-    msg.textContent = `Server error (${res.status}). Restart start_web.bat.`;
-    return;
-  }
-  if (!res.ok || !data.ok) {
+  if (!data.ok) {
     msg.textContent =
       data.error === "busy"
         ? "Already busy."
         : data.error === "not found"
           ? "API missing — restart start_web.bat to load the latest server."
-          : data.error || data.message || `Discover failed (${res.status})`;
+          : data.error || data.message || `Discover failed (${data.status})`;
     return;
   }
   msg.textContent = `Discovering (max ${max_items.toLocaleString()})…`;
   queueState.offset = 0;
-  startPolling();
+  landingPoller.start(2000);
   await loadLanding();
 }
 
 async function startScrape() {
   const mode = document.querySelector('input[name="maxMode"]:checked')?.value || "all";
-  const max_videos = mode === "all" ? "all" : Number(document.getElementById("maxN").value) || 25;
-  const workers = Number(document.getElementById("workers").value) || 2;
-  const msg = document.getElementById("scrapeMsg");
-  const sProg = document.getElementById("scrapeProgress");
-  const logEl = document.getElementById("runpodSetupLog");
+  const max_videos = mode === "all" ? "all" : Number($("maxN").value) || 25;
+  const workers = Number($("workers").value) || 2;
+  const msg = $("scrapeMsg");
+  const sProg = $("scrapeProgress");
+  const logEl = $("runpodSetupLog");
   if (sProg) sProg.hidden = false;
 
   let settings;
@@ -306,13 +292,9 @@ async function startScrape() {
     logEl.hidden = false;
     logEl.textContent = "Starting…\n";
   }
-  let res;
+  let data;
   try {
-    res = await fetch("/api/runpod/go", {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ settings, max_videos, workers }),
-    });
+    data = await apiPost("/api/runpod/go", { settings, max_videos, workers });
   } catch (e) {
     alert(
       "Could not start scrape (connection dropped). " +
@@ -322,21 +304,20 @@ async function startScrape() {
     );
     return;
   }
-  const data = await res.json().catch(() => ({}));
-  if (!res.ok || !data.ok) {
-    alert(data.error || data.message || `RunPod start failed (${res.status})`);
+  if (!data.ok) {
+    alert(data.error || data.message || `RunPod start failed (${data.status})`);
     return;
   }
   if (buildPollTimer) clearInterval(buildPollTimer);
   buildPollTimer = setInterval(pollRunpodGo, 1500);
   await pollRunpodGo();
-  startPolling();
+  landingPoller.start(2000);
 }
 
 async function pollRunpodGo() {
-  const msg = document.getElementById("scrapeMsg");
-  const logEl = document.getElementById("runpodSetupLog");
-  const data = await fetch("/api/runpod/go").then((r) => r.json()).catch(() => ({}));
+  const msg = $("scrapeMsg");
+  const logEl = $("runpodSetupLog");
+  const data = await apiGet("/api/runpod/go").catch(() => ({}));
   const job = data.job || {};
   if (logEl) {
     logEl.hidden = false;
@@ -355,115 +336,180 @@ async function pollRunpodGo() {
     settingsLoaded = false;
     await loadSettingsForm();
     await loadLanding();
-    startPolling();
+    landingPoller.start(2000);
   }
 }
 
-
 async function deleteSource(url) {
   if (!confirm("Remove from queue?")) return;
-  await fetch("/api/queue/delete", {
-    method: "POST",
-    headers: { "Content-Type": "application/json" },
-    body: JSON.stringify({ url }),
-  });
+  await apiPost("/api/queue/delete", { url });
   await loadLanding();
 }
 
 async function clearQueue() {
   if (!confirm("Clear the entire discover queue?")) return;
-  await fetch("/api/queue/clear", {
-    method: "POST",
-    headers: { "Content-Type": "application/json" },
-    body: "{}",
-  });
+  await apiPost("/api/queue/clear", {});
   queueState.offset = 0;
   await loadLanding();
 }
 
-function startPolling(ms = 2000) {
-  if (pollTimer) {
-    if (pollTimer._ms === ms) return;
-    clearInterval(pollTimer);
-    pollTimer = null;
+/* —— Ops tab (health) —— */
+
+function jobLine(label, j) {
+  if (!j || j.status === "none" || !j.status) {
+    return `<div class="health-job"><span>${escapeHtml(label)}</span><strong class="muted">idle</strong></div>`;
   }
-  pollTimer = setInterval(loadLanding, ms);
-  pollTimer._ms = ms;
+  const bits = [
+    j.status,
+    j.workers != null ? `${j.workers}w` : "",
+    j.completed != null ? `${j.completed}${j.total != null ? "/" + j.total : ""}` : "",
+  ].filter(Boolean);
+  return `<div class="health-job">
+    <span>${escapeHtml(label)}</span>
+    <strong>${escapeHtml(bits.join(" · "))}</strong>
+    <em>${escapeHtml(j.message || "")}</em>
+  </div>`;
 }
 
-function stopPolling() {
-  if (pollTimer) {
-    clearInterval(pollTimer);
-    pollTimer = null;
+function renderHealth(data) {
+  const alertsEl = $("healthAlerts");
+  const alerts = data.alerts || [];
+  if (!alerts.length) {
+    alertsEl.innerHTML = `<div class="health-alert ok">All clear</div>`;
+  } else {
+    alertsEl.innerHTML = alerts
+      .map(
+        (a) =>
+          `<div class="health-alert ${escapeHtml(a.level)}">${escapeHtml(a.message)}</div>`
+      )
+      .join("");
+  }
+
+  const s = data.summary || {};
+  const q = (data.queue && data.queue.pathe) || {};
+  $("healthStats").innerHTML = `
+    <div class="stat-row"><span>Pods</span><strong>${s.busy_count ?? 0} busy · ${s.healthy_count ?? 0}/${s.pod_count ?? 0} healthy</strong></div>
+    <div class="stat-row"><span>Idle healthy</span><strong>${s.idle_healthy_count ?? 0}</strong></div>
+    <div class="stat-row"><span>Verify</span><strong>openai</strong></div>
+    <div class="stat-row"><span>Scrape pool</span><strong>${s.scrape_pool_size ?? 0}</strong></div>
+    <div class="stat-row"><span>Stack</span><strong>${s.pathe_stack ?? "—"} / ${s.pathe_stack_max ?? "—"}</strong></div>
+    <div class="stat-row"><span>MAX_INFLIGHT</span><strong>${s.max_inflight ?? "—"}</strong></div>
+  `;
+
+  const jobs = data.jobs || {};
+  $("healthJobs").innerHTML = [
+    jobLine("Pathé scrape", jobs.pathe_scrape),
+    jobLine("Pathé discover", jobs.pathe_discover),
+    jobLine("YT scrape", jobs.scrape),
+    jobLine("YT discover", jobs.discover),
+  ].join("");
+
+  $("healthQueue").innerHTML = `
+    <div class="stat-row"><span>Pending</span><strong>${q.n_pending ?? 0}</strong></div>
+    <div class="stat-row"><span>Active</span><strong>${q.n_active ?? 0}</strong></div>
+    <div class="stat-row"><span>Done</span><strong>${q.n_done ?? 0}</strong></div>
+    <div class="stat-row"><span>Error</span><strong>${q.n_error ?? 0}</strong></div>
+  `;
+
+  const tbody = $("healthPods");
+  const pods = data.pods || [];
+  if (!pods.length) {
+    tbody.innerHTML = `<tr><td colspan="6" class="empty-cell">No pods found</td></tr>`;
+  } else {
+    tbody.innerHTML = pods
+      .map((p) => {
+        const status = !p.healthy
+          ? `<span class="badge reject">down</span>`
+          : p.busy
+            ? `<span class="badge accept">busy</span>`
+            : `<span class="badge pending">idle</span>`;
+        const inf =
+          p.inflight != null
+            ? `${p.inflight}${p.inflight_limit_pathe != null ? "/" + p.inflight_limit_pathe : ""}`
+            : "—";
+        const err = p.error || p.sync_error || "";
+        return `<tr class="${p.busy ? "row-busy" : p.healthy ? "" : "row-down"}">
+          <td class="col-title">${escapeHtml(p.name || "?")}</td>
+          <td>${status}</td>
+          <td>${escapeHtml(p.phase || "—")}</td>
+          <td>${escapeHtml(inf)}</td>
+          <td class="col-title">${escapeHtml(p.title || p.message || "")}</td>
+          <td class="col-source">${escapeHtml(err)}</td>
+        </tr>`;
+      })
+      .join("");
+  }
+
+  $("healthMeta").textContent = `${fmtTs(data.ts)} · ${data.probe_ms ?? "—"}ms`;
+}
+
+async function loadHealth() {
+  try {
+    const data = await apiGet("/api/health");
+    if (!data.ok && data.error) {
+      $("healthAlerts").innerHTML =
+        `<div class="health-alert red">${escapeHtml(data.error)}</div>`;
+      return;
+    }
+    renderHealth(data);
+  } catch (e) {
+    $("healthAlerts").innerHTML =
+      `<div class="health-alert red">Failed to load health: ${escapeHtml(e.message || e)}</div>`;
   }
 }
 
-function escapeHtml(s) {
-  return String(s)
-    .replaceAll("&", "&amp;")
-    .replaceAll("<", "&lt;")
-    .replaceAll(">", "&gt;")
-    .replaceAll('"', "&quot;");
-}
-
-function escapeAttr(s) {
-  return escapeHtml(s).replaceAll("'", "&#39;");
-}
+/* —— UI wiring —— */
 
 document.querySelectorAll('input[name="maxMode"]').forEach((el) => {
   el.addEventListener("change", () => {
     const nChecked = document.querySelector('input[name="maxMode"][value="n"]').checked;
-    document.getElementById("maxN").disabled = !nChecked;
+    $("maxN").disabled = !nChecked;
   });
 });
 
-document.getElementById("queueSearch")?.addEventListener("input", (ev) => {
-  clearTimeout(searchTimer);
-  searchTimer = setTimeout(() => {
+$("queueSearch")?.addEventListener(
+  "input",
+  debounce((ev) => {
     queueState.q = ev.target.value.trim();
     queueState.offset = 0;
     loadQueuePage();
-  }, 250);
-});
+  }, 250)
+);
 
-document.getElementById("queueStatus")?.addEventListener("change", (ev) => {
+$("queueStatus")?.addEventListener("change", (ev) => {
   queueState.status = ev.target.value;
   queueState.offset = 0;
   loadQueuePage();
 });
 
-document.getElementById("queuePageSize")?.addEventListener("change", (ev) => {
+$("queuePageSize")?.addEventListener("change", (ev) => {
   queueState.limit = Math.min(500, Math.max(25, Number(ev.target.value) || 100));
   queueState.offset = 0;
   loadQueuePage();
 });
 
-document.getElementById("queuePrev")?.addEventListener("click", () => {
+$("queuePrev")?.addEventListener("click", () => {
   queueState.offset = Math.max(0, queueState.offset - queueState.limit);
   loadQueuePage();
 });
 
-document.getElementById("queueNext")?.addEventListener("click", () => {
+$("queueNext")?.addEventListener("click", () => {
   if (queueState.offset + queueState.limit < queueState.total) {
     queueState.offset += queueState.limit;
     loadQueuePage();
   }
 });
 
-document.getElementById("discoverForm").addEventListener("submit", discover);
-document.getElementById("scrapeBtn").addEventListener("click", startScrape);
-document.getElementById("clearQueueBtn").addEventListener("click", clearQueue);
-document.getElementById("settingsForm")?.addEventListener("submit", saveSettings);
-document.getElementById("cookiesRefreshBtn")?.addEventListener("click", async () => {
-  const msg = document.getElementById("settingsMsg");
+$("discoverForm").addEventListener("submit", discover);
+$("scrapeBtn").addEventListener("click", startScrape);
+$("clearQueueBtn").addEventListener("click", clearQueue);
+$("settingsForm")?.addEventListener("submit", saveSettings);
+$("refreshHealth")?.addEventListener("click", () => loadHealth());
+$("cookiesRefreshBtn")?.addEventListener("click", async () => {
+  const msg = $("settingsMsg");
   if (msg) msg.textContent = "Exporting YouTube cookies from your browser…";
   try {
-    const res = await fetch("/api/youtube/cookies", {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ force: true }),
-    });
-    const data = await res.json();
+    const data = await apiPost("/api/youtube/cookies", { force: true });
     if (msg) {
       msg.textContent = data.ok
         ? `Cookies ready (${data.bytes || 0} bytes). Start scrape to use them on pods.`
@@ -474,10 +520,10 @@ document.getElementById("cookiesRefreshBtn")?.addEventListener("click", async ()
   }
 });
 
-document.getElementById("cookiesHarInput")?.addEventListener("change", async (ev) => {
+$("cookiesHarInput")?.addEventListener("change", async (ev) => {
   const input = ev.target;
   const file = input?.files?.[0];
-  const msg = document.getElementById("settingsMsg");
+  const msg = $("settingsMsg");
   if (!file) return;
   if (msg) msg.textContent = `Reading HAR (${file.name})…`;
   try {
@@ -494,12 +540,7 @@ document.getElementById("cookiesHarInput")?.addEventListener("change", async (ev
     }
     if (msg) msg.textContent = "Importing YouTube cookies from HAR…";
     const body = har && typeof har === "object" && har.log ? har : { har };
-    const res = await fetch("/api/youtube/cookies/har", {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify(body),
-    });
-    const data = await res.json();
+    const data = await apiPost("/api/youtube/cookies/har", body);
     if (msg) {
       msg.textContent = data.ok
         ? `${data.message || "HAR cookies imported"}. Start scrape to use them on pods.`
@@ -511,11 +552,22 @@ document.getElementById("cookiesHarInput")?.addEventListener("change", async (ev
     input.value = "";
   }
 });
-document.getElementById("podStopBtn")?.addEventListener("click", stopGpuPod);
+$("podStopBtn")?.addEventListener("click", stopGpuPod);
+
+renderNav("scan");
+initTabs("scan", (tab) => {
+  if (tab === "ops") {
+    document.querySelector(".tabs")?.scrollIntoView();
+    loadHealth();
+    healthPoller.start();
+  } else {
+    healthPoller.stop();
+  }
+});
 loadLanding();
 
 async function collectSettingsPayload() {
-  const form = document.getElementById("settingsForm");
+  const form = $("settingsForm");
   const payload = {};
   const clearSecrets = [];
   form.querySelectorAll("[name]").forEach((el) => {
@@ -540,29 +592,19 @@ async function collectSettingsPayload() {
 
 async function saveSettingsQuiet() {
   const payload = await collectSettingsPayload();
-  const res = await fetch("/api/settings", {
-    method: "POST",
-    headers: { "Content-Type": "application/json" },
-    body: JSON.stringify(payload),
-  });
-  const data = await res.json().catch(() => ({}));
-  if (!res.ok || !data.ok) throw new Error(data.error || `Save failed (${res.status})`);
+  const data = await apiPost("/api/settings", payload);
+  if (!data.ok) throw new Error(data.error || `Save failed (${data.status})`);
   settingsLoaded = false;
   await loadSettingsForm();
   return data;
 }
 
 async function stopGpuPod() {
-  const msg = document.getElementById("settingsMsg");
+  const msg = $("settingsMsg");
   if (msg) msg.textContent = "Stopping GPU Pod…";
-  const res = await fetch("/api/runpod/pod/stop", {
-    method: "POST",
-    headers: { "Content-Type": "application/json" },
-    body: "{}",
-  });
-  const data = await res.json().catch(() => ({}));
-  if (!res.ok || !data.ok) {
-    if (msg) msg.textContent = data.error || `Stop failed (${res.status})`;
+  const data = await apiPost("/api/runpod/pod/stop", {});
+  if (!data.ok) {
+    if (msg) msg.textContent = data.error || `Stop failed (${data.status})`;
     return;
   }
   if (msg) msg.textContent = "GPU Pod stopped.";
@@ -570,7 +612,7 @@ async function stopGpuPod() {
 
 async function saveSettings(ev) {
   ev.preventDefault();
-  const msg = document.getElementById("settingsMsg");
+  const msg = $("settingsMsg");
   if (msg) msg.textContent = "Saving…";
   try {
     await saveSettingsQuiet();
@@ -582,11 +624,11 @@ async function saveSettings(ev) {
 }
 
 async function loadSettingsForm() {
-  const host = document.getElementById("settingsFields");
+  const host = $("settingsFields");
   if (!host) return;
   let data;
   try {
-    data = await fetch("/api/settings").then((r) => r.json());
+    data = await apiGet("/api/settings");
   } catch {
     host.innerHTML = `<p class="job-hint">Could not load settings</p>`;
     return;
@@ -640,7 +682,7 @@ async function loadSettingsForm() {
     .join("");
   host.querySelectorAll(".clear-secret").forEach((btn) => {
     btn.addEventListener("click", () => {
-      const inp = document.getElementById(`setting_${btn.dataset.key}`);
+      const inp = $(`setting_${btn.dataset.key}`);
       if (inp) {
         inp.value = "";
         inp.dataset.clear = "1";
@@ -651,7 +693,7 @@ async function loadSettingsForm() {
   const applyConditionalVisibility = () => {
     host.querySelectorAll(".settings-conditional").forEach((el) => {
       const key = (el.dataset.visibleKey || "PROXY_PROVIDER").trim() || "PROXY_PROVIDER";
-      const sel = document.getElementById(`setting_${key}`);
+      const sel = $(`setting_${key}`);
       const cur = (sel?.value || "").trim().toLowerCase();
       const allowed = (el.dataset.visibleFor || "")
         .split(",")

@@ -9,6 +9,7 @@ from urllib.parse import urlparse
 
 from config import BULK_QUEUE_CSV, OUTPUT_DIR
 from crawl import DEFAULT_MAX, crawl_url, is_crawlable
+from media_files import VIDEO_EXTS
 
 QUEUE_FIELDS = [
     "source",
@@ -74,10 +75,7 @@ def guess_downloadable(url: str) -> str:
     if "commons.wikimedia.org/wiki/file:" in u:
         return "yes"
     path = urlparse(url).path.lower()
-    if any(
-        path.endswith(ext)
-        for ext in (".mp4", ".webm", ".ogv", ".mkv", ".avi", ".mov", ".m3u8")
-    ):
+    if any(path.endswith(ext) for ext in (VIDEO_EXTS | {".m3u8"})):
         return "yes"
     if "youtube.com/results" in u or "/search" in u:
         return "search"

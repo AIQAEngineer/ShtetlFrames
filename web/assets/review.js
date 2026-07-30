@@ -1,3 +1,4 @@
+/* Review hub: keep/pass workspace plus the Crops download tab. */
 let allCandidates = [];
 let sources = [];
 let activeVideoId = null;
@@ -8,12 +9,7 @@ let cropPollTimer = null;
 let sortKey = "scored";
 let sortDir = "desc";
 
-function fmtTime(sec) {
-  const s = Math.max(0, Math.floor(Number(sec) || 0));
-  const m = Math.floor(s / 60);
-  const r = s % 60;
-  return `${m}:${String(r).padStart(2, "0")}`;
-}
+const cropsPoller = new Poller(loadCrops, 4000);
 
 /** Format candidate.created_at — set when scrape/scoring inserts the hit. */
 function fmtScoredAt(sec) {
@@ -43,18 +39,6 @@ function parseReviewSort(raw) {
 function hitCreatedAt(h) {
   const n = Number(h?.created_at);
   return Number.isFinite(n) ? n : 0;
-}
-
-function escapeHtml(s) {
-  return String(s)
-    .replaceAll("&", "&amp;")
-    .replaceAll("<", "&lt;")
-    .replaceAll(">", "&gt;")
-    .replaceAll('"', "&quot;");
-}
-
-function escapeAttr(s) {
-  return escapeHtml(s).replaceAll("'", "&#39;");
 }
 
 /** Turn slug ids into readable titles. */
@@ -233,15 +217,14 @@ async function fetchCandidates() {
   else if (status === "pending") qs = "/api/candidates?limit=2000&status=pending";
   else if (status === "accept") qs = "/api/candidates?limit=2000&status=accept";
   else if (status === "reject") qs = "/api/candidates?limit=2000&status=reject";
-  const res = await fetch(qs);
-  const data = await res.json();
+  const data = await apiGet(qs);
   allCandidates = data.candidates || [];
   sources = groupByVideo(allCandidates);
   renderList();
 }
 
 function renderList() {
-  const list = document.getElementById("list");
+  const list = $("list");
   const visible = filteredSources();
   if (!visible.length) {
     list.innerHTML = `<p class="empty">Nothing here yet — run a scrape, then come back.</p>`;
@@ -288,7 +271,7 @@ function renderList() {
 }
 
 function renderEmptyDetail() {
-  document.getElementById("detail").innerHTML = `
+  $("detail").innerHTML = `
     <div class="review-empty">
       <div class="review-empty-mark">◆</div>
       <h2>Pick a film on the left</h2>
@@ -350,7 +333,7 @@ function renderHit() {
     return;
   }
   const c = src.hits[hitIndex];
-  const detail = document.getElementById("detail");
+  const detail = $("detail");
   // Prefer local /media/sheet; skip expired litter.catbox hosts.
   const cloud = (c.image_url || "").includes("litter.catbox.moe") ? "" : (c.image_url || "");
   const img = c.contact_url || cloud;
@@ -382,12 +365,12 @@ function renderHit() {
         <small>±2s · every 1s · 5 frames · under 400KB</small>
       </span>
       <button class="btn ghost small" id="genCrop" type="button" data-force="1">Regenerate</button>
-      <a class="btn ghost small" href="/crops">Open Crops</a>
+      <a class="btn ghost small" href="/review?tab=crops">Open Crops</a>
     </div>`;
   } else if (cropStatus === "queued") {
     cropBlock = `<div class="crop-action busy">
       <button class="btn ghost" id="genCrop" type="button" disabled>Generating crop…</button>
-      <a class="btn ghost small" href="/crops">Crops</a>
+      <a class="btn ghost small" href="/review?tab=crops">Crops</a>
     </div>`;
   } else if (cropStatus === "error") {
     cropBlock = `<div class="crop-action">
@@ -482,11 +465,11 @@ function renderHit() {
       <button class="btn ghost small" data-act="clear">Undo</button>
     </div>
     <textarea class="notes" id="notes" placeholder="Optional note for yourself…">${escapeHtml(c.notes || "")}</textarea>
-    <p class="hit-hint">Keep / Pass moves to the next moment. Keys: ↑ ↓ ← → or J / K</p>
+    <p class="hit-hint">Keep / Pass moves to the next moment. Keys: ↑ ↓ ← → or J / K · A keep · R pass</p>
   `;
 
-  const prev = document.getElementById("prevHit");
-  const next = document.getElementById("nextHit");
+  const prev = $("prevHit");
+  const next = $("nextHit");
   if (prev)
     prev.addEventListener("click", () => {
       stepImage(-1);
@@ -499,17 +482,13 @@ function renderHit() {
   detail.querySelectorAll("[data-act]").forEach((btn) => {
     btn.addEventListener("click", async () => {
       const decision = btn.dataset.act;
-      const notes = document.getElementById("notes").value;
+      const notes = $("notes").value;
       const stayVideo = activeVideoId;
       const advance =
         decision === "accept" || decision === "reject"
           ? Math.min(hitIndex + 1, src.hits.length - 1)
           : hitIndex;
-      await fetch("/api/review", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ key: c.key, decision, notes }),
-      });
+      await apiPost("/api/review", { key: c.key, decision, notes });
       await fetchCandidates();
       selectSource(stayVideo, advance);
     });
@@ -525,8 +504,7 @@ function renderHit() {
     const stayHit = hitIndex;
     cropPollTimer = setInterval(async () => {
       try {
-        const res = await fetch(`/api/crops?id=${watchId}`);
-        const data = await res.json();
+        const data = await apiGet(`/api/crops?id=${watchId}`);
         const st = (data.crop && data.crop.status) || "";
         if (st === "ready" || st === "error") {
           clearInterval(cropPollTimer);
@@ -540,20 +518,15 @@ function renderHit() {
     }, 2500);
   }
 
-  const genCrop = document.getElementById("genCrop");
+  const genCrop = $("genCrop");
   if (genCrop && !genCrop.disabled) {
     genCrop.addEventListener("click", async () => {
       const force = genCrop.dataset.force === "1";
       genCrop.disabled = true;
       genCrop.textContent = "Queuing…";
       try {
-        const res = await fetch("/api/crops", {
-          method: "POST",
-          headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({ id: Number(c.id || c.key), force }),
-        });
-        const data = await res.json();
-        if (!res.ok || !data.ok) {
+        const data = await apiPost("/api/crops", { id: Number(c.id || c.key), force });
+        if (!data.ok) {
           genCrop.disabled = false;
           genCrop.textContent = force ? "Regenerate" : "Retry crop";
           return;
@@ -573,7 +546,73 @@ function renderHit() {
   }
 }
 
-document.getElementById("statusChips").addEventListener("click", async (e) => {
+/* —— Crops tab —— */
+
+async function loadCrops() {
+  const list = $("cropsList");
+  const summary = $("cropsSummary");
+  if (!list || !summary) return;
+  try {
+    const data = await apiGet("/api/crops");
+    const crops = data.crops || [];
+    const ready = crops.filter((c) => c.status === "ready").length;
+    const queued = crops.filter((c) => c.status === "queued").length;
+    summary.textContent =
+      crops.length === 0
+        ? "No crops yet. Open Review and click Generate crop on a hit."
+        : `${ready} ready to download${queued ? ` · ${queued} generating` : ""}`;
+
+    if (!crops.length) {
+      list.innerHTML = `<div class="sheet placeholder">Nothing queued or ready</div>`;
+      return;
+    }
+
+    list.innerHTML = crops
+      .map((c) => {
+        const name = c.crop_url
+          ? String(c.crop_url).split("/").pop() || `cand_${c.id}_crop.jpg`
+          : `cand_${c.id}_crop.jpg`;
+        const title = c.video_id || `Hit #${c.id}`;
+        const when =
+          c.start_sec != null
+            ? `${fmtTime(c.start_sec)} – ${fmtTime(c.end_sec)}`
+            : "";
+        if (c.status === "ready" && c.crop_url) {
+          return `<article class="crop-card ready">
+            <div class="crop-meta">
+              <h2>${escapeHtml(title)}</h2>
+              <p>#${c.id}${when ? ` · ${escapeHtml(when)}` : ""} · ${fmtBytes(c.bytes)}</p>
+            </div>
+            <a class="btn ok" href="${escapeAttr(c.crop_url)}" download="${escapeAttr(name)}">Download</a>
+          </article>`;
+        }
+        if (c.status === "queued") {
+          return `<article class="crop-card queued">
+            <div class="crop-meta">
+              <h2>${escapeHtml(title)}</h2>
+              <p>#${c.id}${when ? ` · ${escapeHtml(when)}` : ""} · generating…</p>
+            </div>
+            <span class="crop-status">Queued</span>
+          </article>`;
+        }
+        return `<article class="crop-card error">
+          <div class="crop-meta">
+            <h2>${escapeHtml(title)}</h2>
+            <p>#${c.id} · ${escapeHtml(c.error || "failed")}</p>
+          </div>
+          <span class="crop-status">Error</span>
+        </article>`;
+      })
+      .join("");
+  } catch (e) {
+    summary.textContent = "Could not load crops.";
+    list.innerHTML = `<div class="sheet placeholder">${escapeHtml(e.message || e)}</div>`;
+  }
+}
+
+/* —— UI wiring —— */
+
+$("statusChips").addEventListener("click", async (e) => {
   const btn = e.target.closest(".chip");
   if (!btn) return;
   const next = btn.dataset.status || "";
@@ -589,10 +628,9 @@ document.getElementById("statusChips").addEventListener("click", async (e) => {
   }
 });
 
-let searchTimer;
-document.getElementById("search").addEventListener("input", (e) => {
-  clearTimeout(searchTimer);
-  searchTimer = setTimeout(() => {
+$("search").addEventListener(
+  "input",
+  debounce((e) => {
     query = e.target.value.trim();
     renderList();
     const visible = filteredSources();
@@ -600,10 +638,10 @@ document.getElementById("search").addEventListener("input", (e) => {
       if (visible.length) selectSource(visible[0].video_id, 0);
       else renderEmptyDetail();
     }
-  }, 180);
-});
+  }, 180)
+);
 
-document.getElementById("reviewSort")?.addEventListener("change", (e) => {
+$("reviewSort")?.addEventListener("change", (e) => {
   const parsed = parseReviewSort(e.target.value);
   sortKey = parsed.key;
   sortDir = parsed.dir;
@@ -618,19 +656,20 @@ document.getElementById("reviewSort")?.addEventListener("change", (e) => {
   }
 });
 
+$("refreshCrops")?.addEventListener("click", () => loadCrops());
+
 let backfillPoll = null;
 
 function setBackfillStatus(msg) {
-  const el = document.getElementById("backfillStillsStatus");
+  const el = $("backfillStillsStatus");
   if (el) el.textContent = msg || "";
 }
 
 async function refreshBackfillStatus() {
   try {
-    const res = await fetch("/api/stills/status");
-    const data = await res.json();
+    const data = await apiGet("/api/stills/status");
     if (!data.ok) return data;
-    const btn = document.getElementById("backfillStillsBtn");
+    const btn = $("backfillStillsBtn");
     const n = Number(data.missing || 0);
     const running = !!data.running;
     if (btn) {
@@ -651,16 +690,11 @@ async function refreshBackfillStatus() {
 }
 
 async function startBackfillStills() {
-  const btn = document.getElementById("backfillStillsBtn");
+  const btn = $("backfillStillsBtn");
   if (btn) btn.disabled = true;
   setBackfillStatus("Checking missing stills…");
   try {
-    const res = await fetch("/api/stills/backfill", {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ limit: 5000 }),
-    });
-    const data = await res.json();
+    const data = await apiPost("/api/stills/backfill", { limit: 5000 });
     if (!data.ok) {
       setBackfillStatus(data.error || "Backfill failed");
       if (btn) btn.disabled = false;
@@ -707,7 +741,7 @@ async function startBackfillStills() {
   }
 }
 
-document.getElementById("backfillStillsBtn")?.addEventListener("click", () => {
+$("backfillStillsBtn")?.addEventListener("click", () => {
   startBackfillStills();
 });
 
@@ -742,6 +776,16 @@ function detailAct(act) {
   const btn = document.querySelector(`#detail [data-act="${act}"]`);
   if (btn) btn.click();
 }
+
+renderNav("review");
+initTabs("review", (tab) => {
+  if (tab === "crops") {
+    loadCrops();
+    cropsPoller.start();
+  } else {
+    cropsPoller.stop();
+  }
+});
 
 fetchCandidates().then(() => {
   const visible = filteredSources();

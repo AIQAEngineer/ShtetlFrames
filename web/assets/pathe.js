@@ -1,9 +1,10 @@
+/* British Pathé workspace: discover + scrape + queue. */
 (() => {
-  let pathePollTimer = null;
   let patheQueueState = { offset: 0, limit: 100, status: "", q: "", total: 0 };
+  const pathePoller = new Poller(loadPathe, 2000);
 
   async function loadPathe() {
-    const data = await fetch("/api/pathe/summary").then((r) => r.json());
+    const data = await apiGet("/api/pathe/summary");
     renderPatheStats(data);
     renderPatheJobs(data);
     await loadPatheQueue();
@@ -12,7 +13,7 @@
   function renderPatheStats(data) {
     const q = data.queue || {};
     const s = data.scrape || {};
-    const el = document.getElementById("patheStats");
+    const el = $("patheStats");
     if (!el) return;
     const doneAll = Number(q.n_done ?? 0);
     const scrapeRunning =
@@ -38,9 +39,9 @@
     const discovering = d.status === "running";
     const scraping = s.status === "running";
 
-    const dProg = document.getElementById("patheDiscoverProgress");
-    const dBar = document.getElementById("patheDiscoverBar");
-    const dMsg = document.getElementById("patheDiscoverMsg");
+    const dProg = $("patheDiscoverProgress");
+    const dBar = $("patheDiscoverBar");
+    const dMsg = $("patheDiscoverMsg");
     if (dProg) {
       dProg.hidden = !(discovering || d.status === "done" || d.status === "error");
       if (dBar) dBar.style.width = `${Number(d.progress) || 0}%`;
@@ -48,9 +49,9 @@
       dProg.className = `job-status ${d.status || "idle"}`;
     }
 
-    const sProg = document.getElementById("patheScrapeProgress");
-    const sBar = document.getElementById("patheScrapeBar");
-    const sMsg = document.getElementById("patheScrapeMsg");
+    const sProg = $("patheScrapeProgress");
+    const sBar = $("patheScrapeBar");
+    const sMsg = $("patheScrapeMsg");
     if (sProg) {
       sProg.hidden = !(scraping || s.status === "done" || s.status === "error");
       if (sBar) sBar.style.width = `${Number(s.progress) || 0}%`;
@@ -64,8 +65,8 @@
       sProg.className = `job-status ${s.status || "idle"}`;
     }
 
-    const ds = document.getElementById("patheDiscoverStatus");
-    const ss = document.getElementById("patheScrapeStatus");
+    const ds = $("patheDiscoverStatus");
+    const ss = $("patheScrapeStatus");
     if (ds) {
       ds.textContent = discovering
         ? `${d.message || "Discovering…"} (${Math.round(d.progress || 0)}%)`
@@ -78,17 +79,13 @@
     }
 
     for (const id of ["patheDiscoverBtn", "patheDiscoverAllBtn"]) {
-      const btn = document.getElementById(id);
+      const btn = $(id);
       if (btn) btn.disabled = discovering;
     }
-    const scrapeBtn = document.getElementById("patheScrapeBtn");
+    const scrapeBtn = $("patheScrapeBtn");
     if (scrapeBtn) scrapeBtn.disabled = scraping;
 
-    if (discovering || scraping) {
-      if (!pathePollTimer) {
-        pathePollTimer = setInterval(loadPathe, scraping ? 1000 : 2000);
-      }
-    }
+    if (discovering || scraping) pathePoller.start(scraping ? 1000 : 2000);
   }
 
   function assetIdFromUrl(url) {
@@ -97,8 +94,8 @@
   }
 
   async function loadPatheQueue() {
-    const body = document.getElementById("patheQueueBody");
-    const meta = document.getElementById("patheQueueMeta");
+    const body = $("patheQueueBody");
+    const meta = $("patheQueueMeta");
     if (!body) return;
     const params = new URLSearchParams({
       offset: String(patheQueueState.offset),
@@ -108,7 +105,7 @@
     if (patheQueueState.q) params.set("q", patheQueueState.q);
     let data;
     try {
-      data = await fetch("/api/pathe/queue?" + params).then((r) => r.json());
+      data = await apiGet("/api/pathe/queue?" + params);
     } catch {
       body.innerHTML = `<tr><td colspan="5" class="empty-cell">Could not load queue</td></tr>`;
       return;
@@ -124,7 +121,7 @@
           return `
         <tr>
           <td class="col-id">${r.id}</td>
-          <td><span class="status-pill status-${escapeAttr(r.status || "pending")}">${escapeHtml(r.status || "—")}</span></td>
+          <td>${statusChip(r.status)}</td>
           <td class="col-title">
             <a href="${escapeAttr(r.url)}" target="_blank" rel="noopener">${escapeHtml(r.title || "Asset " + aid)}</a>
             ${r.error ? `<div class="row-error">${escapeHtml(String(r.error).slice(0, 180))}</div>` : ""}
@@ -136,88 +133,57 @@
         })
         .join("");
     }
-    const start = patheQueueState.total ? patheQueueState.offset + 1 : 0;
-    const end = Math.min(
-      patheQueueState.offset + patheQueueState.limit,
-      patheQueueState.total
-    );
-    if (meta) {
-      meta.textContent = patheQueueState.total
-        ? `Showing ${start.toLocaleString()}–${end.toLocaleString()} of ${patheQueueState.total.toLocaleString()}`
-        : "0 discovered";
-    }
-    const prev = document.getElementById("pathePrev");
-    const next = document.getElementById("patheNext");
-    if (prev) prev.disabled = patheQueueState.offset <= 0;
-    if (next) {
-      next.disabled =
-        patheQueueState.offset + patheQueueState.limit >= patheQueueState.total;
-    }
-  }
-
-  function escapeHtml(s) {
-    return String(s || "")
-      .replace(/&/g, "&amp;")
-      .replace(/</g, "&lt;")
-      .replace(/>/g, "&gt;");
-  }
-  function escapeAttr(s) {
-    return escapeHtml(s).replace(/"/g, "&quot;");
+    const pg = pagerText(patheQueueState.offset, patheQueueState.limit, patheQueueState.total);
+    if (meta) meta.textContent = pg.text;
+    const prev = $("pathePrev");
+    const next = $("patheNext");
+    if (prev) prev.disabled = pg.prevDisabled;
+    if (next) next.disabled = pg.nextDisabled;
   }
 
   async function postDiscover(body) {
     const payload = {
       // Discover must not start scrape / spin a GPU fleet.
       auto_scrape: false,
-      workers: Number(document.getElementById("patheWorkers")?.value || 8),
+      workers: Number($("patheWorkers")?.value || 8),
       ...body,
     };
-    const res = await fetch("/api/pathe/discover", {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify(payload),
-    });
-    const data = await res.json();
+    const data = await apiPost("/api/pathe/discover", payload);
     if (!data.ok) alert(data.error || "Discover failed");
     patheQueueState.offset = 0;
     await loadPathe();
   }
 
-  document.getElementById("patheDiscoverForm")?.addEventListener("submit", async (e) => {
+  $("patheDiscoverForm")?.addEventListener("submit", async (e) => {
     e.preventDefault();
     await postDiscover({
-      query: document.getElementById("patheQuery")?.value || "",
-      max_items: Number(document.getElementById("patheMax")?.value || 5000),
+      query: $("patheQuery")?.value || "",
+      max_items: Number($("patheMax")?.value || 5000),
     });
   });
 
-  document.getElementById("patheDiscoverAllBtn")?.addEventListener("click", async () => {
+  $("patheDiscoverAllBtn")?.addEventListener("click", async () => {
     await postDiscover({
       all: true,
       query: "",
-      max_items: Number(document.getElementById("patheMax")?.value || 5000),
+      max_items: Number($("patheMax")?.value || 5000),
     });
   });
 
   async function syncPatheClaimOrder() {
-    const order = document.getElementById("patheClaimOrder")?.value || "start";
-    const res = await fetch("/api/settings", {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ QUEUE_CLAIM_ORDER: order }),
-    });
-    const data = await res.json().catch(() => ({}));
-    if (!res.ok || data.ok === false) {
-      throw new Error(data.error || `save failed (${res.status})`);
+    const order = $("patheClaimOrder")?.value || "start";
+    const data = await apiPost("/api/settings", { QUEUE_CLAIM_ORDER: order });
+    if (data.ok === false) {
+      throw new Error(data.error || `save failed (${data.status})`);
     }
     return data;
   }
 
   async function loadPatheClaimOrder() {
-    const sel = document.getElementById("patheClaimOrder");
+    const sel = $("patheClaimOrder");
     if (!sel) return;
     try {
-      const data = await fetch("/api/settings").then((r) => r.json());
+      const data = await apiGet("/api/settings");
       const fields = data?.fields || [];
       const row = fields.find((f) => f.key === "QUEUE_CLAIM_ORDER");
       const v = (row?.value || data?.values?.QUEUE_CLAIM_ORDER || "start")
@@ -230,7 +196,7 @@
   }
 
   function flashPatheSettingsSaved(ok, msg) {
-    const el = document.getElementById("patheSettingsSaved");
+    const el = $("patheSettingsSaved");
     if (!el) return;
     el.hidden = false;
     el.textContent = ok ? msg || "Settings saved." : msg || "Save failed.";
@@ -241,8 +207,8 @@
     }, 2500);
   }
 
-  document.getElementById("patheSaveSettingsBtn")?.addEventListener("click", async () => {
-    const btn = document.getElementById("patheSaveSettingsBtn");
+  $("patheSaveSettingsBtn")?.addEventListener("click", async () => {
+    const btn = $("patheSaveSettingsBtn");
     if (btn) btn.disabled = true;
     try {
       await syncPatheClaimOrder();
@@ -254,68 +220,62 @@
     }
   });
 
-  document.getElementById("patheScrapeBtn")?.addEventListener("click", async () => {
-    const maxRaw = (document.getElementById("patheScrapeMax")?.value || "all").trim();
+  $("patheScrapeBtn")?.addEventListener("click", async () => {
+    const maxRaw = ($("patheScrapeMax")?.value || "all").trim();
     try {
       await syncPatheClaimOrder();
     } catch (_) {
       /* scrape can still start with prior setting */
     }
-    const res = await fetch("/api/pathe/scrape", {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({
-        max_videos: maxRaw,
-        workers: Number(document.getElementById("patheWorkers")?.value || 8),
-      }),
+    const data = await apiPost("/api/pathe/scrape", {
+      max_videos: maxRaw,
+      workers: Number($("patheWorkers")?.value || 8),
     });
-    const data = await res.json();
     if (!data.ok) alert(data.error || data.job?.message || "Scrape failed");
     await loadPathe();
   });
 
-  document.getElementById("patheClearBtn")?.addEventListener("click", async () => {
+  $("patheClearBtn")?.addEventListener("click", async () => {
     if (!confirm("Clear all British Pathé rows from the queue?")) return;
-    await fetch("/api/pathe/queue/clear", {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: "{}",
-    });
+    await apiPost("/api/pathe/queue/clear", {});
     patheQueueState.offset = 0;
     await loadPathe();
   });
 
-  document.getElementById("patheQueueSearch")?.addEventListener("input", (e) => {
-    patheQueueState.q = e.target.value || "";
-    patheQueueState.offset = 0;
-    clearTimeout(window._patheSearchT);
-    window._patheSearchT = setTimeout(loadPatheQueue, 250);
-  });
+  $("patheQueueSearch")?.addEventListener(
+    "input",
+    debounce((e) => {
+      patheQueueState.q = e.target.value || "";
+      patheQueueState.offset = 0;
+      loadPatheQueue();
+    }, 250)
+  );
 
-  document.getElementById("patheQueueStatus")?.addEventListener("change", (e) => {
+  $("patheQueueStatus")?.addEventListener("change", (e) => {
     patheQueueState.status = e.target.value || "";
     patheQueueState.offset = 0;
     loadPatheQueue();
   });
 
-  document.getElementById("pathePageSize")?.addEventListener("change", (e) => {
+  $("pathePageSize")?.addEventListener("change", (e) => {
     patheQueueState.limit = Number(e.target.value) || 100;
     patheQueueState.offset = 0;
     loadPatheQueue();
   });
 
-  document.getElementById("pathePrev")?.addEventListener("click", () => {
+  $("pathePrev")?.addEventListener("click", () => {
     patheQueueState.offset = Math.max(0, patheQueueState.offset - patheQueueState.limit);
     loadPatheQueue();
   });
-  document.getElementById("patheNext")?.addEventListener("click", () => {
+  $("patheNext")?.addEventListener("click", () => {
     patheQueueState.offset += patheQueueState.limit;
     loadPatheQueue();
   });
 
-  if (document.getElementById("patheDiscoverForm") || document.getElementById("patheStats")) {
+  renderNav("pathe");
+  if ($("patheDiscoverForm") || $("patheStats")) {
     loadPatheClaimOrder();
     loadPathe();
-    pathePollTimer = setInterval(loadPathe, 2000);
+    pathePoller.start(2000);
   }
 })();

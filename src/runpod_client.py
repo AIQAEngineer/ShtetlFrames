@@ -2,7 +2,6 @@
 
 from __future__ import annotations
 
-import json
 import random
 import re
 import threading
@@ -1436,30 +1435,9 @@ def _push_handlers_best_effort(urls: list[str]) -> None:
 
 def _agent_log(hypothesis_id: str, location: str, message: str, data: dict[str, Any]) -> None:
     # #region agent log
-    try:
-        payload = {
-            "sessionId": "30525a",
-            "runId": "idle-gpu-pick",
-            "hypothesisId": hypothesis_id,
-            "location": location,
-            "message": message,
-            "data": data,
-            "timestamp": int(time.time() * 1000),
-        }
-        path = Path(__file__).resolve().parents[1] / "debug-30525a.log"
-        with path.open("a", encoding="utf-8") as fh:
-            fh.write(json.dumps(payload, ensure_ascii=False) + "\n")
-        try:
-            requests.post(
-                "http://127.0.0.1:7406/ingest/637a1fe8-1535-4387-b632-3fb6093e59a2",
-                headers={"Content-Type": "application/json", "X-Debug-Session-Id": "30525a"},
-                json=payload,
-                timeout=1.5,
-            )
-        except Exception:
-            pass
-    except Exception:
-        pass
+    from logutil import agent_dbg
+
+    agent_dbg(hypothesis_id, location, message, data, run_id="idle-gpu-pick", post=True)
     # #endregion
 
 

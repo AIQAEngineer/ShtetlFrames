@@ -17,29 +17,10 @@ import config as app_config
 from config import load_env
 
 # #region agent log
-_DBG_LOG = Path(__file__).resolve().parents[1] / "debug-30525a.log"
-_DBG_LOCK = threading.Lock()
-
-
 def _dbg(hypothesis_id: str, location: str, message: str, **data: object) -> None:
-    try:
-        payload = {
-            "sessionId": "30525a",
-            "runId": "scrape-stuck",
-            "hypothesisId": hypothesis_id,
-            "location": location,
-            "message": message,
-            "data": data,
-            "timestamp": int(time.time() * 1000),
-            "tid": threading.get_ident(),
-        }
-        with _DBG_LOCK:
-            with _DBG_LOG.open("a", encoding="utf-8") as fh:
-                fh.write(json.dumps(payload, default=str) + "\n")
-    except Exception:
-        pass
+    from logutil import agent_dbg
 
-
+    agent_dbg(hypothesis_id, location, message, data, run_id="scrape-stuck", tid=True)
 # #endregion
 
 POD_NAME = "shtetlframes-scan"

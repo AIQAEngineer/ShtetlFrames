@@ -2,16 +2,73 @@
 
 from __future__ import annotations
 
+import json
 import sys
+import threading
+import time
 import traceback
 from datetime import datetime, timezone
-from pathlib import Path
+from typing import Any
 
-from config import OUTPUT_DIR
+from config import OUTPUT_DIR, ROOT
 from db import db, init_db
 
 LOG_DIR = OUTPUT_DIR / "logs"
 LOG_FILE = LOG_DIR / "shtetlframes.log"
+
+# Shared agent-debug sink (replaces the per-module _dbg/_agent_log/_train_dbg twins).
+DEBUG_LOG = ROOT / "debug-30525a.log"
+_DEBUG_SESSION = "30525a"
+_DEBUG_INGEST_URL = "http://127.0.0.1:7406/ingest/637a1fe8-1535-4387-b632-3fb6093e59a2"
+_debug_lock = threading.Lock()
+
+
+def agent_dbg(
+    hypothesis_id: str,
+    location: str,
+    message: str,
+    data: dict[str, Any] | None = None,
+    *,
+    run_id: str | None = None,
+    tid: bool = False,
+    post: bool = False,
+) -> None:
+    """Append one structured agent-debug payload to DEBUG_LOG (best-effort, never raises)."""
+    try:
+        payload: dict[str, Any] = {
+            "sessionId": _DEBUG_SESSION,
+            "hypothesisId": hypothesis_id,
+            "location": location,
+            "message": message,
+            "data": data or {},
+            "timestamp": int(time.time() * 1000),
+        }
+        if run_id:
+            payload["runId"] = run_id
+        if tid:
+            payload["tid"] = threading.get_ident()
+        line = json.dumps(payload, default=str, ensure_ascii=False)
+        with _debug_lock:
+            with DEBUG_LOG.open("a", encoding="utf-8") as fh:
+                fh.write(line + "\n")
+        if post:
+            try:
+                import urllib.request
+
+                req = urllib.request.Request(
+                    _DEBUG_INGEST_URL,
+                    data=line.encode("utf-8"),
+                    headers={
+                        "Content-Type": "application/json",
+                        "X-Debug-Session-Id": _DEBUG_SESSION,
+                    },
+                    method="POST",
+                )
+                urllib.request.urlopen(req, timeout=1.5)
+            except Exception:
+                pass
+    except Exception:
+        pass
 
 
 def _ensure() -> None:
@@ -118,32 +175,19 @@ def log_event(
     if exc is not None and not detail:
         detail = _format_exc(exc)
         # #region agent log
-        try:
-            import json
-            import time
-            from pathlib import Path
-
-            payload = {
-                "sessionId": "30525a",
-                "runId": "traceback-fix",
-                "hypothesisId": "H6",
-                "location": "logutil.py:log_event",
-                "message": "formatted_exc",
-                "data": {
-                    "exc_type": type(exc).__name__,
-                    "has_traceback_attr": hasattr(exc, "__traceback__"),
-                    "detail_len": len(detail or ""),
-                    "queue_id": queue_id,
-                    "fatal_dashboard": fatal_dashboard,
-                },
-                "timestamp": int(time.time() * 1000),
-            }
-            with (Path(__file__).resolve().parents[1] / "debug-30525a.log").open(
-                "a", encoding="utf-8"
-            ) as fh:
-                fh.write(json.dumps(payload, ensure_ascii=False) + "\n")
-        except Exception:
-            pass
+        agent_dbg(
+            "H6",
+            "logutil.py:log_event",
+            "formatted_exc",
+            {
+                "exc_type": type(exc).__name__,
+                "has_traceback_attr": hasattr(exc, "__traceback__"),
+                "detail_len": len(detail or ""),
+                "queue_id": queue_id,
+                "fatal_dashboard": fatal_dashboard,
+            },
+            run_id="traceback-fix",
+        )
         # #endregion
     ts = datetime.now(timezone.utc).timestamp()
     msg = (message or "")[:2000]

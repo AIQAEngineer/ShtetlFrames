@@ -19,6 +19,7 @@ from pathlib import Path
 from typing import Any
 
 from config import CONTACT_DIR, VIDEOS_DIR
+from media_files import VIDEO_EXTS, find_video_file
 from still_store import candidate_still_path, local_still_url, save_candidate_still
 
 _ensure_q: queue.Queue[dict[str, Any]] = queue.Queue()
@@ -164,24 +165,6 @@ def _pathe_hls_frame(source_url: str, time_sec: float, out: Path) -> bool:
     )
 
 
-def _download_source(url: str, video_id: str) -> Path | None:
-    from download import download_britishpathe, download_entry
-    from serve import find_video_file
-
-    existing = find_video_file(video_id)
-    if existing and existing.is_file():
-        return existing
-    if "britishpathe.com" in (url or "").lower():
-        VIDEOS_DIR.mkdir(parents=True, exist_ok=True)
-        path = download_britishpathe(url, VIDEOS_DIR, video_id, title=video_id)
-        return path if path and Path(path).is_file() else None
-    result = download_entry(url, video_id, video_id=video_id)
-    if result.get("error") or not result.get("path"):
-        return None
-    path = Path(result["path"])
-    return path if path.is_file() else None
-
-
 def ensure_candidate_still(
     cand_id: int,
     *,
@@ -228,14 +211,14 @@ def ensure_candidate_still(
                     print(f"[still-ensure] #{cid} hls-frame {saved.name}", flush=True)
                     return saved
 
-    from serve import find_video_file
+    from frame_strip import _download_source
 
-    existing = find_video_file(vid)
+    existing = find_video_file(VIDEOS_DIR, vid)
     owned = False
     if existing and existing.is_file():
         video = existing
     else:
-        video = _download_source(src, vid)
+        video = _download_source(src, vid, vid)
         owned = bool(video)
     if not video:
         print(f"[still-ensure] #{cid} download failed {src[:80]}", flush=True)
@@ -457,7 +440,9 @@ def backfill_missing_stills(
                                 pass
                 continue
 
-        path = _download_source(url, vid)
+        from frame_strip import _download_source
+
+        path = _download_source(url, vid, vid)
         if not path:
             fail_n += len(group)
             print(f"[still-backfill] download fail {vid}", flush=True)
@@ -485,14 +470,7 @@ def backfill_missing_stills(
         finally:
             try:
                 for p in VIDEOS_DIR.glob(f"{vid}*"):
-                    if p.is_file() and p.suffix.lower() in {
-                        ".mp4",
-                        ".webm",
-                        ".mkv",
-                        ".avi",
-                        ".mov",
-                        ".part",
-                    }:
+                    if p.is_file() and p.suffix.lower() in (VIDEO_EXTS | {".part"}):
                         p.unlink(missing_ok=True)
             except OSError:
                 pass

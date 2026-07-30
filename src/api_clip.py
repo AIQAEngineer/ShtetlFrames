@@ -10,73 +10,9 @@ from pathlib import Path
 
 from api_http import json_response
 from config import OUTPUT_DIR
+from frame_strip import resolve_pathe_video
 
 TRIMS_DIR = OUTPUT_DIR / "trims"
-
-
-def _resolve_pathe_video(body: dict) -> tuple[dict | None, dict | None]:
-    from britishpathe import (
-        asset_id_from_url,
-        is_britishpathe_asset_url,
-        normalize_asset_url,
-    )
-    from frame_strip import _download_source
-
-    if not isinstance(body, dict):
-        return None, {"ok": False, "error": "json_body_required"}
-
-    raw_url = (body.get("url") or body.get("asset_url") or "").strip()
-    video_id = (body.get("video_id") or "").strip()
-
-    if raw_url:
-        if not is_britishpathe_asset_url(raw_url):
-            return None, {
-                "ok": False,
-                "error": "britishpathe_asset_url_required",
-                "hint": "Paste a URL like https://www.britishpathe.com/asset/187521/",
-            }
-        url = normalize_asset_url(raw_url)
-        aid = asset_id_from_url(url)
-        if not aid:
-            return None, {"ok": False, "error": "asset_id_parse_failed"}
-        video_id = f"pathe_{aid}"
-        video = _download_source(url, video_id, video_id)
-        if not video:
-            return None, {
-                "ok": False,
-                "error": "download_failed",
-                "asset_id": aid,
-                "url": url,
-            }
-        return {
-            "url": url,
-            "aid": str(aid),
-            "video_id": video_id,
-            "video": video,
-        }, None
-
-    if video_id:
-        video = _find_local_video(video_id)
-        if not video:
-            return None, {"ok": False, "error": "video_not_found", "video_id": video_id}
-        return {"url": None, "aid": None, "video_id": video_id, "video": video}, None
-
-    return None, {"ok": False, "error": "url_or_video_id_required"}
-
-
-def _find_local_video(video_id: str) -> Path | None:
-    from config import VIDEOS_DIR
-
-    if not VIDEOS_DIR.exists():
-        return None
-    exts = {".mp4", ".webm", ".mkv", ".avi", ".mov", ".ogv"}
-    for p in VIDEOS_DIR.iterdir():
-        if p.stem == video_id and p.suffix.lower() in exts:
-            return p
-    for p in VIDEOS_DIR.iterdir():
-        if video_id in p.stem and p.suffix.lower() in exts:
-            return p
-    return None
 
 
 def _ffmpeg_bin() -> str:
@@ -172,7 +108,7 @@ def handle_post_drive_auth(handler: BaseHTTPRequestHandler) -> None:
 
 
 def handle_post_clip_load(handler: BaseHTTPRequestHandler, body: dict) -> None:
-    ctx, err = _resolve_pathe_video(body)
+    ctx, err = resolve_pathe_video(body)
     if err:
         code = 502 if err.get("error") == "download_failed" else 400
         json_response(handler, code, err)
@@ -197,7 +133,7 @@ def handle_post_clip_load(handler: BaseHTTPRequestHandler, body: dict) -> None:
 def handle_post_clip_cut(handler: BaseHTTPRequestHandler, body: dict) -> None:
     from frame_strip import parse_mark_seconds
 
-    ctx, err = _resolve_pathe_video(body)
+    ctx, err = resolve_pathe_video(body)
     if err:
         code = 502 if err.get("error") == "download_failed" else 400
         json_response(handler, code, err)
@@ -283,7 +219,7 @@ def handle_post_clip_upload(handler: BaseHTTPRequestHandler, body: dict) -> None
             out = cand
         # else fall through and cut from source
     if out is None:
-        ctx, err = _resolve_pathe_video(body)
+        ctx, err = resolve_pathe_video(body)
         if err:
             code = 502 if err.get("error") == "download_failed" else 400
             json_response(handler, code, err)

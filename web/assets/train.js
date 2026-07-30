@@ -1,3 +1,4 @@
+/* Train hub: label clips (Pathé / YouTube reference) plus the Frames (probe) tab. */
 let query = "";
 let mode = ""; // "" | "youtube"
 let clips = [];
@@ -6,18 +7,7 @@ let activeId = null;
 let status = "pending";
 let search = "";
 let seedPoll = null;
-
-function escapeHtml(s) {
-  return String(s)
-    .replaceAll("&", "&amp;")
-    .replaceAll("<", "&lt;")
-    .replaceAll(">", "&gt;")
-    .replaceAll('"', "&quot;");
-}
-
-function escapeAttr(s) {
-  return escapeHtml(s).replaceAll("'", "&#39;");
-}
+let activeTab = "clips";
 
 function isYoutubeUrl(s) {
   return /youtube\.com\/watch\?v=|youtu\.be\/|youtube\.com\/shorts\//i.test(
@@ -58,7 +48,7 @@ function normalizeClip(c) {
 }
 
 function readQuery() {
-  const el = document.getElementById("trainQuery");
+  const el = $("trainQuery");
   query = (el?.value || "").trim();
   mode = isYoutubeUrl(query) ? "youtube" : query ? "pathe" : "";
   return query;
@@ -69,7 +59,7 @@ function activeClip() {
 }
 
 function renderStats() {
-  const el = document.getElementById("trainStats");
+  const el = $("trainStats");
   if (!el) return;
   const label =
     mode === "youtube" ? "YouTube reference" : query ? `Search “${query}”` : "—";
@@ -79,7 +69,7 @@ function renderStats() {
 }
 
 function renderList() {
-  const list = document.getElementById("list");
+  const list = $("list");
   if (!list) return;
   if (!query && mode !== "youtube") {
     list.innerHTML = `<div class="card" style="cursor:default">
@@ -130,7 +120,7 @@ function renderList() {
 }
 
 function renderDetail() {
-  const detail = document.getElementById("detail");
+  const detail = $("detail");
   const c = activeClip();
   if (!detail) return;
   if (!c) {
@@ -176,7 +166,7 @@ function renderDetail() {
       <button class="btn ghost small" data-act="clear">Undo</button>
     </div>
     <textarea class="notes" id="notes" placeholder="Optional note…">${escapeHtml(c.notes || "")}</textarea>
-    <p class="hit-hint">Keys: J = Orthodox · K = Not · ← → next clip</p>
+    <p class="hit-hint">Keys: A = Orthodox · R = Not · ← → next clip</p>
   `;
 
   detail.querySelectorAll("[data-act]").forEach((btn) => {
@@ -187,19 +177,14 @@ function renderDetail() {
 async function labelClip(decision) {
   const c = activeClip();
   if (!c) return;
-  const notes = document.getElementById("notes")?.value || "";
-  const res = await fetch("/api/train/label", {
-    method: "POST",
-    headers: { "Content-Type": "application/json" },
-    body: JSON.stringify({
-      id: c.id,
-      decision,
-      notes,
-      mode: mode === "youtube" ? "youtube" : "",
-      candidate: mode === "youtube",
-    }),
+  const notes = $("notes")?.value || "";
+  const data = await apiPost("/api/train/label", {
+    id: c.id,
+    decision,
+    notes,
+    mode: mode === "youtube" ? "youtube" : "",
+    candidate: mode === "youtube",
   });
-  const data = await res.json();
   if (!data.ok) {
     setStatus(data.error || "Label failed");
     return;
@@ -228,12 +213,12 @@ function selectClip(id) {
 }
 
 function setStatus(msg) {
-  const el = document.getElementById("trainStatus");
+  const el = $("trainStatus");
   if (el) el.textContent = msg || "";
 }
 
 function setStatusFromSeed(seed) {
-  const el = document.getElementById("trainStatus");
+  const el = $("trainStatus");
   if (!el) return;
   const msg = (seed && seed.message) || "";
   if (!seed || seed.status !== "running") {
@@ -257,11 +242,11 @@ function setStatusFromSeed(seed) {
 
 async function fetchSummary() {
   readQuery();
-  const data = await fetch("/api/train/summary").then((r) => r.json());
+  const data = await apiGet("/api/train/summary");
   if (data.youtube_ref && !query) {
     query = data.youtube_ref.url || "";
     mode = "youtube";
-    const el = document.getElementById("trainQuery");
+    const el = $("trainQuery");
     if (el && !el.value) el.value = query;
   }
   if (mode === "youtube" && data.youtube_stats) stats = data.youtube_stats;
@@ -277,9 +262,9 @@ async function fetchSummary() {
 
 async function fetchClips() {
   readQuery();
-  if (mode === "youtube" || (load_youtube_ref_fallback())) {
+  if (mode === "youtube") {
     const params = new URLSearchParams({ status, limit: "500" });
-    const data = await fetch("/api/train/youtube?" + params).then((r) => r.json());
+    const data = await apiGet("/api/train/youtube?" + params);
     clips = (data.clips || []).map(normalizeClip);
     if (search) {
       const q = search.toLowerCase();
@@ -293,7 +278,7 @@ async function fetchClips() {
     if (data.ref?.url) {
       query = data.ref.url;
       mode = "youtube";
-      const el = document.getElementById("trainQuery");
+      const el = $("trainQuery");
       if (el) el.value = query;
     }
   } else if (!query) {
@@ -306,7 +291,7 @@ async function fetchClips() {
       limit: "500",
     });
     if (search) params.set("q", search);
-    const data = await fetch("/api/train/clips?" + params).then((r) => r.json());
+    const data = await apiGet("/api/train/clips?" + params);
     clips = (data.clips || []).map(normalizeClip);
     stats = data.stats || stats;
   }
@@ -320,10 +305,6 @@ async function fetchClips() {
     activeId = null;
     renderDetail();
   }
-}
-
-function load_youtube_ref_fallback() {
-  return mode === "youtube";
 }
 
 async function pollSeed() {
@@ -353,25 +334,20 @@ async function loadSearch() {
     setStatus("Enter a Pathé search query or YouTube URL first");
     return;
   }
-  const btn = document.getElementById("loadBtn");
+  const btn = $("loadBtn");
   if (btn) btn.disabled = true;
   try {
     if (mode === "youtube") {
       setStatus("Queuing YouTube video for Orthodox training scan…");
-      const res = await fetch("/api/train/youtube", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({
-          url: query,
-          title: "Orthodox look training reference",
-        }),
+      const data = await apiPost("/api/train/youtube", {
+        url: query,
+        title: "Orthodox look training reference",
       });
-      const data = await res.json();
       if (!data.ok) {
         setStatus(data.error || "Could not start YouTube training scan");
         return;
       }
-          const scan = data.scan || data.scrape || {};
+      const scan = data.scan || data.scrape || {};
       const scrapeMsg = scan.deferred
         ? `GPU ${scan.backend || "runpod"} scan started`
         : scan.ok
@@ -384,12 +360,7 @@ async function loadSearch() {
     }
 
     setStatus(`Starting Pathé discover for “${query}”…`);
-    const res = await fetch("/api/train/seed", {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ query, max_items: 500, resume: false }),
-    });
-    const data = await res.json();
+    const data = await apiPost("/api/train/seed", { query, max_items: 500, resume: false });
     if (!data.ok) {
       setStatus(data.error || "Could not start load");
       return;
@@ -402,7 +373,7 @@ async function loadSearch() {
 }
 
 function syncLoadButtonLabel() {
-  const btn = document.getElementById("loadBtn");
+  const btn = $("loadBtn");
   if (!btn) return;
   readQuery();
   btn.textContent =
@@ -419,16 +390,11 @@ async function scoreThese() {
     setStatus("Enter a Pathé search query first");
     return;
   }
-  const btn = document.getElementById("scanBtn");
+  const btn = $("scanBtn");
   if (btn) btn.disabled = true;
   setStatus("Queuing clips for GPU score…");
   try {
-    const res = await fetch("/api/train/scan", {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ query, only: "all" }),
-    });
-    const data = await res.json();
+    const data = await apiPost("/api/train/scan", { query, only: "all" });
     if (!data.ok) {
       setStatus(data.error || "Scan failed to start");
       return;
@@ -443,27 +409,22 @@ async function scoreThese() {
   }
 }
 
-async function trainClipFromKeeps() {
-  const btn = document.getElementById("clipBtn");
+/* Single CLIP-train action shared by both tabs. */
+async function startClipTrain(payload, btn, startMsg) {
   if (btn) btn.disabled = true;
-  setStatus("Training CLIP probe from Keep/Pass stills…");
+  setStatus(startMsg);
   try {
-    const res = await fetch("/api/train/clip", {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({}),
-    });
-    const data = await res.json();
+    const data = await apiPost("/api/train/clip", payload);
     if (!data.ok) {
       setStatus(data.error || "CLIP train failed to start");
+      if (btn) btn.disabled = false;
       return;
     }
     setStatus(data.job?.message || "CLIP train running…");
     if (seedPoll) clearInterval(seedPoll);
     seedPoll = setInterval(async () => {
       try {
-        const sres = await fetch("/api/train/summary");
-        const sdata = await sres.json();
+        const sdata = await apiGet("/api/train/summary");
         const job = sdata.clip_ft || {};
         const m = sdata.clip_metrics || {};
         if (job.message) setStatus(job.message);
@@ -472,9 +433,7 @@ async function trainClipFromKeeps() {
           seedPoll = null;
           const auc = m.val_auc != null ? ` · auc=${Number(m.val_auc).toFixed(2)}` : "";
           const acc = m.val_acc != null ? ` · acc=${Number(m.val_acc).toFixed(2)}` : "";
-          setStatus(
-            (job.message || "CLIP probe ready") + acc + auc
-          );
+          setStatus((job.message || "CLIP probe ready") + acc + auc);
           if (btn) btn.disabled = false;
         } else if (job.status === "error") {
           clearInterval(seedPoll);
@@ -494,17 +453,12 @@ async function trainClipFromKeeps() {
 
 async function clearSet() {
   if (!confirm("Clear the whole training set? Labels will be deleted.")) return;
-  const res = await fetch("/api/train/clear", {
-    method: "POST",
-    headers: { "Content-Type": "application/json" },
-    body: JSON.stringify({}),
-  });
-  const data = await res.json();
+  const data = await apiPost("/api/train/clear", {});
   clips = [];
   activeId = null;
   mode = "";
   query = "";
-  const el = document.getElementById("trainQuery");
+  const el = $("trainQuery");
   if (el) el.value = "";
   stats = { n_total: 0, n_pending: 0, n_yes: 0, n_no: 0 };
   setStatus(data.ok ? `Cleared ${data.deleted || 0} clip(s)` : data.error || "Clear failed");
@@ -519,12 +473,7 @@ async function ensureThumbs() {
   if (!missing) return;
   setStatus(`Fetching stills for ${missing} clip(s)…`);
   try {
-    const res = await fetch("/api/train/thumbs", {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ query, max_pages: 12 }),
-    });
-    const data = await res.json();
+    const data = await apiPost("/api/train/thumbs", { query, max_pages: 12 });
     if (data.ok) {
       setStatus(
         data.updated
@@ -540,8 +489,173 @@ async function ensureThumbs() {
   }
 }
 
+/* —— Frames tab (probe frames include/exclude) —— */
+
+let probeLabel = "all";
+let probeStatusFilter = "all";
+let probeOffset = 0;
+const probeLimit = 120;
+let probeItems = [];
+let probeBusy = false;
+
+async function loadFrames() {
+  const statusEl = $("probeStatus");
+  const statsEl = $("probeStats");
+  const grid = $("probeGrid");
+  const pager = $("probePager");
+  if (!statusEl || !grid) return;
+  statusEl.textContent = "Loading frames…";
+  const qs = new URLSearchParams({
+    label: probeLabel,
+    status: probeStatusFilter,
+    limit: String(probeLimit),
+    offset: String(probeOffset),
+  });
+  try {
+    const j = await apiGet(`/api/clip_ft/frames?${qs}`);
+    if (!j.ok) {
+      statusEl.textContent = `Load failed: ${j.error || j.status}`;
+      return;
+    }
+    probeItems = j.items || [];
+    const c = j.counts || {};
+    if (statsEl) {
+      statsEl.textContent =
+        `Train as good: ${c.keep_included ?? 0} Keep · ` +
+        `Train as wrong: ${(c.pass_included ?? 0) + (c.excluded ?? 0)} ` +
+        `(${c.pass_included ?? 0} Pass included + ${c.excluded ?? 0} excluded) · ` +
+        `on disk Keep ${c.keep ?? 0} / Pass ${c.pass ?? 0}`;
+    }
+    grid.innerHTML = probeItems
+      .map((it) => {
+        const on = it.included;
+        const meta = [
+          it.label,
+          it.cand_id != null ? `#${it.cand_id}` : null,
+          it.time_sec != null ? fmtTimeFrac(it.time_sec) : it.name.includes("_still") ? "still" : null,
+        ]
+          .filter(Boolean)
+          .join(" · ");
+        return `<figure class="frame-card frame-cover ${on ? "is-in" : "is-out"}" data-path="${escapeAttr(
+          it.path
+        )}" tabindex="0" role="button" aria-pressed="${on ? "true" : "false"}">
+          <img src="${escapeAttr(it.url)}" alt="${escapeAttr(it.path)}" loading="lazy" />
+          <figcaption>${escapeHtml(meta)}</figcaption>
+          <span class="frame-flag">${on ? "Included · good if Keep" : "Excluded · trains as wrong"}</span>
+        </figure>`;
+      })
+      .join("");
+    const total = Number(j.total) || 0;
+    const pg = pagerText(probeOffset, probeLimit, total);
+    statusEl.textContent = total
+      ? `Showing ${pg.start}–${pg.end} of ${total}`
+      : "No frames in dataset — run deep CLIP export first.";
+    if (pager) pager.hidden = total <= probeLimit;
+    const pageLabel = $("probePageLabel");
+    if (pageLabel) pageLabel.textContent = `${pg.start}–${pg.end} / ${total}`;
+    const prev = $("probePrev");
+    const next = $("probeNext");
+    if (prev) prev.disabled = pg.prevDisabled;
+    if (next) next.disabled = pg.nextDisabled;
+  } catch (err) {
+    statusEl.textContent = `Load failed: ${err.message || err}`;
+  }
+}
+
+async function setExcluded(paths, excluded) {
+  if (!paths.length || probeBusy) return;
+  probeBusy = true;
+  const statusEl = $("probeStatus");
+  try {
+    const j = await apiPost("/api/clip_ft/exclude", { paths, excluded });
+    if (!j.ok) {
+      statusEl.textContent = `Update failed: ${j.error || j.status}`;
+      return;
+    }
+    await loadFrames();
+  } catch (err) {
+    statusEl.textContent = `Update failed: ${err.message || err}`;
+  } finally {
+    probeBusy = false;
+  }
+}
+
+function bindFramesTab() {
+  const grid = $("probeGrid");
+  if (!grid) return;
+
+  grid.addEventListener("click", (e) => {
+    const card = e.target.closest(".frame-card");
+    if (!card) return;
+    const path = card.dataset.path;
+    const item = probeItems.find((x) => x.path === path);
+    if (!item) return;
+    setExcluded([path], item.included); // toggle → exclude if currently included
+  });
+
+  grid.addEventListener("keydown", (e) => {
+    if (e.key !== "Enter" && e.key !== " ") return;
+    const card = e.target.closest(".frame-card");
+    if (!card) return;
+    e.preventDefault();
+    card.click();
+  });
+
+  $("labelChips").addEventListener("click", (e) => {
+    const btn = e.target.closest(".chip");
+    if (!btn) return;
+    probeLabel = btn.dataset.label || "all";
+    probeOffset = 0;
+    setChipGroup("labelChips", "label", probeLabel);
+    loadFrames();
+  });
+
+  $("probeStatusChips").addEventListener("click", (e) => {
+    const btn = e.target.closest(".chip");
+    if (!btn) return;
+    probeStatusFilter = btn.dataset.status || "all";
+    probeOffset = 0;
+    setChipGroup("probeStatusChips", "status", probeStatusFilter);
+    loadFrames();
+  });
+
+  $("probeIncludeAll").addEventListener("click", () => {
+    setExcluded(
+      probeItems.map((i) => i.path),
+      false
+    );
+  });
+
+  $("probeExcludeAll").addEventListener("click", () => {
+    setExcluded(
+      probeItems.map((i) => i.path),
+      true
+    );
+  });
+
+  $("probePrev").addEventListener("click", () => {
+    probeOffset = Math.max(0, probeOffset - probeLimit);
+    loadFrames();
+  });
+
+  $("probeNext").addEventListener("click", () => {
+    probeOffset += probeLimit;
+    loadFrames();
+  });
+
+  $("probeTrain").addEventListener("click", (e) => {
+    startClipTrain(
+      { export: false, deep: false },
+      e.currentTarget,
+      "Starting CLIP train from included frames…"
+    );
+  });
+}
+
+/* —— UI wiring —— */
+
 function bindUi() {
-  document.getElementById("statusChips")?.querySelectorAll("[data-status]").forEach((chip) => {
+  $("statusChips")?.querySelectorAll("[data-status]").forEach((chip) => {
     chip.addEventListener("click", async () => {
       document
         .querySelectorAll("#statusChips .chip")
@@ -553,36 +667,38 @@ function bindUi() {
     });
   });
 
-  let searchTimer = null;
-  document.getElementById("search")?.addEventListener("input", (e) => {
-    clearTimeout(searchTimer);
-    searchTimer = setTimeout(async () => {
+  $("search")?.addEventListener(
+    "input",
+    debounce(async (e) => {
       search = e.target.value || "";
       await fetchClips();
-    }, 220);
-  });
+    }, 220)
+  );
 
-  document.getElementById("trainQuery")?.addEventListener("input", () => {
+  $("trainQuery")?.addEventListener("input", () => {
     syncLoadButtonLabel();
   });
-  document.getElementById("trainQuery")?.addEventListener("change", () => {
+  $("trainQuery")?.addEventListener("change", () => {
     readQuery();
     syncLoadButtonLabel();
     fetchClips();
   });
 
-  document.getElementById("loadBtn")?.addEventListener("click", loadSearch);
-  document.getElementById("scanBtn")?.addEventListener("click", scoreThese);
-  document.getElementById("clipBtn")?.addEventListener("click", trainClipFromKeeps);
-  document.getElementById("clearBtn")?.addEventListener("click", clearSet);
+  $("loadBtn")?.addEventListener("click", loadSearch);
+  $("scanBtn")?.addEventListener("click", scoreThese);
+  $("clipBtn")?.addEventListener("click", (e) =>
+    startClipTrain({}, e.currentTarget, "Training CLIP probe from Keep/Pass stills…")
+  );
+  $("clearBtn")?.addEventListener("click", clearSet);
 
   window.addEventListener("keydown", (e) => {
+    if (activeTab !== "clips") return;
     if (e.target && ["INPUT", "TEXTAREA"].includes(e.target.tagName)) return;
     const idx = clips.findIndex((c) => Number(c.id) === Number(activeId));
-    if (e.key === "j" || e.key === "J") {
+    if (e.key === "a" || e.key === "A") {
       e.preventDefault();
       labelClip("yes");
-    } else if (e.key === "k" || e.key === "K") {
+    } else if (e.key === "r" || e.key === "R" || e.key === "x" || e.key === "X") {
       e.preventDefault();
       labelClip("no");
     } else if (e.key === "ArrowRight" || e.key === "ArrowDown") {
@@ -596,7 +712,13 @@ function bindUi() {
 }
 
 (async function init() {
+  renderNav("train");
   bindUi();
+  bindFramesTab();
+  initTabs("clips", (tab) => {
+    activeTab = tab;
+    if (tab === "frames") loadFrames();
+  });
   await fetchSummary();
   syncLoadButtonLabel();
   await fetchClips();

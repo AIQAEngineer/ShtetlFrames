@@ -1,11 +1,11 @@
-"""Cloud image hosts disabled — Review stills are persisted locally only."""
+"""Cloud image hosts disabled — Review stills are persisted locally only.
+
+Implementation lives in ``shtetl_core.upload``; this module re-exports it for
+backwards compatibility with older imports.
+"""
 
 from __future__ import annotations
 
-from pathlib import Path
+from shtetl_core.upload import upload_image
 
-
-def upload_image(path: Path) -> str | None:
-    """No-op (Catbox removed). Local pipeline keeps ``_local_still`` bytes."""
-    del path
-    return None
+__all__ = ["upload_image"]

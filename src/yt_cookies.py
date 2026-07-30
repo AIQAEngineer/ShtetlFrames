@@ -740,3 +740,43 @@ def ensure_cookies_for_scrape() -> dict:
 def is_bot_check_error(msg: str) -> bool:
     low = (msg or "").lower()
     return "not a bot" in low or "sign in to confirm" in low
+
+
+def _send_result(handler, result: dict) -> None:
+    from api_http import json_response
+
+    json_response(
+        handler,
+        200 if result.get("ok") else 400,
+        {"ok": bool(result.get("ok")), **result},
+    )
+
+
+def handle_post_cookies(handler, body) -> None:
+    """POST /api/youtube/cookies — export from the local browser (or import a posted HAR)."""
+    payload = body if isinstance(body, dict) else {}
+    har = payload.get("har") or payload.get("har_text") or payload.get("har_json")
+    if har is not None:
+        _send_result(handler, import_cookies_from_har(har))
+        return
+    force = bool(payload.get("force", True))
+    _send_result(handler, export_youtube_cookies(force=force))
+
+
+def handle_post_cookies_har(handler, body) -> None:
+    """POST /api/youtube/cookies/har — import cookies from a HAR document."""
+    from api_http import json_response
+
+    payload = body if isinstance(body, dict) else {}
+    har = payload.get("har") or payload.get("har_text") or payload.get("har_json")
+    # Allow posting the HAR document itself as the JSON body.
+    if har is None and isinstance(payload.get("log"), dict):
+        har = payload
+    if har is None:
+        json_response(
+            handler,
+            400,
+            {"ok": False, "error": "missing har field (upload via the UI or POST {\"har\": ...})"},
+        )
+        return
+    _send_result(handler, import_cookies_from_har(har))

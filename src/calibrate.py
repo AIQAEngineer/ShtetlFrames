@@ -12,6 +12,7 @@ from ultralytics import YOLO
 
 from config import DATA_DIR, DEFAULT_SCORE_THRESHOLD, OUTPUT_DIR, VIDEOS_DIR, YOLO_WEIGHTS
 from detect import CueScorer, scan_video
+from media_files import VIDEO_EXTS
 
 
 def main() -> None:
@@ -33,7 +34,7 @@ def main() -> None:
         matches = [
             p
             for p in VIDEOS_DIR.glob(f"{vid}.*")
-            if p.suffix.lower() in {".mp4", ".webm", ".mkv", ".avi", ".mov"}
+            if p.suffix.lower() in VIDEO_EXTS
         ]
         if not matches:
             print(f"Missing video for {vid}")

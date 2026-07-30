@@ -423,11 +423,12 @@ def build_crop_for_video(
         )
 
 
-def _download_source(url: str, video_id: str, title: str) -> Path | None:
+def _download_source(url: str, video_id: str, title: str = "") -> Path | None:
+    """Reuse a local copy of the source video, else download (Pathé/YouTube/direct)."""
     from download import download_britishpathe, download_entry
-    from serve import find_video_file
+    from media_files import find_video_file
 
-    existing = find_video_file(video_id)
+    existing = find_video_file(VIDEOS_DIR, video_id)
     if existing and existing.is_file():
         return existing
 
@@ -441,6 +442,58 @@ def _download_source(url: str, video_id: str, title: str) -> Path | None:
         return None
     path = Path(result["path"])
     return path if path.is_file() else None
+
+
+def resolve_pathe_video(body: dict, *, allow_video_id: bool = True) -> tuple[dict | None, dict | None]:
+    """Shared mark/clip resolver: Pathé asset URL (or local video_id) → local video file.
+
+    Returns ``(ctx, error_payload)``; ctx = {url, aid, video_id, video}.
+    """
+    from britishpathe import (
+        asset_id_from_url,
+        is_britishpathe_asset_url,
+        normalize_asset_url,
+    )
+    from media_files import find_video_file
+
+    if not isinstance(body, dict):
+        return None, {"ok": False, "error": "json_body_required"}
+
+    raw_url = (body.get("url") or body.get("asset_url") or "").strip()
+    video_id = (body.get("video_id") or "").strip()
+
+    if raw_url:
+        if not is_britishpathe_asset_url(raw_url):
+            return None, {
+                "ok": False,
+                "error": "britishpathe_asset_url_required",
+                "hint": "Paste a URL like https://www.britishpathe.com/asset/187521/",
+            }
+        url = normalize_asset_url(raw_url)
+        aid = asset_id_from_url(url)
+        if not aid:
+            return None, {"ok": False, "error": "asset_id_parse_failed"}
+        video_id = f"pathe_{aid}"
+        video = _download_source(url, video_id, video_id)
+        if not video:
+            return None, {
+                "ok": False,
+                "error": "download_failed",
+                "asset_id": aid,
+                "url": url,
+            }
+        return {"url": url, "aid": str(aid), "video_id": video_id, "video": video}, None
+
+    if not allow_video_id:
+        return None, {"ok": False, "error": "url_required"}
+
+    if video_id:
+        video = find_video_file(VIDEOS_DIR, video_id)
+        if not video:
+            return None, {"ok": False, "error": "video_not_found", "video_id": video_id}
+        return {"url": None, "aid": None, "video_id": video_id, "video": video}, None
+
+    return None, {"ok": False, "error": "url_or_video_id_required"}
 
 
 def generate_strip_for_candidate(

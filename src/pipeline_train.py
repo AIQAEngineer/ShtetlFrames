@@ -285,40 +285,9 @@ def _start_youtube_ref_watcher(ref: dict[str, Any]) -> None:
 
 def _train_dbg(hypothesis_id: str, location: str, message: str, **data: Any) -> None:
     # #region agent log
-    try:
-        payload = {
-            "sessionId": "30525a",
-            "runId": "yt-train-gpu",
-            "hypothesisId": hypothesis_id,
-            "location": location,
-            "message": message,
-            "data": data,
-            "timestamp": int(time.time() * 1000),
-        }
-        path = _YT_REF_PATH.parent.parent / "debug-30525a.log"
-        # Prefer repo-root debug log next to src/
-        from config import ROOT
+    from logutil import agent_dbg
 
-        path = ROOT / "debug-30525a.log"
-        with path.open("a", encoding="utf-8") as fh:
-            fh.write(json.dumps(payload, default=str) + "\n")
-        try:
-            import urllib.request
-
-            req = urllib.request.Request(
-                "http://127.0.0.1:7406/ingest/637a1fe8-1535-4387-b632-3fb6093e59a2",
-                data=json.dumps(payload).encode("utf-8"),
-                headers={
-                    "Content-Type": "application/json",
-                    "X-Debug-Session-Id": "30525a",
-                },
-                method="POST",
-            )
-            urllib.request.urlopen(req, timeout=1.5)
-        except Exception:
-            pass
-    except Exception:
-        pass
+    agent_dbg(hypothesis_id, location, message, data, run_id="yt-train-gpu", post=True)
     # #endregion
 
 

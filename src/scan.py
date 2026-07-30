@@ -22,9 +22,7 @@ from detect import (
     segments_to_jsonl,
     scan_video,
 )
-
-
-VIDEO_EXTS = {".mp4", ".webm", ".mkv", ".avi", ".mov", ".mpg", ".mpeg", ".ogv"}
+from media_files import VIDEO_EXTS
 
 
 def find_videos(video_dir: Path, only_ids: set[str] | None = None) -> list[tuple[str, Path]]:
