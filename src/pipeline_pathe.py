@@ -46,10 +46,16 @@ from db import (
 _PATHE_ITEM_DEADLINE_SEC = 22 * 60
 _PATHE_HEARTBEAT_SEC = 12.0
 _PATHE_RECLAIM_SEC = 45.0
+# Extra client threads beyond pods×stack: they resolve HLS on the PC while
+# other threads keep GPUs busy, so pods do not sit idle waiting on Scrapfly.
+_PATHE_RESOLVE_OVERLAP = 16
+_PATHE_PREFETCH_BATCH = 24
 from pipeline_state import _active, _lock
 
 _pathe_live: dict[int, dict] = {}
 _scrape_stop = threading.Event()
+# Set while scrape runs so the outer finally can stop the resolve prefetcher.
+_pathe_prefetch_stop: list[threading.Event | None] = [None]
 
 
 def stop_pathe_scrape(*, message: str = "Pathé scrape stopped") -> dict:
@@ -82,11 +88,45 @@ def _pathe_stack_ceiling() -> int:
 
 
 def _pathe_client_slots(n_pods: int, stack_n: int, *, cap: int) -> int:
-    """Client threads = healthy GPUs × Pathé stack (so stacking can fill idle GPUs)."""
+    """Client threads = GPUs × stack + resolve overlap (keep GPUs fed).
+
+    Overlap threads spend time on Scrapfly HLS resolve while others download/
+    scan on pods, so a free GPU is not blocked waiting for the next m3u8.
+    """
     pods = max(1, int(n_pods or 1))
     ceiling = _pathe_stack_ceiling()
     stack = max(1, min(ceiling, int(stack_n or 1)))
-    return max(1, min(pods * stack, int(cap)))
+    want = pods * stack + _PATHE_RESOLVE_OVERLAP
+    return max(1, min(want, int(cap)))
+
+
+def _pathe_workers_cap(n_pods: int, stack_ceil: int) -> int:
+    """Hard ceiling for Pathé client threads (GPU slots + resolve overlap)."""
+    from runpod_provision import MAX_PARALLEL_PODS
+
+    pods = max(1, min(int(n_pods or 1), MAX_PARALLEL_PODS))
+    stack = max(1, min(6, int(stack_ceil or 1)))
+    return max(1, pods * stack + _PATHE_RESOLVE_OVERLAP)
+
+
+def _pathe_resolve_prefetcher(stop_event: threading.Event) -> None:
+    """Warm m3u8 cache for upcoming pending rows (does not claim them)."""
+    from britishpathe import warm_resolve_cache
+    from db import peek_pending_pathe
+
+    while not stop_event.is_set():
+        try:
+            rows = peek_pending_pathe(_PATHE_PREFETCH_BATCH)
+            urls = [(r.get("url") or "").strip() for r in rows]
+            urls = [u for u in urls if u]
+            if not urls:
+                stop_event.wait(2.0)
+                continue
+            warmed = warm_resolve_cache(urls, stop_event=stop_event)
+            stop_event.wait(0.15 if warmed else 1.5)
+        except Exception as e:
+            print(f"[shtetl] pathe resolve prefetch: {e}"[:160], flush=True)
+            stop_event.wait(2.0)
 
 
 def start_pathe_discover(
@@ -500,9 +540,7 @@ def start_pathe_scrape(
                 stack_hint = max(1, min(stack_ceil, pathe_stack_limit()))
             except Exception:
                 stack_hint = stack_ceil
-            workers_cap_hint = max(
-                1, min(max_inflight * stack_ceil, MAX_PARALLEL_PODS * stack_ceil)
-            )
+            workers_cap_hint = _pathe_workers_cap(max_inflight, stack_ceil)
             workers = _pathe_client_slots(
                 max_inflight, stack_hint, cap=workers_cap_hint
             )
@@ -759,15 +797,13 @@ def _pathe_scrape_job(workers: int, backend: str, limit: int | None) -> None:
                 stack_n = max(1, min(stack_ceil, pathe_stack_limit()))
             except Exception:
                 stack_n = stack_ceil
-            workers_cap = max(
-                1, min(n_pods * stack_ceil, MAX_PARALLEL_PODS * stack_ceil)
-            )
+            workers_cap = _pathe_workers_cap(n_pods, stack_ceil)
             workers = _pathe_client_slots(len(bases) or 1, stack_n, cap=workers_cap)
             set_job(
                 "pathe_scrape",
                 message=(
                     f"Pathé scrape · {len(bases)}/{n_pods} GPU pod(s) · "
-                    f"workers={workers} (stack≤{stack_n})"
+                    f"workers={workers} (stack≤{stack_n} +resolve)"
                 ),
                 workers=workers,
                 progress=5,
@@ -779,8 +815,21 @@ def _pathe_scrape_job(workers: int, backend: str, limit: int | None) -> None:
         # logical ``workers`` without recreating the executor.
         executor_max = max(
             workers_cap,
-            MAX_PARALLEL_PODS * 6 if backend == "runpod" else workers_cap,
+            (
+                _pathe_workers_cap(MAX_PARALLEL_PODS, 6)
+                if backend == "runpod"
+                else workers_cap
+            ),
         )
+
+        prefetch_stop = threading.Event()
+        _pathe_prefetch_stop[0] = prefetch_stop
+        threading.Thread(
+            target=_pathe_resolve_prefetcher,
+            args=(prefetch_stop,),
+            name="pathe-resolve-prefetch",
+            daemon=True,
+        ).start()
 
         with ThreadPoolExecutor(max_workers=executor_max) as pool:
             futs: dict = {}
@@ -852,10 +901,7 @@ def _pathe_scrape_job(workers: int, backend: str, limit: int | None) -> None:
                                 MAX_PARALLEL_PODS,
                             ),
                         )
-                        workers_cap = max(
-                            1,
-                            min(n_pods * stack_ceil, MAX_PARALLEL_PODS * stack_ceil),
-                        )
+                        workers_cap = _pathe_workers_cap(n_pods, stack_ceil)
                         # Self-heal in background — never block claim/result loop.
                         if time.monotonic() - last_pool_sync >= 3.0:
                             last_pool_sync = time.monotonic()
@@ -888,12 +934,12 @@ def _pathe_scrape_job(workers: int, backend: str, limit: int | None) -> None:
                                 workers=workers,
                                 message=(
                                     f"Pathé scrape · {healthy}/{n_pods} GPU pod(s) · "
-                                    f"workers={workers} (stack≤{stack_n}/{stack_ceil})"
+                                    f"workers={workers} (stack≤{stack_n}/{stack_ceil} +resolve)"
                                 ),
                             )
                             status(
                                 f"Using {workers} client slots on {healthy} GPUs "
-                                f"(stack≤{stack_n}/{stack_ceil})",
+                                f"(stack≤{stack_n}/{stack_ceil} +resolve)",
                                 job="pathe_scrape",
                                 persist=True,
                             )
@@ -1082,6 +1128,13 @@ def _pathe_scrape_job(workers: int, backend: str, limit: int | None) -> None:
         except Exception:
             pass
     finally:
+        try:
+            ev = _pathe_prefetch_stop[0]
+            if ev is not None:
+                ev.set()
+            _pathe_prefetch_stop[0] = None
+        except Exception:
+            pass
         with _lock:
             _pathe_live.clear()
             _active["pathe_scrape"] = False

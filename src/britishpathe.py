@@ -57,6 +57,14 @@ OG_TITLE_RE_ALT = re.compile(
     r'content=["\']([^"\']+)["\']\s+property=["\']og:title["\']',
     re.I,
 )
+OG_IMAGE_RE = re.compile(
+    r'property=["\']og:image["\']\s+content=["\']([^"\']+)["\']',
+    re.I,
+)
+OG_IMAGE_RE_ALT = re.compile(
+    r'content=["\']([^"\']+)["\']\s+property=["\']og:image["\']',
+    re.I,
+)
 BP_TITLE_MARKERS = (
     "| british pathe",
     "| british pathé",
@@ -214,6 +222,14 @@ def extract_m3u8(html: str) -> str | None:
 def extract_og_title(html: str) -> str:
     m = OG_TITLE_RE.search(html or "") or OG_TITLE_RE_ALT.search(html or "")
     return (m.group(1).strip() if m else "") or ""
+
+
+def extract_og_image(html: str) -> str:
+    m = OG_IMAGE_RE.search(html or "") or OG_IMAGE_RE_ALT.search(html or "")
+    url = (m.group(1).strip() if m else "") or ""
+    if url.startswith("//"):
+        url = "https:" + url
+    return url if url.startswith(("http://", "https://")) else ""
 
 
 def _normalize_search_query(title: str) -> str:
@@ -393,6 +409,7 @@ def resolve_asset(
             "asset_url": asset_url,
             "m3u8_url": cached["m3u8_url"],
             "title": cached.get("title") or "",
+            "thumb_url": cached.get("thumb_url") or "",
             "cached": True,
         }
 
@@ -415,16 +432,19 @@ def resolve_asset(
                         raise RuntimeError(f"pathe_still_image asset={aid}")
                     raise RuntimeError(f"pathe_no_m3u8 asset={aid}")
                 title = extract_og_title(html)
+                thumb = extract_og_image(html)
                 entry = {
                     "asset_id": aid,
                     "asset_url": asset_url,
                     "m3u8_url": m3u8,
                     "title": title,
+                    "thumb_url": thumb,
                 }
                 with _cache_lock:
                     cache[aid] = {
                         "m3u8_url": m3u8,
                         "title": title,
+                        "thumb_url": thumb,
                         "asset_url": asset_url,
                     }
                 _save_cache()
@@ -825,6 +845,48 @@ def invalidate_resolve_cache(url_or_id: str) -> bool:
     return True
 
 
+def resolve_cache_hit(url_or_id: str) -> bool:
+    """True when the Pathé asset already has a cached ``.m3u8`` playlist URL."""
+    raw = (url_or_id or "").strip()
+    if not raw:
+        return False
+    aid = asset_id_from_url(raw) if "://" in raw else raw
+    if not aid or not str(aid).isdigit():
+        return False
+    aid = str(int(aid))
+    cached = _load_cache().get(aid)
+    return bool(
+        isinstance(cached, dict)
+        and cached.get("m3u8_url")
+        and str(cached.get("m3u8_url")).endswith(".m3u8")
+    )
+
+
+def warm_resolve_cache(urls: list[str], *, stop_event: threading.Event | None = None) -> int:
+    """Resolve uncached Pathé asset URLs into the local m3u8 cache.
+
+    Shares ``_RESOLVE_SLOTS`` with live scrape resolves so prefetch cannot
+    stampede Scrapfly — it only uses spare capacity. Returns how many URLs
+    were newly resolved (cache misses that succeeded).
+    """
+    warmed = 0
+    for raw in urls:
+        if stop_event is not None and stop_event.is_set():
+            break
+        url = (raw or "").strip()
+        if not url:
+            continue
+        if resolve_cache_hit(url):
+            continue
+        try:
+            resolve_asset(url)
+            warmed += 1
+        except Exception:
+            # still-image / gone / 429 — scrape path will surface the definitive error
+            continue
+    return warmed
+
+
 def prepare_pathe_job(
     url: str,
     title: str = "",
@@ -850,11 +912,13 @@ def prepare_pathe_job(
 
     aid = asset_id_from_url(url)
     asset_url = asset_page_url(aid or "0")
-    _note(
-        "Re-resolving British Pathé preview HLS…"
-        if force
-        else "Resolving British Pathé preview HLS…"
-    )
+    cached_hit = (not force) and resolve_cache_hit(asset_url)
+    if force:
+        _note("Re-resolving British Pathé preview HLS…")
+    elif cached_hit:
+        _note("Using cached Pathé preview HLS…")
+    else:
+        _note("Resolving British Pathé preview HLS…")
     try:
         resolved = resolve_asset(asset_url, force=force)
     except Exception as e:

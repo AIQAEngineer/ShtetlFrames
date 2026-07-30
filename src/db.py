@@ -489,6 +489,22 @@ def take_pending_pathe(limit: int | None, *, only_pending: bool = True) -> list[
     return take_pending(limit, source="pathe", only_pending=only_pending)
 
 
+def peek_pending_pathe(limit: int) -> list[dict]:
+    """Read next Pathé ``pending`` rows without claiming (resolve-cache warm)."""
+    n = max(0, int(limit or 0))
+    if n <= 0:
+        return []
+    id_dir = _queue_id_dir()
+    with db() as conn:
+        rows = conn.execute(
+            f"SELECT id, url, title FROM queue_items "
+            f"WHERE status='pending' AND downloadable='yes' AND {_PATHE_URL_SQL} "
+            f"ORDER BY id {id_dir} LIMIT ?",
+            (n,),
+        ).fetchall()
+    return [dict(r) for r in rows]
+
+
 def requeue_pathe_errors() -> int:
     """Reset Pathé error rows to pending so a new scrape can retry them."""
     with db(write=True) as conn:

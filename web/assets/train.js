@@ -15,6 +15,15 @@ function isYoutubeUrl(s) {
   );
 }
 
+function isPatheAssetUrl(s) {
+  return /britishpathe\.com\/asset\/\d+/i.test(String(s || ""));
+}
+
+function normalizePatheAssetUrl(s) {
+  const m = String(s || "").match(/britishpathe\.com\/asset\/(\d+)/i);
+  return m ? `https://www.britishpathe.com/asset/${m[1]}/` : String(s || "").trim();
+}
+
 function decisionLabel(d) {
   const x = String(d || "").trim();
   if (x === "yes" || x === "accept") return "Orthodox Jew";
@@ -50,7 +59,15 @@ function normalizeClip(c) {
 function readQuery() {
   const el = $("trainQuery");
   query = (el?.value || "").trim();
-  mode = isYoutubeUrl(query) ? "youtube" : query ? "pathe" : "";
+  if (isYoutubeUrl(query)) {
+    mode = "youtube";
+  } else if (isPatheAssetUrl(query)) {
+    query = normalizePatheAssetUrl(query);
+    if (el && el.value.trim() !== query) el.value = query;
+    mode = "asset";
+  } else {
+    mode = query ? "pathe" : "";
+  }
   return query;
 }
 
@@ -62,7 +79,13 @@ function renderStats() {
   const el = $("trainStats");
   if (!el) return;
   const label =
-    mode === "youtube" ? "YouTube reference" : query ? `Search “${query}”` : "—";
+    mode === "youtube"
+      ? "YouTube reference"
+      : mode === "asset"
+        ? `Asset ${query.match(/\/asset\/(\d+)/)?.[1] || query}`
+        : query
+          ? `Search “${query}”`
+          : "—";
   el.textContent =
     `${label} · ${stats.n_total || 0} clips · ${stats.n_pending || 0} to tag · ` +
     `${stats.n_yes || 0} Orthodox · ${stats.n_no || 0} not`;
@@ -74,7 +97,7 @@ function renderList() {
   if (!query && mode !== "youtube") {
     list.innerHTML = `<div class="card" style="cursor:default">
       <div class="title">No source yet</div>
-      <div class="cue">Paste a Pathé keyword or a YouTube URL, then Load.</div>
+      <div class="cue">Paste a Pathé keyword, Pathé asset URL, or a YouTube URL, then Load.</div>
     </div>`;
     return;
   }
@@ -84,7 +107,9 @@ function renderList() {
       <div class="cue">${
         mode === "youtube"
           ? "Local scan running — frame hits appear here when segments are saved."
-          : `Press “Load” for “${escapeHtml(query)}”.`
+          : mode === "asset"
+            ? `Press “Load” to resolve asset ${escapeHtml(query.match(/\/asset\/(\d+)/)?.[1] || query)}.`
+            : `Press “Load” for “${escapeHtml(query)}”.`
       }</div>
     </div>`;
     return;
@@ -359,11 +384,25 @@ async function loadSearch() {
       return;
     }
 
-    setStatus(`Starting Pathé discover for “${query}”…`);
-    const data = await apiPost("/api/train/seed", { query, max_items: 500, resume: false });
+    setStatus(
+      mode === "asset"
+        ? `Loading Pathé asset…`
+        : `Starting Pathé discover for “${query}”…`
+    );
+    const data = await apiPost("/api/train/seed", {
+      query,
+      max_items: mode === "asset" ? 1 : 500,
+      resume: false,
+    });
     if (!data.ok) {
       setStatus(data.error || "Could not start load");
       return;
+    }
+    if (data.query) {
+      query = data.query;
+      const el = $("trainQuery");
+      if (el) el.value = query;
+      mode = isPatheAssetUrl(query) ? "asset" : mode;
     }
     if (!seedPoll) seedPoll = setInterval(pollSeed, 1500);
     await pollSeed();
@@ -377,7 +416,11 @@ function syncLoadButtonLabel() {
   if (!btn) return;
   readQuery();
   btn.textContent =
-    mode === "youtube" ? "Scan YouTube on GPU" : "Load Pathé search";
+    mode === "youtube"
+      ? "Scan YouTube on GPU"
+      : mode === "asset"
+        ? "Load Pathé asset"
+        : "Load Pathé search";
 }
 
 async function scoreThese() {
@@ -468,7 +511,7 @@ async function clearSet() {
 }
 
 async function ensureThumbs() {
-  if (!query || mode === "youtube") return;
+  if (!query || mode === "youtube" || mode === "asset") return;
   const missing = clips.filter((c) => !(c.thumb_url || "").trim()).length;
   if (!missing) return;
   setStatus(`Fetching stills for ${missing} clip(s)…`);

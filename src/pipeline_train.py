@@ -37,16 +37,98 @@ def train_seed_busy() -> bool:
         return _active
 
 
+def normalize_train_query(query: str) -> str:
+    """Canonicalize Pathé asset URLs; leave keyword searches unchanged."""
+    q = (query or "").strip()
+    if not q:
+        return ""
+    try:
+        from britishpathe import (
+            asset_id_from_url,
+            is_britishpathe_asset_url,
+            normalize_asset_url,
+        )
+
+        if is_britishpathe_asset_url(q) or asset_id_from_url(q):
+            return normalize_asset_url(q) or q
+    except Exception:
+        pass
+    return q
+
+
+def _seed_single_pathe_asset(asset_url: str) -> None:
+    """Resolve one Pathé /asset/ URL into train_clips (title + thumb)."""
+    from britishpathe import (
+        asset_id_from_url,
+        extract_og_image,
+        extract_og_title,
+        normalize_asset_url,
+        resolve_asset,
+        scrapfly_fetch_html,
+    )
+
+    url = normalize_asset_url(asset_url) or asset_url.strip()
+    aid = asset_id_from_url(url) or ""
+    set_job(
+        "train_seed",
+        status="running",
+        phase="asset",
+        message=f"Loading Pathé asset {aid or url}…",
+        progress=10,
+        discovered=0,
+        total=1,
+        completed=0,
+        hits=0,
+        error="",
+    )
+    resolved = resolve_asset(url)
+    title = (resolved.get("title") or "").strip()
+    thumb = (resolved.get("thumb_url") or "").strip()
+    # Cached resolves often predate thumb_url — pull og:image/title once.
+    if not thumb or not title or title.lower().startswith("asset "):
+        try:
+            set_job("train_seed", progress=40, message=f"Fetching preview for asset {aid}…")
+            html = scrapfly_fetch_html(resolved.get("asset_url") or url, render_js=False)
+            thumb = thumb or extract_og_image(html)
+            title = extract_og_title(html) or title
+        except Exception:
+            pass
+    title = title or f"Asset {aid}"
+    row = {
+        "url": resolved.get("asset_url") or url,
+        "title": title,
+        "year": "",
+        "identifier": str(resolved.get("asset_id") or aid),
+        "source": "British Pathé",
+        "downloadable": "yes",
+        "thumb_url": thumb,
+        "image_url": thumb,
+    }
+    stats = upsert_train_clips([row], query=url)
+    added = int(stats.get("n_added") or 0)
+    set_job(
+        "train_seed",
+        status="done",
+        phase="done",
+        progress=100,
+        discovered=max(1, added),
+        completed=max(1, added),
+        hits=0,
+        message=f"Ready · Pathé asset {aid}" + (f" — {title}" if title else ""),
+        error="",
+    )
+
+
 def start_train_seed(
     *,
     query: str = DEFAULT_TRAIN_QUERY,
     max_items: int = DEFAULT_TRAIN_MAX,
     resume: bool = True,
 ) -> dict:
-    """Background-fetch Pathé search listing into ``train_clips``."""
+    """Background-fetch Pathé search listing (or a single asset URL) into ``train_clips``."""
     global _active
     init_db()
-    q = (query or DEFAULT_TRAIN_QUERY).strip()
+    q = normalize_train_query(query or DEFAULT_TRAIN_QUERY)
     if not q:
         return {"ok": False, "error": "missing Pathé search query"}
     try:
@@ -54,28 +136,50 @@ def start_train_seed(
     except (TypeError, ValueError):
         cap = DEFAULT_TRAIN_MAX
 
+    from britishpathe import is_britishpathe_asset_url
+
+    single_asset = is_britishpathe_asset_url(q)
+
     with _lock:
         if _active:
             return {"ok": False, "error": "train seed already running", "job": get_job("train_seed")}
         _active = True
 
-    set_job(
-        "train_seed",
-        status="running",
-        phase="discover",
-        message=f"Loading Pathé search “{q}”…",
-        progress=2,
-        discovered=0,
-        total=cap,
-        completed=0,
-        hits=0,
-        error="",
-    )
+    if single_asset:
+        set_job(
+            "train_seed",
+            status="running",
+            phase="asset",
+            message=f"Loading Pathé asset…",
+            progress=2,
+            discovered=0,
+            total=1,
+            completed=0,
+            hits=0,
+            error="",
+        )
+    else:
+        set_job(
+            "train_seed",
+            status="running",
+            phase="discover",
+            message=f"Loading Pathé search “{q}”…",
+            progress=2,
+            discovered=0,
+            total=cap,
+            completed=0,
+            hits=0,
+            error="",
+        )
 
     def _run() -> None:
         global _active
         added = 0
         try:
+            if single_asset:
+                _seed_single_pathe_asset(q)
+                return
+
             from britishpathe import discover_catalog
 
             def on_status(msg: str) -> None:
@@ -124,7 +228,13 @@ def start_train_seed(
                 _active = False
 
     threading.Thread(target=_run, daemon=True, name="train-seed").start()
-    return {"ok": True, "job": get_job("train_seed"), "query": q, "max_items": cap}
+    return {
+        "ok": True,
+        "job": get_job("train_seed"),
+        "query": q,
+        "max_items": 1 if single_asset else cap,
+        "mode": "asset" if single_asset else "search",
+    }
 
 
 def backfill_train_thumbs(
@@ -135,9 +245,14 @@ def backfill_train_thumbs(
     """Re-fetch Pathé listing pages and fill missing train_clips.thumb_url."""
     global _thumb_active
     init_db()
-    q = (query or DEFAULT_TRAIN_QUERY).strip()
+    q = normalize_train_query(query or DEFAULT_TRAIN_QUERY)
     if not q:
         return {"ok": False, "error": "missing Pathé search query", "updated": 0}
+    from britishpathe import is_britishpathe_asset_url
+
+    # Single-asset sets get thumbs from resolve_asset; listing scrape is wrong here.
+    if is_britishpathe_asset_url(q):
+        return {"ok": True, "updated": 0, "pages": 0, "query": q, "skipped": "asset_url"}
     with _thumb_lock:
         if _thumb_active:
             return {"ok": False, "error": "thumb backfill already running", "updated": 0}

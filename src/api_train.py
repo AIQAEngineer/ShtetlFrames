@@ -21,6 +21,7 @@ from pipeline_train import (
     clear_youtube_train_ref,
     list_youtube_train_candidates,
     load_youtube_train_ref,
+    normalize_train_query,
     start_train_seed,
     start_youtube_train_ref,
     youtube_video_id,
@@ -29,8 +30,10 @@ from pipeline_train import (
 
 def _query_from_qs(qs: dict, body: dict | None = None) -> str:
     if body and isinstance(body, dict) and body.get("query") is not None:
-        return str(body.get("query") or "").strip()
-    return ((qs.get("query") or [DEFAULT_TRAIN_QUERY])[0] or "").strip()
+        raw = str(body.get("query") or "").strip()
+    else:
+        raw = ((qs.get("query") or [DEFAULT_TRAIN_QUERY])[0] or "").strip()
+    return normalize_train_query(raw)
 
 
 def handle_get_summary(handler: BaseHTTPRequestHandler, parsed: ParseResult) -> None:
@@ -123,7 +126,7 @@ def handle_get_clips(handler: BaseHTTPRequestHandler, parsed: ParseResult) -> No
 
 def handle_post_seed(handler: BaseHTTPRequestHandler, body: dict) -> None:
     body = body if isinstance(body, dict) else {}
-    query = str(body.get("query") or DEFAULT_TRAIN_QUERY).strip()
+    query = normalize_train_query(str(body.get("query") or DEFAULT_TRAIN_QUERY))
     if not query:
         json_response(handler, 400, {"ok": False, "error": "missing Pathé search query"})
         return
