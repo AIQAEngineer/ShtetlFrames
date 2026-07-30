@@ -9,7 +9,7 @@ from frame_strip import resolve_pathe_video
 
 
 def handle_post_mark(handler: BaseHTTPRequestHandler, body: dict) -> None:
-    from frame_strip import build_mark_triplet, parse_mark_seconds
+    from frame_strip import build_mark_triplet, build_range_frames, parse_mark_seconds
 
     ctx, err = resolve_pathe_video(body, allow_video_id=False)
     if err:
@@ -17,6 +17,36 @@ def handle_post_mark(handler: BaseHTTPRequestHandler, body: dict) -> None:
         json_response(handler, code, err)
         return
     assert ctx is not None
+
+    # Start+end range mode → dense frame grid over the window (choose frames to stitch).
+    start = parse_mark_seconds(body.get("start")) if body.get("start") not in (None, "") else None
+    end = parse_mark_seconds(body.get("end")) if body.get("end") not in (None, "") else None
+    if start is not None and end is not None:
+        if end <= start:
+            json_response(
+                handler,
+                400,
+                {"ok": False, "error": "end_before_start", "hint": "End must be after start"},
+            )
+            return
+        result = build_range_frames(
+            ctx["video"], start, end, asset_id=ctx["aid"], source_url=ctx["url"]
+        )
+        if not result:
+            json_response(
+                handler,
+                500,
+                {
+                    "ok": False,
+                    "error": "extract_failed",
+                    "asset_id": ctx["aid"],
+                    "start_sec": start,
+                    "end_sec": end,
+                },
+            )
+            return
+        json_response(handler, 200, {"ok": True, **result})
+        return
 
     mark = parse_mark_seconds(body.get("mark") if "mark" in body else body.get("second"))
     if mark is None:
@@ -26,7 +56,7 @@ def handle_post_mark(handler: BaseHTTPRequestHandler, body: dict) -> None:
             {
                 "ok": False,
                 "error": "mark_required",
-                "hint": "Seconds as a number (e.g. 42.5) or m:ss",
+                "hint": "Seconds as a number (e.g. 42.5) or m:ss — or set both start and end",
             },
         )
         return

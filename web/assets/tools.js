@@ -2,6 +2,20 @@
 
 /* —— Mark & stitch —— */
 
+function parseTime(raw) {
+  const s = String(raw ?? "").trim().replace(",", ".");
+  if (!s) return null;
+  if (s.includes(":")) {
+    const parts = s.split(":").map((p) => Number(p));
+    if (parts.some((n) => !Number.isFinite(n))) return null;
+    if (parts.length === 2) return Math.max(0, parts[0] * 60 + parts[1]);
+    if (parts.length === 3) return Math.max(0, parts[0] * 3600 + parts[1] * 60 + parts[2]);
+    return null;
+  }
+  const n = Number(s);
+  return Number.isFinite(n) ? Math.max(0, n) : null;
+}
+
 const markForm = $("markForm");
 const markStatus = $("markStatus");
 const markResult = $("markResult");
@@ -43,11 +57,13 @@ function setFrameSelected(fig, on) {
 }
 
 function renderMarkFrames(frames, bust) {
-  const mark = Number(lastMarkPayload?.mark_sec || 0);
+  const mark = Number(lastMarkPayload?.mark_sec ?? lastMarkPayload?.mid_sec ?? 0);
+  const isRange = lastMarkPayload?.mode === "range";
   markFrames.innerHTML = (frames || [])
     .map((f) => {
-      const near =
-        Math.abs(Number(f.time_sec) - mark) <= 0.09 || Boolean(f.is_mark);
+      const near = isRange
+        ? false
+        : Math.abs(Number(f.time_sec) - mark) <= 0.09 || Boolean(f.is_mark);
       return `<figure class="frame-card${near ? " is-selected" : ""}${f.is_mark ? " is-mark" : ""}" data-time="${escapeAttr(f.time_sec)}" tabindex="0" role="checkbox" aria-checked="${near ? "true" : "false"}">
           <img src="${escapeAttr(f.url)}${bust}" alt="${escapeAttr(f.label)}" draggable="false" />
           <figcaption>${escapeHtml(f.label)} · ${fmtTimeFrac(f.time_sec)}</figcaption>
@@ -84,10 +100,15 @@ $("markSelectNone").addEventListener("click", () => {
 });
 
 $("markSelectMark").addEventListener("click", () => {
-  const mark = Number(lastMarkPayload?.mark_sec || 0);
+  const isRange = lastMarkPayload?.mode === "range";
   markFrames.querySelectorAll(".frame-card").forEach((fig) => {
     const t = Number(fig.dataset.time);
-    setFrameSelected(fig, Number.isFinite(t) && Math.abs(t - mark) <= 0.09);
+    if (isRange) {
+      setFrameSelected(fig, Number.isFinite(t));
+    } else {
+      const mark = Number(lastMarkPayload?.mark_sec || 0);
+      setFrameSelected(fig, Number.isFinite(t) && Math.abs(t - mark) <= 0.09);
+    }
   });
   syncCombineUi();
 });
@@ -95,8 +116,40 @@ $("markSelectMark").addEventListener("click", () => {
 markForm.addEventListener("submit", async (e) => {
   e.preventDefault();
   const url = $("markUrl").value.trim();
-  const mark = $("markSec").value.trim();
-  if (!url || !mark) return;
+  const markRaw = $("markSec").value.trim();
+  const startRaw = $("markStart").value.trim();
+  const endRaw = $("markEnd").value.trim();
+  if (!url) return;
+
+  const start = parseTime(startRaw);
+  const end = parseTime(endRaw);
+  const mark = parseTime(markRaw);
+
+  let body = { url };
+  let modeLabel = "";
+  if (startRaw && endRaw) {
+    if (start == null || end == null) {
+      markStatus.textContent = "Enter start and end as seconds or m:ss (example: 14:02).";
+      return;
+    }
+    if (end <= start) {
+      markStatus.textContent = "End must be after start.";
+      return;
+    }
+    body.start = start;
+    body.end = end;
+    modeLabel = `range ${fmtTimeFrac(start)} → ${fmtTimeFrac(end)}`;
+  } else if (markRaw) {
+    if (mark == null) {
+      markStatus.textContent = "Enter the mark as seconds or m:ss (example: 1:12).";
+      return;
+    }
+    body.mark = mark;
+    modeLabel = `mark ${fmtTimeFrac(mark)}`;
+  } else {
+    markStatus.textContent = "Add either a second mark, or both start and end.";
+    return;
+  }
 
   markGo.disabled = true;
   markCombine.disabled = true;
@@ -106,7 +159,7 @@ markForm.addEventListener("submit", async (e) => {
   lastMarkPayload = null;
 
   try {
-    const data = await apiPost("/api/mark", { url, mark });
+    const data = await apiPost("/api/mark", body);
     if (!data.ok) {
       markStatus.textContent =
         data.error || data.hint || `Failed (HTTP ${data.status})`;
@@ -118,12 +171,16 @@ markForm.addEventListener("submit", async (e) => {
     markStrip.src = `${data.strip_url}${bust}`;
     renderMarkFrames(data.frames || [], bust);
 
+    const when =
+      data.mode === "range"
+        ? `${fmtTimeFrac(data.start_sec)} → ${fmtTimeFrac(data.end_sec)}`
+        : `mark ${fmtTimeFrac(data.mark_sec)}`;
     markMeta.innerHTML = `Asset <a href="${escapeAttr(data.source_url)}" target="_blank" rel="noopener">${escapeHtml(
       data.asset_id
-    )}</a> · mark ${fmtTimeFrac(data.mark_sec)} · ${(data.frames || []).length} frames · strip ${fmtBytes(data.strip_bytes)}
+    )}</a> · ${when} · ${(data.frames || []).length} frames · strip ${fmtBytes(data.strip_bytes)}
       · <a href="${escapeAttr(data.strip_url)}" download>Download strip</a>`;
 
-    markStatus.textContent = `Ready — pick frames around ${fmtTimeFrac(data.mark_sec)}, then Stitch strip`;
+    markStatus.textContent = `Ready — ${modeLabel} · pick frames, then Stitch strip`;
     markResult.hidden = false;
   } catch (err) {
     markStatus.textContent = String(err?.message || err || "request failed");
@@ -144,10 +201,14 @@ markCombine.addEventListener("click", async () => {
   markGo.disabled = true;
   markStatus.textContent = `Stitching ${times.length} frames at full resolution…`;
 
+  const markFor =
+    lastMarkPayload.mode === "range"
+      ? lastMarkPayload.mid_sec
+      : lastMarkPayload.mark_sec;
   try {
     const data = await apiPost("/api/mark/combine", {
       url,
-      mark: lastMarkPayload.mark_sec,
+      mark: markFor,
       times,
       scale: 1,
     });
@@ -176,20 +237,6 @@ markCombine.addEventListener("click", async () => {
 });
 
 /* —— Cut & upload —— */
-
-function parseTime(raw) {
-  const s = String(raw ?? "").trim().replace(",", ".");
-  if (!s) return null;
-  if (s.includes(":")) {
-    const parts = s.split(":").map((p) => Number(p));
-    if (parts.some((n) => !Number.isFinite(n))) return null;
-    if (parts.length === 2) return Math.max(0, parts[0] * 60 + parts[1]);
-    if (parts.length === 3) return Math.max(0, parts[0] * 3600 + parts[1] * 60 + parts[2]);
-    return null;
-  }
-  const n = Number(s);
-  return Number.isFinite(n) ? Math.max(0, n) : null;
-}
 
 const clipForm = $("clipForm");
 const clipTimes = $("clipTimes");
@@ -459,10 +506,19 @@ clipTimes.addEventListener("submit", (e) => {
   uploadToDrive();
 });
 
-/* Deep-link: /tools?tab=clip&url=...&start=...&end=... */
+/* Deep-link: /tools?tab=clip&url=...&start=...&end=... (clip) or tab=mark&url&mark|start&end */
 (function initFromQuery() {
   const q = new URLSearchParams(location.search);
+  const tab = q.get("tab");
   const url = q.get("url");
+  if (tab === "mark" && url) {
+    $("markUrl").value = url;
+    if (q.get("mark")) $("markSec").value = q.get("mark");
+    if (q.get("start")) $("markStart").value = q.get("start");
+    if (q.get("end")) $("markEnd").value = q.get("end");
+    markForm.requestSubmit();
+    return;
+  }
   if (url) $("clipUrl").value = url;
   if (q.get("start")) clipStart.value = q.get("start");
   if (q.get("end")) clipEnd.value = q.get("end");

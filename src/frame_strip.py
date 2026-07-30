@@ -905,6 +905,127 @@ def _stitch_hq_strip(
     )
 
 
+MARK_RANGE_INTERVAL = 0.25
+MARK_RANGE_MAX_FRAMES = 40
+MARK_RANGE_MAX_SPAN_SEC = 90.0
+
+
+def build_range_frames(
+    video: Path,
+    start_sec: float,
+    end_sec: float,
+    *,
+    asset_id: str,
+    source_url: str = "",
+    step: float = MARK_RANGE_INTERVAL,
+) -> dict[str, Any] | None:
+    """Dense pick grid over an explicit [start, end] window (no center mark).
+
+    Used by the Tools "Mark & stitch" tab when both start and end are given —
+    lets the user choose any frames in the range to stitch into an HQ strip.
+    """
+    from PIL import Image
+
+    start = max(0.0, float(start_sec))
+    end = max(start + 0.05, float(end_sec))
+    span = min(end - start, MARK_RANGE_MAX_SPAN_SEC)
+    end = start + span
+    aid = re.sub(r"[^\w.\-]", "_", (asset_id or "asset").strip())[:48] or "asset"
+    tag = f"{start:.2f}_{end:.2f}".replace(".", "p")
+    prefix = f"mark_{aid}_range_{tag}"
+    source = _source_label(aid, source_url or f"https://www.britishpathe.com/asset/{aid}/")
+
+    raw: list[float] = []
+    t = start
+    while t <= end + 1e-9:
+        raw.append(round(t, 3))
+        t += max(0.04, float(step or MARK_RANGE_INTERVAL))
+    if not raw or abs(raw[-1] - end) > 0.02:
+        raw.append(round(end, 3))
+    if len(raw) > MARK_RANGE_MAX_FRAMES:
+        idxs = [round(i * (len(raw) - 1) / (MARK_RANGE_MAX_FRAMES - 1)) for i in range(MARK_RANGE_MAX_FRAMES)]
+        times = sorted({raw[i] for i in idxs})
+    else:
+        times = raw
+
+    CONTACT_DIR.mkdir(parents=True, exist_ok=True)
+    with tempfile.TemporaryDirectory(prefix=f"mark_range_{aid}_") as td:
+        work = Path(td)
+        extracted = _extract_mark_frames(Path(video), times, work, thumb_h=MARK_THUMB_H)
+        frames: list[tuple[float, Any]] = []
+        for t, path in extracted:
+            try:
+                im = Image.open(path).convert("RGB")
+            except Exception:
+                continue
+            if im.height != MARK_THUMB_H and im.height > 0:
+                try:
+                    resample = Image.Resampling.LANCZOS
+                except AttributeError:
+                    resample = Image.LANCZOS
+                nw = max(1, int(round(im.width * (MARK_THUMB_H / float(im.height)))))
+                im = im.resize((nw, MARK_THUMB_H), resample)
+            frames.append((t, im))
+
+        if not frames:
+            return None
+
+        strip_times = {
+            round(frames[0][0], 3),
+            round(frames[len(frames) // 2][0], 3),
+            round(frames[-1][0], 3),
+        }
+        strip_frames = [(t, im) for t, im in frames if round(t, 3) in strip_times]
+        if len(strip_frames) < 2:
+            strip_frames = frames[:3] if len(frames) >= 3 else frames
+        mid = (start + end) / 2.0
+        strip = stitch_labeled_strip(
+            strip_frames, source=source, mid_sec=mid, caption_below=True
+        )
+        strip_path = CONTACT_DIR / f"{prefix}_strip.jpg"
+        saved = _save_jpeg_under(
+            strip, strip_path, max_bytes=MARK_MAX_BYTES, quality=CROP_JPEG_QUALITY
+        )
+        if not saved:
+            return None
+
+        frame_urls: list[dict[str, Any]] = []
+        for i, (t, im) in enumerate(frames):
+            tag = f"t{i:02d}_{round(t, 3):.3f}".replace(".", "p")
+            fp = CONTACT_DIR / f"{prefix}_{tag}.jpg"
+            try:
+                im.convert("RGB").save(fp, format="JPEG", quality=90, optimize=True)
+            except Exception:
+                continue
+            if fp.is_file() and fp.stat().st_size > 200:
+                frame_urls.append(
+                    {
+                        "label": fmt_range_label(t, start),
+                        "time_sec": round(float(t), 3),
+                        "url": f"/media/sheet/{fp.name}",
+                        "bytes": int(fp.stat().st_size),
+                        "is_mark": False,
+                    }
+                )
+
+        return {
+            "asset_id": aid,
+            "mode": "range",
+            "start_sec": round(start, 3),
+            "end_sec": round(end, 3),
+            "mid_sec": round((start + end) / 2.0, 3),
+            "times": [round(float(t), 3) for t, _ in frames],
+            "strip_url": f"/media/sheet/{strip_path.name}",
+            "strip_bytes": int(strip_path.stat().st_size),
+            "source_url": source_url or f"https://www.britishpathe.com/asset/{aid}/",
+            "frames": frame_urls,
+        }
+
+
+def fmt_range_label(t: float, start: float) -> str:
+    return f"+{max(0.0, float(t) - float(start)):.2f}s"
+
+
 def build_mark_triplet(
     video: Path,
     mark_sec: float,

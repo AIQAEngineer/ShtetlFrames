@@ -23,7 +23,7 @@
         <div>
           <h1>Mark</h1>
           <p class="section-lede" style="margin:0">
-            Paste a Pathé asset URL and a second mark — pick frames around ±0.5s, then stitch them into one high-quality strip.
+            Paste a Pathé asset URL and either a second mark, or a start–end range — pick frames, then stitch them into one high-quality strip.
           </p>
         </div>
       </header>
@@ -44,16 +44,36 @@
           <input
             id="markSec"
             type="text"
-            required
             inputmode="decimal"
             placeholder="42.5 or 1:12"
+            autocomplete="off"
+          />
+        </label>
+        <span class="mark-or">or</span>
+        <label class="mark-field mark-field-mark">
+          <span>Start</span>
+          <input
+            id="markStart"
+            type="text"
+            inputmode="decimal"
+            placeholder="0:00"
+            autocomplete="off"
+          />
+        </label>
+        <label class="mark-field mark-field-mark">
+          <span>End</span>
+          <input
+            id="markEnd"
+            type="text"
+            inputmode="decimal"
+            placeholder="0:10"
             autocomplete="off"
           />
         </label>
         <button class="btn ok" id="markGo" type="submit">Load frames</button>
       </form>
 
-      <p class="crops-summary" id="markStatus">Paste a URL and mark to begin.</p>
+      <p class="crops-summary" id="markStatus">Paste a URL plus a mark or start–end range to begin.</p>
 
       <div class="mark-result" id="markResult" hidden>
         <div class="mark-strip-wrap">

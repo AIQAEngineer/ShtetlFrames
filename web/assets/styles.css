@@ -1166,6 +1166,13 @@ button.run-btn:disabled {
   min-width: 7rem;
 }
 
+.mark-or {
+  align-self: flex-end;
+  padding-bottom: 0.75rem;
+  color: var(--bone-dim);
+  font-size: 0.85rem;
+}
+
 .mark-field span {
   font-size: 0.78rem;
   letter-spacing: 0.04em;
