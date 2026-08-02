@@ -1,0 +1,2338 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1" />
+<title>Known hits × new CLIP probe</title>
+<style>
+  :root {
+    --bg: #0f1115; --panel: #171a21; --text: #e8eaed; --muted: #9aa0a6;
+    --hit: #1e3a2f; --hitb: #3dd68c; --miss: #3a1e1e; --missb: #f07178;
+    --line: #2a2f3a;
+  }
+  * { box-sizing: border-box; }
+  body {
+    margin: 0; font-family: "Segoe UI", system-ui, sans-serif;
+    background: var(--bg); color: var(--text); line-height: 1.4;
+  }
+  header {
+    padding: 1.5rem 1.75rem 1rem; border-bottom: 1px solid var(--line);
+    background: var(--panel);
+  }
+  h1 { margin: 0 0 .35rem; font-size: 1.45rem; font-weight: 650; }
+  h2 { margin: 0 0 .75rem; font-size: 1.05rem; font-weight: 600; }
+  h2 .n { color: var(--muted); font-weight: 500; }
+  .sub { color: var(--muted); font-size: .92rem; max-width: 70rem; }
+  .stats {
+    display: flex; flex-wrap: wrap; gap: .6rem; margin-top: 1rem;
+  }
+  .stat {
+    background: #12151c; border: 1px solid var(--line); border-radius: 8px;
+    padding: .55rem .8rem; min-width: 7.5rem;
+  }
+  .stat b { display: block; font-size: 1.25rem; }
+  .stat span { color: var(--muted); font-size: .78rem; }
+  main { padding: 1.25rem 1.75rem 3rem; display: grid; gap: 1.75rem; }
+  .grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(160px, 1fr));
+    gap: .75rem;
+  }
+  .card {
+    background: var(--panel); border: 1px solid var(--line);
+    border-radius: 10px; overflow: hidden; display: flex; flex-direction: column;
+  }
+  .card.hit { border-color: #2a5a42; }
+  .card.miss { border-color: #5a2a2a; }
+  .card img, .card .noimg {
+    width: 100%; aspect-ratio: 3/4; object-fit: cover; background: #0a0c10;
+    display: block;
+  }
+  .card .noimg {
+    display: grid; place-items: center; color: var(--muted); font-size: .8rem;
+  }
+  .meta { padding: .5rem .55rem .65rem; font-size: .78rem; }
+  .score { font-weight: 700; font-variant-numeric: tabular-nums; }
+  .card.hit .score { color: var(--hitb); }
+  .card.miss .score { color: var(--missb); }
+  .vid { color: var(--muted); margin-top: .15rem; word-break: break-all; }
+  .cue { margin-top: .25rem; color: #c5c9d0; }
+  .empty { color: var(--muted); }
+  .legend { display: flex; gap: 1rem; margin-top: .75rem; font-size: .85rem; }
+  .pill {
+    display: inline-flex; align-items: center; gap: .35rem;
+    padding: .15rem .55rem; border-radius: 999px; border: 1px solid var(--line);
+  }
+  .pill.hit { background: var(--hit); border-color: #2a5a42; }
+  .pill.miss { background: var(--miss); border-color: #5a2a2a; }
+</style>
+</head>
+<body>
+<header>
+  <h1>Known hits × new CLIP probe</h1>
+  <p class="sub">
+    Human Keep stills and local known-positive videos rescored with
+    OpenCLIP ViT-L-14 + linear probe
+    (blend=0.5,
+    val_acc=0.8983050584793091,
+    n_keep=71/n_pass=224).
+    Gate threshold = 0.1.
+  </p>
+  <div class="legend">
+    <span class="pill hit">picked up ≥ thr</span>
+    <span class="pill miss">missed &lt; thr</span>
+  </div>
+  <div class="stats">
+    <div class="stat"><b>47/71</b><span>Keeps picked up</span></div>
+    <div class="stat"><b>24</b><span>Keeps missed</span></div>
+    <div class="stat"><b>58</b><span>Video frames picked up</span></div>
+    <div class="stat"><b>161</b><span>Video frames missed</span></div>
+    <div class="stat"><b>2</b><span>Videos scanned</span></div>
+  </div>
+</header>
+<main>
+  <section><h2>Keep stills — picked up <span class='n'>(47)</span></h2><div class='grid'>
+    <article class="card hit">
+      <img src="/media/sheet/cand_1912.jpg" loading="lazy" alt="munkacs_1933_yt" />
+      <div class="meta">
+        <div class="score">+0.362</div>
+        <div class="vid">#1912 munkacs_1933_yt</div>
+        <div class="cue">elderly Orthodox Jewish rabbi with long white beard black hat and dark</div>
+      </div>
+    </article>
+
+    <article class="card hit">
+      <img src="/media/sheet/cand_1924.jpg" loading="lazy" alt="munkacs_1933_yt" />
+      <div class="meta">
+        <div class="score">+0.351</div>
+        <div class="vid">#1924 munkacs_1933_yt</div>
+        <div class="cue">Hasidic rebbe with white beard sidelocks and shtreimel fur hat</div>
+      </div>
+    </article>
+
+    <article class="card hit">
+      <img src="/media/sheet/cand_1915.jpg" loading="lazy" alt="munkacs_1933_yt" />
+      <div class="meta">
+        <div class="score">+0.350</div>
+        <div class="vid">#1915 munkacs_1933_yt</div>
+        <div class="cue">elderly Orthodox Jewish rabbi with long white beard black hat and dark</div>
+      </div>
+    </article>
+
+    <article class="card hit">
+      <img src="/media/sheet/cand_1904.jpg" loading="lazy" alt="orthodox_look_training_reference" />
+      <div class="meta">
+        <div class="score">+0.349</div>
+        <div class="vid">#1904 orthodox_look_training_reference</div>
+        <div class="cue">Hasidic rebbe with white beard sidelocks and shtreimel fur hat</div>
+      </div>
+    </article>
+
+    <article class="card hit">
+      <img src="/media/sheet/cand_1913.jpg" loading="lazy" alt="munkacs_1933_yt" />
+      <div class="meta">
+        <div class="score">+0.346</div>
+        <div class="vid">#1913 munkacs_1933_yt</div>
+        <div class="cue">Hasidic rebbe with white beard sidelocks and shtreimel fur hat</div>
+      </div>
+    </article>
+
+    <article class="card hit">
+      <img src="/media/sheet/cand_1914.jpg" loading="lazy" alt="munkacs_1933_yt" />
+      <div class="meta">
+        <div class="score">+0.344</div>
+        <div class="vid">#1914 munkacs_1933_yt</div>
+        <div class="cue">Hasidic rebbe with white beard sidelocks and shtreimel fur hat</div>
+      </div>
+    </article>
+
+    <article class="card hit">
+      <img src="/media/sheet/cand_1925.jpg" loading="lazy" alt="munkacs_1933_yt" />
+      <div class="meta">
+        <div class="score">+0.340</div>
+        <div class="vid">#1925 munkacs_1933_yt</div>
+        <div class="cue">Hasidic rebbe with white beard sidelocks and shtreimel fur hat</div>
+      </div>
+    </article>
+
+    <article class="card hit">
+      <img src="/media/sheet/cand_1922.jpg" loading="lazy" alt="munkacs_1933_yt" />
+      <div class="meta">
+        <div class="score">+0.337</div>
+        <div class="vid">#1922 munkacs_1933_yt</div>
+        <div class="cue">Hasidic rebbe with white beard sidelocks and shtreimel fur hat</div>
+      </div>
+    </article>
+
+    <article class="card hit">
+      <img src="/media/sheet/cand_1921.jpg" loading="lazy" alt="munkacs_1933_yt" />
+      <div class="meta">
+        <div class="score">+0.336</div>
+        <div class="vid">#1921 munkacs_1933_yt</div>
+        <div class="cue">Hasidic rebbe with white beard sidelocks and shtreimel fur hat</div>
+      </div>
+    </article>
+
+    <article class="card hit">
+      <img src="/media/sheet/cand_1919.jpg" loading="lazy" alt="munkacs_1933_yt" />
+      <div class="meta">
+        <div class="score">+0.333</div>
+        <div class="vid">#1919 munkacs_1933_yt</div>
+        <div class="cue">Hasidic rebbe with white beard sidelocks and shtreimel fur hat</div>
+      </div>
+    </article>
+
+    <article class="card hit">
+      <img src="/media/sheet/cand_1923.jpg" loading="lazy" alt="munkacs_1933_yt" />
+      <div class="meta">
+        <div class="score">+0.333</div>
+        <div class="vid">#1923 munkacs_1933_yt</div>
+        <div class="cue">Hasidic rebbe with white beard sidelocks and shtreimel fur hat</div>
+      </div>
+    </article>
+
+    <article class="card hit">
+      <img src="/media/sheet/cand_1908.jpg" loading="lazy" alt="orthodox_look_training_reference" />
+      <div class="meta">
+        <div class="score">+0.330</div>
+        <div class="vid">#1908 orthodox_look_training_reference</div>
+        <div class="cue">Hasidic rebbe with white beard sidelocks and shtreimel fur hat</div>
+      </div>
+    </article>
+
+    <article class="card hit">
+      <img src="/media/sheet/cand_1916.jpg" loading="lazy" alt="munkacs_1933_yt" />
+      <div class="meta">
+        <div class="score">+0.330</div>
+        <div class="vid">#1916 munkacs_1933_yt</div>
+        <div class="cue">Hasidic rebbe with white beard sidelocks and shtreimel fur hat</div>
+      </div>
+    </article>
+
+    <article class="card hit">
+      <img src="/media/sheet/cand_1927.jpg" loading="lazy" alt="munkacs_1933_yt" />
+      <div class="meta">
+        <div class="score">+0.318</div>
+        <div class="vid">#1927 munkacs_1933_yt</div>
+        <div class="cue">Hasidic rebbe with white beard sidelocks and shtreimel fur hat</div>
+      </div>
+    </article>
+
+    <article class="card hit">
+      <img src="/media/sheet/cand_1910.jpg" loading="lazy" alt="orthodox_look_training_reference" />
+      <div class="meta">
+        <div class="score">+0.313</div>
+        <div class="vid">#1910 orthodox_look_training_reference</div>
+        <div class="cue">Hasidic rebbe with white beard sidelocks and shtreimel fur hat</div>
+      </div>
+    </article>
+
+    <article class="card hit">
+      <img src="/media/sheet/cand_1906.jpg" loading="lazy" alt="orthodox_look_training_reference" />
+      <div class="meta">
+        <div class="score">+0.311</div>
+        <div class="vid">#1906 orthodox_look_training_reference</div>
+        <div class="cue">Hasidic rebbe with white beard sidelocks and shtreimel fur hat</div>
+      </div>
+    </article>
+
+    <article class="card hit">
+      <img src="/media/sheet/cand_1920.jpg" loading="lazy" alt="munkacs_1933_yt" />
+      <div class="meta">
+        <div class="score">+0.309</div>
+        <div class="vid">#1920 munkacs_1933_yt</div>
+        <div class="cue">Hasidic rebbe with white beard sidelocks and shtreimel fur hat</div>
+      </div>
+    </article>
+
+    <article class="card hit">
+      <img src="/media/sheet/cand_1917.jpg" loading="lazy" alt="munkacs_1933_yt" />
+      <div class="meta">
+        <div class="score">+0.307</div>
+        <div class="vid">#1917 munkacs_1933_yt</div>
+        <div class="cue">Hasidic rebbe with white beard sidelocks and shtreimel fur hat</div>
+      </div>
+    </article>
+
+    <article class="card hit">
+      <img src="/media/sheet/cand_1918.jpg" loading="lazy" alt="munkacs_1933_yt" />
+      <div class="meta">
+        <div class="score">+0.307</div>
+        <div class="vid">#1918 munkacs_1933_yt</div>
+        <div class="cue">Hasidic rebbe with white beard sidelocks and shtreimel fur hat</div>
+      </div>
+    </article>
+
+    <article class="card hit">
+      <img src="/media/sheet/cand_1905.jpg" loading="lazy" alt="orthodox_look_training_reference" />
+      <div class="meta">
+        <div class="score">+0.307</div>
+        <div class="vid">#1905 orthodox_look_training_reference</div>
+        <div class="cue">group of Hasidic Jewish men in black coats streimels hats and payot</div>
+      </div>
+    </article>
+
+    <article class="card hit">
+      <img src="/media/sheet/cand_1907.jpg" loading="lazy" alt="orthodox_look_training_reference" />
+      <div class="meta">
+        <div class="score">+0.305</div>
+        <div class="vid">#1907 orthodox_look_training_reference</div>
+        <div class="cue">Hasidic rebbe with white beard sidelocks and shtreimel fur hat</div>
+      </div>
+    </article>
+
+    <article class="card hit">
+      <img src="/media/sheet/cand_1926.jpg" loading="lazy" alt="munkacs_1933_yt" />
+      <div class="meta">
+        <div class="score">+0.302</div>
+        <div class="vid">#1926 munkacs_1933_yt</div>
+        <div class="cue">Hasidic rebbe with white beard sidelocks and shtreimel fur hat</div>
+      </div>
+    </article>
+
+    <article class="card hit">
+      <img src="/media/sheet/cand_1909.jpg" loading="lazy" alt="orthodox_look_training_reference" />
+      <div class="meta">
+        <div class="score">+0.292</div>
+        <div class="vid">#1909 orthodox_look_training_reference</div>
+        <div class="cue">Hasidic rebbe with white beard sidelocks and shtreimel fur hat</div>
+      </div>
+    </article>
+
+    <article class="card hit">
+      <img src="/media/sheet/cand_1911.jpg" loading="lazy" alt="orthodox_look_training_reference" />
+      <div class="meta">
+        <div class="score">+0.244</div>
+        <div class="vid">#1911 orthodox_look_training_reference</div>
+        <div class="cue">Hasidic rebbe with white beard sidelocks and shtreimel fur hat</div>
+      </div>
+    </article>
+
+    <article class="card hit">
+      <img src="/media/sheet/cand_5577.jpg" loading="lazy" alt="jewish_new_year" />
+      <div class="meta">
+        <div class="score">+0.231</div>
+        <div class="vid">#5577 jewish_new_year</div>
+        <div class="cue">Hasidic rebbe with white beard sidelocks and shtreimel fur hat</div>
+      </div>
+    </article>
+
+    <article class="card hit">
+      <img src="/media/sheet/cand_1903.jpg" loading="lazy" alt="orthodox_look_training_reference" />
+      <div class="meta">
+        <div class="score">+0.226</div>
+        <div class="vid">#1903 orthodox_look_training_reference</div>
+        <div class="cue">Hasidic rebbe with white beard sidelocks and shtreimel fur hat</div>
+      </div>
+    </article>
+
+    <article class="card hit">
+      <img src="/media/sheet/cand_3189.jpg" loading="lazy" alt="jerusalem_part_of_pathe_front_page" />
+      <div class="meta">
+        <div class="score">+0.216</div>
+        <div class="vid">#3189 jerusalem_part_of_pathe_front_page</div>
+        <div class="cue">Orthodox Jewish man with beard sidelocks black hat and long kapote or </div>
+      </div>
+    </article>
+
+    <article class="card hit">
+      <img src="/media/sheet/cand_3037.jpg" loading="lazy" alt="britain_recognises_israel" />
+      <div class="meta">
+        <div class="score">+0.204</div>
+        <div class="vid">#3037 britain_recognises_israel</div>
+        <div class="cue">Hasidic rebbe with white beard sidelocks and shtreimel fur hat</div>
+      </div>
+    </article>
+
+    <article class="card hit">
+      <img src="/media/sheet/cand_3323.jpg" loading="lazy" alt="jewish_life_in_central_europe_and_palestine" />
+      <div class="meta">
+        <div class="score">+0.153</div>
+        <div class="vid">#3323 jewish_life_in_central_europe_and_palestine</div>
+        <div class="cue">group of Hasidic Jewish men in black coats streimels hats and payot</div>
+      </div>
+    </article>
+
+    <article class="card hit">
+      <img src="/media/sheet/cand_5336.jpg" loading="lazy" alt="london_aka_palestine_conference_at_st_james039s_palace" />
+      <div class="meta">
+        <div class="score">+0.151</div>
+        <div class="vid">#5336 london_aka_palestine_conference_at_st_james039s_palace</div>
+        <div class="cue">Hasidic rebbe with white beard sidelocks and shtreimel fur hat</div>
+      </div>
+    </article>
+
+    <article class="card hit">
+      <img src="/media/sheet/cand_3038.jpg" loading="lazy" alt="britain_recognises_israel" />
+      <div class="meta">
+        <div class="score">+0.148</div>
+        <div class="vid">#3038 britain_recognises_israel</div>
+        <div class="cue">Hasidic rebbe with white beard sidelocks and shtreimel fur hat</div>
+      </div>
+    </article>
+
+    <article class="card hit">
+      <img src="/media/sheet/cand_4283.jpg" loading="lazy" alt="magicians_week_at_brighton" />
+      <div class="meta">
+        <div class="score">+0.134</div>
+        <div class="vid">#4283 magicians_week_at_brighton</div>
+        <div class="cue">Hasidic rebbe with white beard sidelocks and shtreimel fur hat</div>
+      </div>
+    </article>
+
+    <article class="card hit">
+      <img src="/media/sheet/cand_5096.jpg" loading="lazy" alt="the_super_forcing_system" />
+      <div class="meta">
+        <div class="score">+0.131</div>
+        <div class="vid">#5096 the_super_forcing_system</div>
+        <div class="cue">group of Hasidic Jewish men in black coats streimels hats and payot</div>
+      </div>
+    </article>
+
+    <article class="card hit">
+      <img src="/media/sheet/cand_3634.jpg" loading="lazy" alt="dachau_concentration_camp" />
+      <div class="meta">
+        <div class="score">+0.130</div>
+        <div class="vid">#3634 dachau_concentration_camp</div>
+        <div class="cue">Hasidic rebbe with white beard sidelocks and shtreimel fur hat</div>
+      </div>
+    </article>
+
+    <article class="card hit">
+      <img src="/media/sheet/cand_4957.jpg" loading="lazy" alt="summing_up_no_01" />
+      <div class="meta">
+        <div class="score">+0.129</div>
+        <div class="vid">#4957 summing_up_no_01</div>
+        <div class="cue">Hasidic rebbe with white beard sidelocks and shtreimel fur hat</div>
+      </div>
+    </article>
+
+    <article class="card hit">
+      <img src="/media/sheet/cand_5095.jpg" loading="lazy" alt="the_super_forcing_system" />
+      <div class="meta">
+        <div class="score">+0.125</div>
+        <div class="vid">#5095 the_super_forcing_system</div>
+        <div class="cue">Hasidic rebbe with white beard sidelocks and shtreimel fur hat</div>
+      </div>
+    </article>
+
+    <article class="card hit">
+      <img src="/media/sheet/cand_4304.jpg" loading="lazy" alt="jerusalem" />
+      <div class="meta">
+        <div class="score">+0.122</div>
+        <div class="vid">#4304 jerusalem</div>
+        <div class="cue">group of Hasidic Jewish men in black coats streimels hats and payot</div>
+      </div>
+    </article>
+
+    <article class="card hit">
+      <img src="/media/sheet/cand_4791.jpg" loading="lazy" alt="jewish_new_year_in_palestine" />
+      <div class="meta">
+        <div class="score">+0.122</div>
+        <div class="vid">#4791 jewish_new_year_in_palestine</div>
+        <div class="cue">Orthodox Jewish man with curled payot sidelocks and black yarmulke or </div>
+      </div>
+    </article>
+
+    <article class="card hit">
+      <img src="/media/sheet/cand_5201.jpg" loading="lazy" alt="out_takes_cuts_from_cp_653_reel_1_of_2_morocco" />
+      <div class="meta">
+        <div class="score">+0.120</div>
+        <div class="vid">#5201 out_takes_cuts_from_cp_653_reel_1_of_2_morocco</div>
+        <div class="cue">group of Hasidic Jewish men in black coats streimels hats and payot</div>
+      </div>
+    </article>
+
+    <article class="card hit">
+      <img src="/media/sheet/cand_1959.jpg" loading="lazy" alt="in_palestine_today" />
+      <div class="meta">
+        <div class="score">+0.119</div>
+        <div class="vid">#1959 in_palestine_today</div>
+        <div class="cue">Hasidic rebbe with white beard sidelocks and shtreimel fur hat</div>
+      </div>
+    </article>
+
+    <article class="card hit">
+      <img src="/media/sheet/cand_3190.jpg" loading="lazy" alt="jerusalem_part_of_pathe_front_page" />
+      <div class="meta">
+        <div class="score">+0.113</div>
+        <div class="vid">#3190 jerusalem_part_of_pathe_front_page</div>
+        <div class="cue">Orthodox Jewish man with beard sidelocks black hat and long kapote or </div>
+      </div>
+    </article>
+
+    <article class="card hit">
+      <img src="/media/sheet/cand_1958.jpg" loading="lazy" alt="in_palestine_today" />
+      <div class="meta">
+        <div class="score">+0.110</div>
+        <div class="vid">#1958 in_palestine_today</div>
+        <div class="cue">group of Hasidic Jewish men in black coats streimels hats and payot</div>
+      </div>
+    </article>
+
+    <article class="card hit">
+      <img src="/media/sheet/cand_4913.jpg" loading="lazy" alt="selected_originals_the_papal_pilgrimage" />
+      <div class="meta">
+        <div class="score">+0.109</div>
+        <div class="vid">#4913 selected_originals_the_papal_pilgrimage</div>
+        <div class="cue">group of Hasidic Jewish men in black coats streimels hats and payot</div>
+      </div>
+    </article>
+
+    <article class="card hit">
+      <img src="/media/sheet/cand_5395.jpg" loading="lazy" alt="in_palestine_today_tel_aviv" />
+      <div class="meta">
+        <div class="score">+0.109</div>
+        <div class="vid">#5395 in_palestine_today_tel_aviv</div>
+        <div class="cue">group of Hasidic Jewish men in black coats streimels hats and payot</div>
+      </div>
+    </article>
+
+    <article class="card hit">
+      <img src="/media/sheet/cand_4819.jpg" loading="lazy" alt="palestine_jews_freed_by_british" />
+      <div class="meta">
+        <div class="score">+0.106</div>
+        <div class="vid">#4819 palestine_jews_freed_by_british</div>
+        <div class="cue">Hasidic rebbe with white beard sidelocks and shtreimel fur hat</div>
+      </div>
+    </article>
+
+    <article class="card hit">
+      <img src="/media/sheet/cand_2919.jpg" loading="lazy" alt="in_palestine_today_tel_aviv" />
+      <div class="meta">
+        <div class="score">+0.103</div>
+        <div class="vid">#2919 in_palestine_today_tel_aviv</div>
+        <div class="cue">Hasidic rebbe with white beard sidelocks and shtreimel fur hat</div>
+      </div>
+    </article>
+
+    <article class="card hit">
+      <img src="/media/sheet/cand_4302.jpg" loading="lazy" alt="jerusalem" />
+      <div class="meta">
+        <div class="score">+0.102</div>
+        <div class="vid">#4302 jerusalem</div>
+        <div class="cue">Orthodox Jewish man with beard sidelocks black hat and long kapote or </div>
+      </div>
+    </article></div></section>
+  <section><h2>Keep stills — missed <span class='n'>(24)</span></h2><div class='grid'>
+    <article class="card miss">
+      <img src="/media/sheet/cand_4328.jpg" loading="lazy" alt="inauguration_of_university_games" />
+      <div class="meta">
+        <div class="score">-0.261</div>
+        <div class="vid">#4328 inauguration_of_university_games</div>
+        <div class="cue">group of Hasidic Jewish men in black coats streimels hats and payot</div>
+      </div>
+    </article>
+
+    <article class="card miss">
+      <img src="/media/sheet/cand_4716.jpg" loading="lazy" alt="jews_leave_british_detention_camp_for_palestine_aka_jewish_refugees_in_detention" />
+      <div class="meta">
+        <div class="score">-0.136</div>
+        <div class="vid">#4716 jews_leave_british_detention_camp_for_palestine_aka_jewish_refugees_in_detention</div>
+        <div class="cue">group of Hasidic Jewish men in black coats streimels hats and payot</div>
+      </div>
+    </article>
+
+    <article class="card miss">
+      <img src="/media/sheet/cand_4715.jpg" loading="lazy" alt="america_recognizes_israel_aka_us_recognizes_israel" />
+      <div class="meta">
+        <div class="score">-0.119</div>
+        <div class="vid">#4715 america_recognizes_israel_aka_us_recognizes_israel</div>
+        <div class="cue">group of Hasidic Jewish men in black coats streimels hats and payot</div>
+      </div>
+    </article>
+
+    <article class="card miss">
+      <img src="/media/sheet/cand_5010.jpg" loading="lazy" alt="middle_east_calms_way_of_the_cross" />
+      <div class="meta">
+        <div class="score">-0.111</div>
+        <div class="vid">#5010 middle_east_calms_way_of_the_cross</div>
+        <div class="cue">group of Hasidic Jewish men in black coats streimels hats and payot</div>
+      </div>
+    </article>
+
+    <article class="card miss">
+      <img src="/media/sheet/cand_4284.jpg" loading="lazy" alt="magicians_week_at_brighton" />
+      <div class="meta">
+        <div class="score">-0.100</div>
+        <div class="vid">#4284 magicians_week_at_brighton</div>
+        <div class="cue">Litvish yeshiva man with beard black hat and dark frock coat</div>
+      </div>
+    </article>
+
+    <article class="card miss">
+      <img src="/media/sheet/cand_5018.jpg" loading="lazy" alt="israel_navy_warships_arrive_in_eilat_base_ending_red_sea_blockage" />
+      <div class="meta">
+        <div class="score">-0.073</div>
+        <div class="vid">#5018 israel_navy_warships_arrive_in_eilat_base_ending_red_sea_blockage</div>
+        <div class="cue">group of Hasidic Jewish men in black coats streimels hats and payot</div>
+      </div>
+    </article>
+
+    <article class="card miss">
+      <img src="/media/sheet/cand_4461.jpg" loading="lazy" alt="palestine" />
+      <div class="meta">
+        <div class="score">-0.063</div>
+        <div class="vid">#4461 palestine</div>
+        <div class="cue">Hasidic rebbe with white beard sidelocks and shtreimel fur hat</div>
+      </div>
+    </article>
+
+    <article class="card miss">
+      <img src="/media/sheet/cand_5097.jpg" loading="lazy" alt="the_super_forcing_system" />
+      <div class="meta">
+        <div class="score">-0.055</div>
+        <div class="vid">#5097 the_super_forcing_system</div>
+        <div class="cue">group of Hasidic Jewish men in black coats streimels hats and payot</div>
+      </div>
+    </article>
+
+    <article class="card miss">
+      <img src="/media/sheet/cand_3687.jpg" loading="lazy" alt="jewish_wedding_in_the_usa" />
+      <div class="meta">
+        <div class="score">-0.040</div>
+        <div class="vid">#3687 jewish_wedding_in_the_usa</div>
+        <div class="cue">Hasidic rebbe with white beard sidelocks and shtreimel fur hat</div>
+      </div>
+    </article>
+
+    <article class="card miss">
+      <img src="/media/sheet/cand_4303.jpg" loading="lazy" alt="jerusalem" />
+      <div class="meta">
+        <div class="score">-0.036</div>
+        <div class="vid">#4303 jerusalem</div>
+        <div class="cue">Orthodox Jewish man with curled payot sidelocks and black yarmulke or </div>
+      </div>
+    </article>
+
+    <article class="card miss">
+      <img src="/media/sheet/cand_4793.jpg" loading="lazy" alt="remembrance_day_in_palestine" />
+      <div class="meta">
+        <div class="score">-0.026</div>
+        <div class="vid">#4793 remembrance_day_in_palestine</div>
+        <div class="cue">group of Hasidic Jewish men in black coats streimels hats and payot</div>
+      </div>
+    </article>
+
+    <article class="card miss">
+      <img src="/media/sheet/cand_3325.jpg" loading="lazy" alt="jewish_life_in_central_europe_and_palestine" />
+      <div class="meta">
+        <div class="score">-0.000</div>
+        <div class="vid">#3325 jewish_life_in_central_europe_and_palestine</div>
+        <div class="cue">Hasidic rebbe with white beard sidelocks and shtreimel fur hat</div>
+      </div>
+    </article>
+
+    <article class="card miss">
+      <img src="/media/sheet/cand_5094.jpg" loading="lazy" alt="the_super_forcing_system" />
+      <div class="meta">
+        <div class="score">+0.007</div>
+        <div class="vid">#5094 the_super_forcing_system</div>
+        <div class="cue">group of Hasidic Jewish men in black coats streimels hats and payot</div>
+      </div>
+    </article>
+
+    <article class="card miss">
+      <img src="/media/sheet/cand_2921.jpg" loading="lazy" alt="in_palestine_today_tel_aviv" />
+      <div class="meta">
+        <div class="score">+0.015</div>
+        <div class="vid">#2921 in_palestine_today_tel_aviv</div>
+        <div class="cue">group of Hasidic Jewish men in black coats streimels hats and payot</div>
+      </div>
+    </article>
+
+    <article class="card miss">
+      <img src="/media/sheet/cand_3686.jpg" loading="lazy" alt="jewish_wedding_in_the_usa" />
+      <div class="meta">
+        <div class="score">+0.020</div>
+        <div class="vid">#3686 jewish_wedding_in_the_usa</div>
+        <div class="cue">Hasidic rebbe with white beard sidelocks and shtreimel fur hat</div>
+      </div>
+    </article>
+
+    <article class="card miss">
+      <img src="/media/sheet/cand_3633.jpg" loading="lazy" alt="dachau_concentration_camp" />
+      <div class="meta">
+        <div class="score">+0.028</div>
+        <div class="vid">#3633 dachau_concentration_camp</div>
+        <div class="cue">group of Hasidic Jewish men in black coats streimels hats and payot</div>
+      </div>
+    </article>
+
+    <article class="card miss">
+      <img src="/media/sheet/cand_3324.jpg" loading="lazy" alt="jewish_life_in_central_europe_and_palestine" />
+      <div class="meta">
+        <div class="score">+0.030</div>
+        <div class="vid">#3324 jewish_life_in_central_europe_and_palestine</div>
+        <div class="cue">Hasidic rebbe with white beard sidelocks and shtreimel fur hat</div>
+      </div>
+    </article>
+
+    <article class="card miss">
+      <img src="/media/sheet/cand_3635.jpg" loading="lazy" alt="dachau_concentration_camp" />
+      <div class="meta">
+        <div class="score">+0.034</div>
+        <div class="vid">#3635 dachau_concentration_camp</div>
+        <div class="cue">group of Hasidic Jewish men in black coats streimels hats and payot</div>
+      </div>
+    </article>
+
+    <article class="card miss">
+      <img src="/media/sheet/cand_2920.jpg" loading="lazy" alt="in_palestine_today_tel_aviv" />
+      <div class="meta">
+        <div class="score">+0.050</div>
+        <div class="vid">#2920 in_palestine_today_tel_aviv</div>
+        <div class="cue">Orthodox Jewish man with beard sidelocks black hat and long kapote or </div>
+      </div>
+    </article>
+
+    <article class="card miss">
+      <img src="/media/sheet/cand_3689.jpg" loading="lazy" alt="jewish_wedding_in_the_usa" />
+      <div class="meta">
+        <div class="score">+0.050</div>
+        <div class="vid">#3689 jewish_wedding_in_the_usa</div>
+        <div class="cue">Hasidic rebbe with white beard sidelocks and shtreimel fur hat</div>
+      </div>
+    </article>
+
+    <article class="card miss">
+      <img src="/media/sheet/cand_3695.jpg" loading="lazy" alt="jewish_wedding_in_the_usa" />
+      <div class="meta">
+        <div class="score">+0.050</div>
+        <div class="vid">#3695 jewish_wedding_in_the_usa</div>
+        <div class="cue">Hasidic rebbe with white beard sidelocks and shtreimel fur hat</div>
+      </div>
+    </article>
+
+    <article class="card miss">
+      <img src="/media/sheet/cand_3696.jpg" loading="lazy" alt="jewish_wedding_in_the_usa" />
+      <div class="meta">
+        <div class="score">+0.050</div>
+        <div class="vid">#3696 jewish_wedding_in_the_usa</div>
+        <div class="cue">elderly Orthodox Jewish rabbi with long white beard black hat and dark</div>
+      </div>
+    </article>
+
+    <article class="card miss">
+      <img src="/media/sheet/cand_4785.jpg" loading="lazy" alt="jewish_children_on_way_to_palestine" />
+      <div class="meta">
+        <div class="score">+0.050</div>
+        <div class="vid">#4785 jewish_children_on_way_to_palestine</div>
+        <div class="cue">Hasidic rebbe with white beard sidelocks and shtreimel fur hat</div>
+      </div>
+    </article>
+
+    <article class="card miss">
+      <img src="/media/sheet/cand_4790.jpg" loading="lazy" alt="terrorists_at_work_again_in_palestine" />
+      <div class="meta">
+        <div class="score">+0.050</div>
+        <div class="vid">#4790 terrorists_at_work_again_in_palestine</div>
+        <div class="cue">Hasidic rebbe with white beard sidelocks and shtreimel fur hat</div>
+      </div>
+    </article></div></section>
+  <section><h2>Video person-frames — picked up <span class='n'>(58)</span></h2><div class='grid'>
+    <article class="card hit">
+      <img src="/media/known_hit_probe/video_crops/munkacs_1933_yt/munkacs_1933_yt_t00037.0s_hit.jpg" loading="lazy" alt="munkacs_1933_yt @ 37.0s" />
+      <div class="meta">
+        <div class="score">+0.379</div>
+        <div class="vid"> munkacs_1933_yt @ 37.0s</div>
+        <div class="cue">Hasidic rebbe with white beard sidelocks and shtreimel fur hat</div>
+      </div>
+    </article>
+
+    <article class="card hit">
+      <img src="/media/known_hit_probe/video_crops/munkacs_1933_yt/munkacs_1933_yt_t00041.0s_hit.jpg" loading="lazy" alt="munkacs_1933_yt @ 41.0s" />
+      <div class="meta">
+        <div class="score">+0.365</div>
+        <div class="vid"> munkacs_1933_yt @ 41.0s</div>
+        <div class="cue">Hasidic rebbe with white beard sidelocks and shtreimel fur hat</div>
+      </div>
+    </article>
+
+    <article class="card hit">
+      <img src="/media/known_hit_probe/video_crops/munkacs_1933_yt/munkacs_1933_yt_t00038.0s_hit.jpg" loading="lazy" alt="munkacs_1933_yt @ 38.0s" />
+      <div class="meta">
+        <div class="score">+0.359</div>
+        <div class="vid"> munkacs_1933_yt @ 38.0s</div>
+        <div class="cue">Hasidic rebbe with white beard sidelocks and shtreimel fur hat</div>
+      </div>
+    </article>
+
+    <article class="card hit">
+      <img src="/media/known_hit_probe/video_crops/munkacs_1933_yt/munkacs_1933_yt_t00040.0s_hit.jpg" loading="lazy" alt="munkacs_1933_yt @ 40.0s" />
+      <div class="meta">
+        <div class="score">+0.357</div>
+        <div class="vid"> munkacs_1933_yt @ 40.0s</div>
+        <div class="cue">Hasidic rebbe with white beard sidelocks and shtreimel fur hat</div>
+      </div>
+    </article>
+
+    <article class="card hit">
+      <img src="/media/known_hit_probe/video_crops/munkacs_1933_yt/munkacs_1933_yt_t00043.0s_hit.jpg" loading="lazy" alt="munkacs_1933_yt @ 43.0s" />
+      <div class="meta">
+        <div class="score">+0.352</div>
+        <div class="vid"> munkacs_1933_yt @ 43.0s</div>
+        <div class="cue">Hasidic rebbe with white beard sidelocks and shtreimel fur hat</div>
+      </div>
+    </article>
+
+    <article class="card hit">
+      <img src="/media/known_hit_probe/video_crops/munkacs_1933_yt/munkacs_1933_yt_t00014.0s_hit.jpg" loading="lazy" alt="munkacs_1933_yt @ 14.0s" />
+      <div class="meta">
+        <div class="score">+0.352</div>
+        <div class="vid"> munkacs_1933_yt @ 14.0s</div>
+        <div class="cue">Hasidic rebbe with white beard sidelocks and shtreimel fur hat</div>
+      </div>
+    </article>
+
+    <article class="card hit">
+      <img src="/media/known_hit_probe/video_crops/munkacs_1933_yt/munkacs_1933_yt_t00003.0s_hit.jpg" loading="lazy" alt="munkacs_1933_yt @ 3.0s" />
+      <div class="meta">
+        <div class="score">+0.352</div>
+        <div class="vid"> munkacs_1933_yt @ 3.0s</div>
+        <div class="cue">Hasidic rebbe with white beard sidelocks and shtreimel fur hat</div>
+      </div>
+    </article>
+
+    <article class="card hit">
+      <img src="/media/known_hit_probe/video_crops/munkacs_1933_yt/munkacs_1933_yt_t00042.0s_hit.jpg" loading="lazy" alt="munkacs_1933_yt @ 42.0s" />
+      <div class="meta">
+        <div class="score">+0.349</div>
+        <div class="vid"> munkacs_1933_yt @ 42.0s</div>
+        <div class="cue">Hasidic rebbe with white beard sidelocks and shtreimel fur hat</div>
+      </div>
+    </article>
+
+    <article class="card hit">
+      <img src="/media/known_hit_probe/video_crops/munkacs_1933_yt/munkacs_1933_yt_t00016.0s_hit.jpg" loading="lazy" alt="munkacs_1933_yt @ 16.0s" />
+      <div class="meta">
+        <div class="score">+0.347</div>
+        <div class="vid"> munkacs_1933_yt @ 16.0s</div>
+        <div class="cue">Hasidic rebbe with white beard sidelocks and shtreimel fur hat</div>
+      </div>
+    </article>
+
+    <article class="card hit">
+      <img src="/media/known_hit_probe/video_crops/munkacs_1933_yt/munkacs_1933_yt_t00031.0s_hit.jpg" loading="lazy" alt="munkacs_1933_yt @ 31.0s" />
+      <div class="meta">
+        <div class="score">+0.346</div>
+        <div class="vid"> munkacs_1933_yt @ 31.0s</div>
+        <div class="cue">Hasidic rebbe with white beard sidelocks and shtreimel fur hat</div>
+      </div>
+    </article>
+
+    <article class="card hit">
+      <img src="/media/known_hit_probe/video_crops/munkacs_1933_yt/munkacs_1933_yt_t00027.0s_hit.jpg" loading="lazy" alt="munkacs_1933_yt @ 27.0s" />
+      <div class="meta">
+        <div class="score">+0.344</div>
+        <div class="vid"> munkacs_1933_yt @ 27.0s</div>
+        <div class="cue">Hasidic rebbe with white beard sidelocks and shtreimel fur hat</div>
+      </div>
+    </article>
+
+    <article class="card hit">
+      <img src="/media/known_hit_probe/video_crops/munkacs_1933_yt/munkacs_1933_yt_t00030.0s_hit.jpg" loading="lazy" alt="munkacs_1933_yt @ 30.0s" />
+      <div class="meta">
+        <div class="score">+0.344</div>
+        <div class="vid"> munkacs_1933_yt @ 30.0s</div>
+        <div class="cue">Hasidic rebbe with white beard sidelocks and shtreimel fur hat</div>
+      </div>
+    </article>
+
+    <article class="card hit">
+      <img src="/media/known_hit_probe/video_crops/munkacs_1933_yt/munkacs_1933_yt_t00036.0s_hit.jpg" loading="lazy" alt="munkacs_1933_yt @ 36.0s" />
+      <div class="meta">
+        <div class="score">+0.343</div>
+        <div class="vid"> munkacs_1933_yt @ 36.0s</div>
+        <div class="cue">elderly Orthodox Jewish rabbi with long white beard black hat and dark</div>
+      </div>
+    </article>
+
+    <article class="card hit">
+      <img src="/media/known_hit_probe/video_crops/munkacs_1933_yt/munkacs_1933_yt_t00017.0s_hit.jpg" loading="lazy" alt="munkacs_1933_yt @ 17.0s" />
+      <div class="meta">
+        <div class="score">+0.339</div>
+        <div class="vid"> munkacs_1933_yt @ 17.0s</div>
+        <div class="cue">Hasidic rebbe with white beard sidelocks and shtreimel fur hat</div>
+      </div>
+    </article>
+
+    <article class="card hit">
+      <img src="/media/known_hit_probe/video_crops/munkacs_1933_yt/munkacs_1933_yt_t00035.0s_hit.jpg" loading="lazy" alt="munkacs_1933_yt @ 35.0s" />
+      <div class="meta">
+        <div class="score">+0.338</div>
+        <div class="vid"> munkacs_1933_yt @ 35.0s</div>
+        <div class="cue">Hasidic rebbe with white beard sidelocks and shtreimel fur hat</div>
+      </div>
+    </article>
+
+    <article class="card hit">
+      <img src="/media/known_hit_probe/video_crops/munkacs_1933_yt/munkacs_1933_yt_t00025.0s_hit.jpg" loading="lazy" alt="munkacs_1933_yt @ 25.0s" />
+      <div class="meta">
+        <div class="score">+0.337</div>
+        <div class="vid"> munkacs_1933_yt @ 25.0s</div>
+        <div class="cue">Hasidic rebbe with white beard sidelocks and shtreimel fur hat</div>
+      </div>
+    </article>
+
+    <article class="card hit">
+      <img src="/media/known_hit_probe/video_crops/munkacs_1933_yt/munkacs_1933_yt_t00008.0s_hit.jpg" loading="lazy" alt="munkacs_1933_yt @ 8.0s" />
+      <div class="meta">
+        <div class="score">+0.334</div>
+        <div class="vid"> munkacs_1933_yt @ 8.0s</div>
+        <div class="cue">Hasidic rebbe with white beard sidelocks and shtreimel fur hat</div>
+      </div>
+    </article>
+
+    <article class="card hit">
+      <img src="/media/known_hit_probe/video_crops/munkacs_1933_yt/munkacs_1933_yt_t00029.0s_hit.jpg" loading="lazy" alt="munkacs_1933_yt @ 29.0s" />
+      <div class="meta">
+        <div class="score">+0.328</div>
+        <div class="vid"> munkacs_1933_yt @ 29.0s</div>
+        <div class="cue">Hasidic rebbe with white beard sidelocks and shtreimel fur hat</div>
+      </div>
+    </article>
+
+    <article class="card hit">
+      <img src="/media/known_hit_probe/video_crops/munkacs_1933_yt/munkacs_1933_yt_t00019.0s_hit.jpg" loading="lazy" alt="munkacs_1933_yt @ 19.0s" />
+      <div class="meta">
+        <div class="score">+0.327</div>
+        <div class="vid"> munkacs_1933_yt @ 19.0s</div>
+        <div class="cue">Hasidic rebbe with white beard sidelocks and shtreimel fur hat</div>
+      </div>
+    </article>
+
+    <article class="card hit">
+      <img src="/media/known_hit_probe/video_crops/munkacs_1933_yt/munkacs_1933_yt_t00026.0s_hit.jpg" loading="lazy" alt="munkacs_1933_yt @ 26.0s" />
+      <div class="meta">
+        <div class="score">+0.326</div>
+        <div class="vid"> munkacs_1933_yt @ 26.0s</div>
+        <div class="cue">Hasidic rebbe with white beard sidelocks and shtreimel fur hat</div>
+      </div>
+    </article>
+
+    <article class="card hit">
+      <img src="/media/known_hit_probe/video_crops/munkacs_1933_yt/munkacs_1933_yt_t00009.0s_hit.jpg" loading="lazy" alt="munkacs_1933_yt @ 9.0s" />
+      <div class="meta">
+        <div class="score">+0.324</div>
+        <div class="vid"> munkacs_1933_yt @ 9.0s</div>
+        <div class="cue">Hasidic rebbe with white beard sidelocks and shtreimel fur hat</div>
+      </div>
+    </article>
+
+    <article class="card hit">
+      <img src="/media/known_hit_probe/video_crops/munkacs_1933_yt/munkacs_1933_yt_t00032.0s_hit.jpg" loading="lazy" alt="munkacs_1933_yt @ 32.0s" />
+      <div class="meta">
+        <div class="score">+0.324</div>
+        <div class="vid"> munkacs_1933_yt @ 32.0s</div>
+        <div class="cue">Hasidic rebbe with white beard sidelocks and shtreimel fur hat</div>
+      </div>
+    </article>
+
+    <article class="card hit">
+      <img src="/media/known_hit_probe/video_crops/munkacs_1933_yt/munkacs_1933_yt_t00023.0s_hit.jpg" loading="lazy" alt="munkacs_1933_yt @ 23.0s" />
+      <div class="meta">
+        <div class="score">+0.323</div>
+        <div class="vid"> munkacs_1933_yt @ 23.0s</div>
+        <div class="cue">Hasidic rebbe with white beard sidelocks and shtreimel fur hat</div>
+      </div>
+    </article>
+
+    <article class="card hit">
+      <img src="/media/known_hit_probe/video_crops/munkacs_1933_yt/munkacs_1933_yt_t00013.0s_hit.jpg" loading="lazy" alt="munkacs_1933_yt @ 13.0s" />
+      <div class="meta">
+        <div class="score">+0.322</div>
+        <div class="vid"> munkacs_1933_yt @ 13.0s</div>
+        <div class="cue">Hasidic rebbe with white beard sidelocks and shtreimel fur hat</div>
+      </div>
+    </article>
+
+    <article class="card hit">
+      <img src="/media/known_hit_probe/video_crops/munkacs_1933_yt/munkacs_1933_yt_t00034.0s_hit.jpg" loading="lazy" alt="munkacs_1933_yt @ 34.0s" />
+      <div class="meta">
+        <div class="score">+0.320</div>
+        <div class="vid"> munkacs_1933_yt @ 34.0s</div>
+        <div class="cue">Hasidic rebbe with white beard sidelocks and shtreimel fur hat</div>
+      </div>
+    </article>
+
+    <article class="card hit">
+      <img src="/media/known_hit_probe/video_crops/munkacs_1933_yt/munkacs_1933_yt_t00028.0s_hit.jpg" loading="lazy" alt="munkacs_1933_yt @ 28.0s" />
+      <div class="meta">
+        <div class="score">+0.320</div>
+        <div class="vid"> munkacs_1933_yt @ 28.0s</div>
+        <div class="cue">Hasidic rebbe with white beard sidelocks and shtreimel fur hat</div>
+      </div>
+    </article>
+
+    <article class="card hit">
+      <img src="/media/known_hit_probe/video_crops/munkacs_1933_yt/munkacs_1933_yt_t00039.0s_hit.jpg" loading="lazy" alt="munkacs_1933_yt @ 39.0s" />
+      <div class="meta">
+        <div class="score">+0.320</div>
+        <div class="vid"> munkacs_1933_yt @ 39.0s</div>
+        <div class="cue">Hasidic rebbe with white beard sidelocks and shtreimel fur hat</div>
+      </div>
+    </article>
+
+    <article class="card hit">
+      <img src="/media/known_hit_probe/video_crops/munkacs_1933_yt/munkacs_1933_yt_t00021.0s_hit.jpg" loading="lazy" alt="munkacs_1933_yt @ 21.0s" />
+      <div class="meta">
+        <div class="score">+0.320</div>
+        <div class="vid"> munkacs_1933_yt @ 21.0s</div>
+        <div class="cue">Hasidic rebbe with white beard sidelocks and shtreimel fur hat</div>
+      </div>
+    </article>
+
+    <article class="card hit">
+      <img src="/media/known_hit_probe/video_crops/munkacs_1933_yt/munkacs_1933_yt_t00004.0s_hit.jpg" loading="lazy" alt="munkacs_1933_yt @ 4.0s" />
+      <div class="meta">
+        <div class="score">+0.318</div>
+        <div class="vid"> munkacs_1933_yt @ 4.0s</div>
+        <div class="cue">Hasidic rebbe with white beard sidelocks and shtreimel fur hat</div>
+      </div>
+    </article>
+
+    <article class="card hit">
+      <img src="/media/known_hit_probe/video_crops/munkacs_1933_yt/munkacs_1933_yt_t00012.0s_hit.jpg" loading="lazy" alt="munkacs_1933_yt @ 12.0s" />
+      <div class="meta">
+        <div class="score">+0.318</div>
+        <div class="vid"> munkacs_1933_yt @ 12.0s</div>
+        <div class="cue">Hasidic rebbe with white beard sidelocks and shtreimel fur hat</div>
+      </div>
+    </article>
+
+    <article class="card hit">
+      <img src="/media/known_hit_probe/video_crops/munkacs_1933_yt/munkacs_1933_yt_t00018.0s_hit.jpg" loading="lazy" alt="munkacs_1933_yt @ 18.0s" />
+      <div class="meta">
+        <div class="score">+0.315</div>
+        <div class="vid"> munkacs_1933_yt @ 18.0s</div>
+        <div class="cue">Hasidic rebbe with white beard sidelocks and shtreimel fur hat</div>
+      </div>
+    </article>
+
+    <article class="card hit">
+      <img src="/media/known_hit_probe/video_crops/munkacs_1933_yt/munkacs_1933_yt_t00024.0s_hit.jpg" loading="lazy" alt="munkacs_1933_yt @ 24.0s" />
+      <div class="meta">
+        <div class="score">+0.314</div>
+        <div class="vid"> munkacs_1933_yt @ 24.0s</div>
+        <div class="cue">Hasidic rebbe with white beard sidelocks and shtreimel fur hat</div>
+      </div>
+    </article>
+
+    <article class="card hit">
+      <img src="/media/known_hit_probe/video_crops/munkacs_1933_yt/munkacs_1933_yt_t00022.0s_hit.jpg" loading="lazy" alt="munkacs_1933_yt @ 22.0s" />
+      <div class="meta">
+        <div class="score">+0.313</div>
+        <div class="vid"> munkacs_1933_yt @ 22.0s</div>
+        <div class="cue">Hasidic rebbe with white beard sidelocks and shtreimel fur hat</div>
+      </div>
+    </article>
+
+    <article class="card hit">
+      <img src="/media/known_hit_probe/video_crops/munkacs_1933_yt/munkacs_1933_yt_t00063.1s_hit.jpg" loading="lazy" alt="munkacs_1933_yt @ 63.1s" />
+      <div class="meta">
+        <div class="score">+0.309</div>
+        <div class="vid"> munkacs_1933_yt @ 63.1s</div>
+        <div class="cue">Hasidic rebbe with white beard sidelocks and shtreimel fur hat</div>
+      </div>
+    </article>
+
+    <article class="card hit">
+      <img src="/media/known_hit_probe/video_crops/munkacs_1933_yt/munkacs_1933_yt_t00061.1s_hit.jpg" loading="lazy" alt="munkacs_1933_yt @ 61.1s" />
+      <div class="meta">
+        <div class="score">+0.308</div>
+        <div class="vid"> munkacs_1933_yt @ 61.1s</div>
+        <div class="cue">Hasidic rebbe with white beard sidelocks and shtreimel fur hat</div>
+      </div>
+    </article>
+
+    <article class="card hit">
+      <img src="/media/known_hit_probe/video_crops/munkacs_1933_yt/munkacs_1933_yt_t00011.0s_hit.jpg" loading="lazy" alt="munkacs_1933_yt @ 11.0s" />
+      <div class="meta">
+        <div class="score">+0.306</div>
+        <div class="vid"> munkacs_1933_yt @ 11.0s</div>
+        <div class="cue">Hasidic rebbe with white beard sidelocks and shtreimel fur hat</div>
+      </div>
+    </article>
+
+    <article class="card hit">
+      <img src="/media/known_hit_probe/video_crops/munkacs_1933_yt/munkacs_1933_yt_t00010.0s_hit.jpg" loading="lazy" alt="munkacs_1933_yt @ 10.0s" />
+      <div class="meta">
+        <div class="score">+0.303</div>
+        <div class="vid"> munkacs_1933_yt @ 10.0s</div>
+        <div class="cue">Hasidic rebbe with white beard sidelocks and shtreimel fur hat</div>
+      </div>
+    </article>
+
+    <article class="card hit">
+      <img src="/media/known_hit_probe/video_crops/munkacs_1933_yt/munkacs_1933_yt_t00020.0s_hit.jpg" loading="lazy" alt="munkacs_1933_yt @ 20.0s" />
+      <div class="meta">
+        <div class="score">+0.297</div>
+        <div class="vid"> munkacs_1933_yt @ 20.0s</div>
+        <div class="cue">Hasidic rebbe with white beard sidelocks and shtreimel fur hat</div>
+      </div>
+    </article>
+
+    <article class="card hit">
+      <img src="/media/known_hit_probe/video_crops/munkacs_1933_yt/munkacs_1933_yt_t00062.1s_hit.jpg" loading="lazy" alt="munkacs_1933_yt @ 62.1s" />
+      <div class="meta">
+        <div class="score">+0.286</div>
+        <div class="vid"> munkacs_1933_yt @ 62.1s</div>
+        <div class="cue">Hasidic rebbe with white beard sidelocks and shtreimel fur hat</div>
+      </div>
+    </article>
+
+    <article class="card hit">
+      <img src="/media/known_hit_probe/video_crops/munkacs_1933_yt/munkacs_1933_yt_t00007.0s_hit.jpg" loading="lazy" alt="munkacs_1933_yt @ 7.0s" />
+      <div class="meta">
+        <div class="score">+0.283</div>
+        <div class="vid"> munkacs_1933_yt @ 7.0s</div>
+        <div class="cue">Hasidic rebbe with white beard sidelocks and shtreimel fur hat</div>
+      </div>
+    </article>
+
+    <article class="card hit">
+      <img src="/media/known_hit_probe/video_crops/kolbuszowa_yt/kolbuszowa_yt_t00247.0s_hit.jpg" loading="lazy" alt="kolbuszowa_yt @ 247.0s" />
+      <div class="meta">
+        <div class="score">+0.282</div>
+        <div class="vid"> kolbuszowa_yt @ 247.0s</div>
+        <div class="cue">Hasidic rebbe with white beard sidelocks and shtreimel fur hat</div>
+      </div>
+    </article>
+
+    <article class="card hit">
+      <img src="/media/known_hit_probe/video_crops/munkacs_1933_yt/munkacs_1933_yt_t00060.1s_hit.jpg" loading="lazy" alt="munkacs_1933_yt @ 60.1s" />
+      <div class="meta">
+        <div class="score">+0.269</div>
+        <div class="vid"> munkacs_1933_yt @ 60.1s</div>
+        <div class="cue">Hasidic rebbe with white beard sidelocks and shtreimel fur hat</div>
+      </div>
+    </article>
+
+    <article class="card hit">
+      <img src="/media/known_hit_probe/video_crops/munkacs_1933_yt/munkacs_1933_yt_t00065.1s_hit.jpg" loading="lazy" alt="munkacs_1933_yt @ 65.1s" />
+      <div class="meta">
+        <div class="score">+0.265</div>
+        <div class="vid"> munkacs_1933_yt @ 65.1s</div>
+        <div class="cue">Hasidic rebbe with white beard sidelocks and shtreimel fur hat</div>
+      </div>
+    </article>
+
+    <article class="card hit">
+      <img src="/media/known_hit_probe/video_crops/kolbuszowa_yt/kolbuszowa_yt_t00254.0s_hit.jpg" loading="lazy" alt="kolbuszowa_yt @ 254.0s" />
+      <div class="meta">
+        <div class="score">+0.264</div>
+        <div class="vid"> kolbuszowa_yt @ 254.0s</div>
+        <div class="cue">Hasidic rebbe with white beard sidelocks and shtreimel fur hat</div>
+      </div>
+    </article>
+
+    <article class="card hit">
+      <img src="/media/known_hit_probe/video_crops/munkacs_1933_yt/munkacs_1933_yt_t00015.0s_hit.jpg" loading="lazy" alt="munkacs_1933_yt @ 15.0s" />
+      <div class="meta">
+        <div class="score">+0.264</div>
+        <div class="vid"> munkacs_1933_yt @ 15.0s</div>
+        <div class="cue">Hasidic rebbe with white beard sidelocks and shtreimel fur hat</div>
+      </div>
+    </article>
+
+    <article class="card hit">
+      <img src="/media/known_hit_probe/video_crops/kolbuszowa_yt/kolbuszowa_yt_t00214.0s_hit.jpg" loading="lazy" alt="kolbuszowa_yt @ 214.0s" />
+      <div class="meta">
+        <div class="score">+0.261</div>
+        <div class="vid"> kolbuszowa_yt @ 214.0s</div>
+        <div class="cue">Hasidic rebbe with white beard sidelocks and shtreimel fur hat</div>
+      </div>
+    </article>
+
+    <article class="card hit">
+      <img src="/media/known_hit_probe/video_crops/kolbuszowa_yt/kolbuszowa_yt_t00255.0s_hit.jpg" loading="lazy" alt="kolbuszowa_yt @ 255.0s" />
+      <div class="meta">
+        <div class="score">+0.253</div>
+        <div class="vid"> kolbuszowa_yt @ 255.0s</div>
+        <div class="cue">Hasidic rebbe with white beard sidelocks and shtreimel fur hat</div>
+      </div>
+    </article>
+
+    <article class="card hit">
+      <img src="/media/known_hit_probe/video_crops/kolbuszowa_yt/kolbuszowa_yt_t00252.0s_hit.jpg" loading="lazy" alt="kolbuszowa_yt @ 252.0s" />
+      <div class="meta">
+        <div class="score">+0.248</div>
+        <div class="vid"> kolbuszowa_yt @ 252.0s</div>
+        <div class="cue">Hasidic rebbe with white beard sidelocks and shtreimel fur hat</div>
+      </div>
+    </article>
+
+    <article class="card hit">
+      <img src="/media/known_hit_probe/video_crops/munkacs_1933_yt/munkacs_1933_yt_t00005.0s_hit.jpg" loading="lazy" alt="munkacs_1933_yt @ 5.0s" />
+      <div class="meta">
+        <div class="score">+0.246</div>
+        <div class="vid"> munkacs_1933_yt @ 5.0s</div>
+        <div class="cue">Hasidic rebbe with white beard sidelocks and shtreimel fur hat</div>
+      </div>
+    </article>
+
+    <article class="card hit">
+      <img src="/media/known_hit_probe/video_crops/kolbuszowa_yt/kolbuszowa_yt_t00256.0s_hit.jpg" loading="lazy" alt="kolbuszowa_yt @ 256.0s" />
+      <div class="meta">
+        <div class="score">+0.227</div>
+        <div class="vid"> kolbuszowa_yt @ 256.0s</div>
+        <div class="cue">Hasidic rebbe with white beard sidelocks and shtreimel fur hat</div>
+      </div>
+    </article>
+
+    <article class="card hit">
+      <img src="/media/known_hit_probe/video_crops/kolbuszowa_yt/kolbuszowa_yt_t00253.0s_hit.jpg" loading="lazy" alt="kolbuszowa_yt @ 253.0s" />
+      <div class="meta">
+        <div class="score">+0.218</div>
+        <div class="vid"> kolbuszowa_yt @ 253.0s</div>
+        <div class="cue">Hasidic rebbe with white beard sidelocks and shtreimel fur hat</div>
+      </div>
+    </article>
+
+    <article class="card hit">
+      <img src="/media/known_hit_probe/video_crops/kolbuszowa_yt/kolbuszowa_yt_t00249.0s_hit.jpg" loading="lazy" alt="kolbuszowa_yt @ 249.0s" />
+      <div class="meta">
+        <div class="score">+0.198</div>
+        <div class="vid"> kolbuszowa_yt @ 249.0s</div>
+        <div class="cue">Hasidic rebbe with white beard sidelocks and shtreimel fur hat</div>
+      </div>
+    </article>
+
+    <article class="card hit">
+      <img src="/media/known_hit_probe/video_crops/munkacs_1933_yt/munkacs_1933_yt_t00068.1s_hit.jpg" loading="lazy" alt="munkacs_1933_yt @ 68.1s" />
+      <div class="meta">
+        <div class="score">+0.187</div>
+        <div class="vid"> munkacs_1933_yt @ 68.1s</div>
+        <div class="cue">Hasidic rebbe with white beard sidelocks and shtreimel fur hat</div>
+      </div>
+    </article>
+
+    <article class="card hit">
+      <img src="/media/known_hit_probe/video_crops/kolbuszowa_yt/kolbuszowa_yt_t00220.0s_hit.jpg" loading="lazy" alt="kolbuszowa_yt @ 220.0s" />
+      <div class="meta">
+        <div class="score">+0.148</div>
+        <div class="vid"> kolbuszowa_yt @ 220.0s</div>
+        <div class="cue">Litvish yeshiva man with beard black hat and dark frock coat</div>
+      </div>
+    </article>
+
+    <article class="card hit">
+      <img src="/media/known_hit_probe/video_crops/kolbuszowa_yt/kolbuszowa_yt_t00227.0s_hit.jpg" loading="lazy" alt="kolbuszowa_yt @ 227.0s" />
+      <div class="meta">
+        <div class="score">+0.128</div>
+        <div class="vid"> kolbuszowa_yt @ 227.0s</div>
+        <div class="cue">Hasidic Jewish man wearing a large round shtreimel fur hat and black c</div>
+      </div>
+    </article>
+
+    <article class="card hit">
+      <img src="/media/known_hit_probe/video_crops/kolbuszowa_yt/kolbuszowa_yt_t00219.0s_hit.jpg" loading="lazy" alt="kolbuszowa_yt @ 219.0s" />
+      <div class="meta">
+        <div class="score">+0.121</div>
+        <div class="vid"> kolbuszowa_yt @ 219.0s</div>
+        <div class="cue">Hasidic rebbe with white beard sidelocks and shtreimel fur hat</div>
+      </div>
+    </article>
+
+    <article class="card hit">
+      <img src="/media/known_hit_probe/video_crops/kolbuszowa_yt/kolbuszowa_yt_t00391.0s_hit.jpg" loading="lazy" alt="kolbuszowa_yt @ 391.0s" />
+      <div class="meta">
+        <div class="score">+0.112</div>
+        <div class="vid"> kolbuszowa_yt @ 391.0s</div>
+        <div class="cue">Hasidic Jewish man wearing a large round shtreimel fur hat and black c</div>
+      </div>
+    </article>
+
+    <article class="card hit">
+      <img src="/media/known_hit_probe/video_crops/kolbuszowa_yt/kolbuszowa_yt_t00233.0s_hit.jpg" loading="lazy" alt="kolbuszowa_yt @ 233.0s" />
+      <div class="meta">
+        <div class="score">+0.108</div>
+        <div class="vid"> kolbuszowa_yt @ 233.0s</div>
+        <div class="cue">Hasidic rebbe with white beard sidelocks and shtreimel fur hat</div>
+      </div>
+    </article></div></section>
+  <section><h2>Video person-frames — missed (person detected, below gate) <span class='n'>(120)</span></h2><div class='grid'>
+    <article class="card miss">
+      <img src="/media/known_hit_probe/video_crops/kolbuszowa_yt/kolbuszowa_yt_t00163.0s_miss.jpg" loading="lazy" alt="kolbuszowa_yt @ 163.0s" />
+      <div class="meta">
+        <div class="score">-0.053</div>
+        <div class="vid"> kolbuszowa_yt @ 163.0s</div>
+        <div class="cue">Hasidic rebbe with white beard sidelocks and shtreimel fur hat</div>
+      </div>
+    </article>
+
+    <article class="card miss">
+      <img src="/media/known_hit_probe/video_crops/kolbuszowa_yt/kolbuszowa_yt_t00000.0s_miss.jpg" loading="lazy" alt="kolbuszowa_yt @ 0.0s" />
+      <div class="meta">
+        <div class="score">-0.052</div>
+        <div class="vid"> kolbuszowa_yt @ 0.0s</div>
+        <div class="cue">group of Hasidic Jewish men in black coats streimels hats and payot</div>
+      </div>
+    </article>
+
+    <article class="card miss">
+      <img src="/media/known_hit_probe/video_crops/kolbuszowa_yt/kolbuszowa_yt_t00200.0s_miss.jpg" loading="lazy" alt="kolbuszowa_yt @ 200.0s" />
+      <div class="meta">
+        <div class="score">-0.045</div>
+        <div class="vid"> kolbuszowa_yt @ 200.0s</div>
+        <div class="cue">Hasidic Jewish man wearing a large round shtreimel fur hat and black c</div>
+      </div>
+    </article>
+
+    <article class="card miss">
+      <img src="/media/known_hit_probe/video_crops/kolbuszowa_yt/kolbuszowa_yt_t00004.0s_miss.jpg" loading="lazy" alt="kolbuszowa_yt @ 4.0s" />
+      <div class="meta">
+        <div class="score">-0.037</div>
+        <div class="vid"> kolbuszowa_yt @ 4.0s</div>
+        <div class="cue">group of Hasidic Jewish men in black coats streimels hats and payot</div>
+      </div>
+    </article>
+
+    <article class="card miss">
+      <img src="/media/known_hit_probe/video_crops/kolbuszowa_yt/kolbuszowa_yt_t00150.0s_miss.jpg" loading="lazy" alt="kolbuszowa_yt @ 150.0s" />
+      <div class="meta">
+        <div class="score">-0.035</div>
+        <div class="vid"> kolbuszowa_yt @ 150.0s</div>
+        <div class="cue">Hasidic rebbe with white beard sidelocks and shtreimel fur hat</div>
+      </div>
+    </article>
+
+    <article class="card miss">
+      <img src="/media/known_hit_probe/video_crops/kolbuszowa_yt/kolbuszowa_yt_t00175.0s_miss.jpg" loading="lazy" alt="kolbuszowa_yt @ 175.0s" />
+      <div class="meta">
+        <div class="score">-0.026</div>
+        <div class="vid"> kolbuszowa_yt @ 175.0s</div>
+        <div class="cue">Hasidic rebbe with white beard sidelocks and shtreimel fur hat</div>
+      </div>
+    </article>
+
+    <article class="card miss">
+      <img src="/media/known_hit_probe/video_crops/kolbuszowa_yt/kolbuszowa_yt_t00193.0s_miss.jpg" loading="lazy" alt="kolbuszowa_yt @ 193.0s" />
+      <div class="meta">
+        <div class="score">-0.025</div>
+        <div class="vid"> kolbuszowa_yt @ 193.0s</div>
+        <div class="cue">Hasidic rebbe with white beard sidelocks and shtreimel fur hat</div>
+      </div>
+    </article>
+
+    <article class="card miss">
+      <img src="/media/known_hit_probe/video_crops/kolbuszowa_yt/kolbuszowa_yt_t00393.0s_miss.jpg" loading="lazy" alt="kolbuszowa_yt @ 393.0s" />
+      <div class="meta">
+        <div class="score">-0.016</div>
+        <div class="vid"> kolbuszowa_yt @ 393.0s</div>
+        <div class="cue">Orthodox Jewish man with curled payot sidelocks and black yarmulke or </div>
+      </div>
+    </article>
+
+    <article class="card miss">
+      <img src="/media/known_hit_probe/video_crops/kolbuszowa_yt/kolbuszowa_yt_t00106.0s_miss.jpg" loading="lazy" alt="kolbuszowa_yt @ 106.0s" />
+      <div class="meta">
+        <div class="score">-0.009</div>
+        <div class="vid"> kolbuszowa_yt @ 106.0s</div>
+        <div class="cue">Hasidic rebbe with white beard sidelocks and shtreimel fur hat</div>
+      </div>
+    </article>
+
+    <article class="card miss">
+      <img src="/media/known_hit_probe/video_crops/kolbuszowa_yt/kolbuszowa_yt_t00384.0s_miss.jpg" loading="lazy" alt="kolbuszowa_yt @ 384.0s" />
+      <div class="meta">
+        <div class="score">-0.005</div>
+        <div class="vid"> kolbuszowa_yt @ 384.0s</div>
+        <div class="cue">Litvish yeshiva man with beard black hat and dark frock coat</div>
+      </div>
+    </article>
+
+    <article class="card miss">
+      <img src="/media/known_hit_probe/video_crops/kolbuszowa_yt/kolbuszowa_yt_t00161.0s_miss.jpg" loading="lazy" alt="kolbuszowa_yt @ 161.0s" />
+      <div class="meta">
+        <div class="score">-0.001</div>
+        <div class="vid"> kolbuszowa_yt @ 161.0s</div>
+        <div class="cue">Hasidic rebbe with white beard sidelocks and shtreimel fur hat</div>
+      </div>
+    </article>
+
+    <article class="card miss">
+      <img src="/media/known_hit_probe/video_crops/kolbuszowa_yt/kolbuszowa_yt_t00154.0s_miss.jpg" loading="lazy" alt="kolbuszowa_yt @ 154.0s" />
+      <div class="meta">
+        <div class="score">-0.000</div>
+        <div class="vid"> kolbuszowa_yt @ 154.0s</div>
+        <div class="cue">Hasidic rebbe with white beard sidelocks and shtreimel fur hat</div>
+      </div>
+    </article>
+
+    <article class="card miss">
+      <img src="/media/known_hit_probe/video_crops/kolbuszowa_yt/kolbuszowa_yt_t00294.0s_miss.jpg" loading="lazy" alt="kolbuszowa_yt @ 294.0s" />
+      <div class="meta">
+        <div class="score">+0.005</div>
+        <div class="vid"> kolbuszowa_yt @ 294.0s</div>
+        <div class="cue">Hasidic rebbe with white beard sidelocks and shtreimel fur hat</div>
+      </div>
+    </article>
+
+    <article class="card miss">
+      <img src="/media/known_hit_probe/video_crops/kolbuszowa_yt/kolbuszowa_yt_t00394.0s_miss.jpg" loading="lazy" alt="kolbuszowa_yt @ 394.0s" />
+      <div class="meta">
+        <div class="score">+0.005</div>
+        <div class="vid"> kolbuszowa_yt @ 394.0s</div>
+        <div class="cue">Litvish yeshiva man with beard black hat and dark frock coat</div>
+      </div>
+    </article>
+
+    <article class="card miss">
+      <img src="/media/known_hit_probe/video_crops/kolbuszowa_yt/kolbuszowa_yt_t00105.0s_miss.jpg" loading="lazy" alt="kolbuszowa_yt @ 105.0s" />
+      <div class="meta">
+        <div class="score">+0.009</div>
+        <div class="vid"> kolbuszowa_yt @ 105.0s</div>
+        <div class="cue">Hasidic rebbe with white beard sidelocks and shtreimel fur hat</div>
+      </div>
+    </article>
+
+    <article class="card miss">
+      <img src="/media/known_hit_probe/video_crops/kolbuszowa_yt/kolbuszowa_yt_t00185.0s_miss.jpg" loading="lazy" alt="kolbuszowa_yt @ 185.0s" />
+      <div class="meta">
+        <div class="score">+0.013</div>
+        <div class="vid"> kolbuszowa_yt @ 185.0s</div>
+        <div class="cue">Hasidic rebbe with white beard sidelocks and shtreimel fur hat</div>
+      </div>
+    </article>
+
+    <article class="card miss">
+      <img src="/media/known_hit_probe/video_crops/kolbuszowa_yt/kolbuszowa_yt_t00395.0s_miss.jpg" loading="lazy" alt="kolbuszowa_yt @ 395.0s" />
+      <div class="meta">
+        <div class="score">+0.016</div>
+        <div class="vid"> kolbuszowa_yt @ 395.0s</div>
+        <div class="cue">Litvish yeshiva man with beard black hat and dark frock coat</div>
+      </div>
+    </article>
+
+    <article class="card miss">
+      <img src="/media/known_hit_probe/video_crops/kolbuszowa_yt/kolbuszowa_yt_t00196.0s_miss.jpg" loading="lazy" alt="kolbuszowa_yt @ 196.0s" />
+      <div class="meta">
+        <div class="score">+0.016</div>
+        <div class="vid"> kolbuszowa_yt @ 196.0s</div>
+        <div class="cue">Hasidic rebbe with white beard sidelocks and shtreimel fur hat</div>
+      </div>
+    </article>
+
+    <article class="card miss">
+      <img src="/media/known_hit_probe/video_crops/kolbuszowa_yt/kolbuszowa_yt_t00293.0s_miss.jpg" loading="lazy" alt="kolbuszowa_yt @ 293.0s" />
+      <div class="meta">
+        <div class="score">+0.018</div>
+        <div class="vid"> kolbuszowa_yt @ 293.0s</div>
+        <div class="cue">Hasidic rebbe with white beard sidelocks and shtreimel fur hat</div>
+      </div>
+    </article>
+
+    <article class="card miss">
+      <img src="/media/known_hit_probe/video_crops/kolbuszowa_yt/kolbuszowa_yt_t00153.0s_miss.jpg" loading="lazy" alt="kolbuszowa_yt @ 153.0s" />
+      <div class="meta">
+        <div class="score">+0.019</div>
+        <div class="vid"> kolbuszowa_yt @ 153.0s</div>
+        <div class="cue">Hasidic rebbe with white beard sidelocks and shtreimel fur hat</div>
+      </div>
+    </article>
+
+    <article class="card miss">
+      <img src="/media/known_hit_probe/video_crops/kolbuszowa_yt/kolbuszowa_yt_t00173.0s_miss.jpg" loading="lazy" alt="kolbuszowa_yt @ 173.0s" />
+      <div class="meta">
+        <div class="score">+0.019</div>
+        <div class="vid"> kolbuszowa_yt @ 173.0s</div>
+        <div class="cue">Hasidic rebbe with white beard sidelocks and shtreimel fur hat</div>
+      </div>
+    </article>
+
+    <article class="card miss">
+      <img src="/media/known_hit_probe/video_crops/kolbuszowa_yt/kolbuszowa_yt_t00213.0s_miss.jpg" loading="lazy" alt="kolbuszowa_yt @ 213.0s" />
+      <div class="meta">
+        <div class="score">+0.019</div>
+        <div class="vid"> kolbuszowa_yt @ 213.0s</div>
+        <div class="cue">Hasidic Jewish man wearing a large round shtreimel fur hat and black c</div>
+      </div>
+    </article>
+
+    <article class="card miss">
+      <img src="/media/known_hit_probe/video_crops/munkacs_1933_yt/munkacs_1933_yt_t00076.1s_miss.jpg" loading="lazy" alt="munkacs_1933_yt @ 76.1s" />
+      <div class="meta">
+        <div class="score">+0.035</div>
+        <div class="vid"> munkacs_1933_yt @ 76.1s</div>
+        <div class="cue">Hasidic rebbe with white beard sidelocks and shtreimel fur hat</div>
+      </div>
+    </article>
+
+    <article class="card miss">
+      <img src="/media/known_hit_probe/video_crops/kolbuszowa_yt/kolbuszowa_yt_t00132.0s_miss.jpg" loading="lazy" alt="kolbuszowa_yt @ 132.0s" />
+      <div class="meta">
+        <div class="score">+0.038</div>
+        <div class="vid"> kolbuszowa_yt @ 132.0s</div>
+        <div class="cue">Hasidic rebbe with white beard sidelocks and shtreimel fur hat</div>
+      </div>
+    </article>
+
+    <article class="card miss">
+      <img src="/media/known_hit_probe/video_crops/kolbuszowa_yt/kolbuszowa_yt_t00308.0s_miss.jpg" loading="lazy" alt="kolbuszowa_yt @ 308.0s" />
+      <div class="meta">
+        <div class="score">+0.038</div>
+        <div class="vid"> kolbuszowa_yt @ 308.0s</div>
+        <div class="cue">Hasidic rebbe with white beard sidelocks and shtreimel fur hat</div>
+      </div>
+    </article>
+
+    <article class="card miss">
+      <img src="/media/known_hit_probe/video_crops/kolbuszowa_yt/kolbuszowa_yt_t00129.0s_miss.jpg" loading="lazy" alt="kolbuszowa_yt @ 129.0s" />
+      <div class="meta">
+        <div class="score">+0.042</div>
+        <div class="vid"> kolbuszowa_yt @ 129.0s</div>
+        <div class="cue">Hasidic rebbe with white beard sidelocks and shtreimel fur hat</div>
+      </div>
+    </article>
+
+    <article class="card miss">
+      <img src="/media/known_hit_probe/video_crops/kolbuszowa_yt/kolbuszowa_yt_t00136.0s_miss.jpg" loading="lazy" alt="kolbuszowa_yt @ 136.0s" />
+      <div class="meta">
+        <div class="score">+0.043</div>
+        <div class="vid"> kolbuszowa_yt @ 136.0s</div>
+        <div class="cue">Hasidic rebbe with white beard sidelocks and shtreimel fur hat</div>
+      </div>
+    </article>
+
+    <article class="card miss">
+      <img src="/media/known_hit_probe/video_crops/kolbuszowa_yt/kolbuszowa_yt_t00165.0s_miss.jpg" loading="lazy" alt="kolbuszowa_yt @ 165.0s" />
+      <div class="meta">
+        <div class="score">+0.043</div>
+        <div class="vid"> kolbuszowa_yt @ 165.0s</div>
+        <div class="cue">Hasidic rebbe with white beard sidelocks and shtreimel fur hat</div>
+      </div>
+    </article>
+
+    <article class="card miss">
+      <img src="/media/known_hit_probe/video_crops/kolbuszowa_yt/kolbuszowa_yt_t00115.0s_miss.jpg" loading="lazy" alt="kolbuszowa_yt @ 115.0s" />
+      <div class="meta">
+        <div class="score">+0.044</div>
+        <div class="vid"> kolbuszowa_yt @ 115.0s</div>
+        <div class="cue">Hasidic rebbe with white beard sidelocks and shtreimel fur hat</div>
+      </div>
+    </article>
+
+    <article class="card miss">
+      <img src="/media/known_hit_probe/video_crops/munkacs_1933_yt/munkacs_1933_yt_t00000.0s_miss.jpg" loading="lazy" alt="munkacs_1933_yt @ 0.0s" />
+      <div class="meta">
+        <div class="score">+0.050</div>
+        <div class="vid"> munkacs_1933_yt @ 0.0s</div>
+        <div class="cue">Hasidic rebbe with white beard sidelocks and shtreimel fur hat</div>
+      </div>
+    </article>
+
+    <article class="card miss">
+      <img src="/media/known_hit_probe/video_crops/munkacs_1933_yt/munkacs_1933_yt_t00001.0s_miss.jpg" loading="lazy" alt="munkacs_1933_yt @ 1.0s" />
+      <div class="meta">
+        <div class="score">+0.050</div>
+        <div class="vid"> munkacs_1933_yt @ 1.0s</div>
+        <div class="cue">Hasidic rebbe with white beard sidelocks and shtreimel fur hat</div>
+      </div>
+    </article>
+
+    <article class="card miss">
+      <img src="/media/known_hit_probe/video_crops/munkacs_1933_yt/munkacs_1933_yt_t00002.0s_miss.jpg" loading="lazy" alt="munkacs_1933_yt @ 2.0s" />
+      <div class="meta">
+        <div class="score">+0.050</div>
+        <div class="vid"> munkacs_1933_yt @ 2.0s</div>
+        <div class="cue">Hasidic rebbe with white beard sidelocks and shtreimel fur hat</div>
+      </div>
+    </article>
+
+    <article class="card miss">
+      <img src="/media/known_hit_probe/video_crops/munkacs_1933_yt/munkacs_1933_yt_t00006.0s_miss.jpg" loading="lazy" alt="munkacs_1933_yt @ 6.0s" />
+      <div class="meta">
+        <div class="score">+0.050</div>
+        <div class="vid"> munkacs_1933_yt @ 6.0s</div>
+        <div class="cue">Hasidic Jewish man wearing a large round shtreimel fur hat and black c</div>
+      </div>
+    </article>
+
+    <article class="card miss">
+      <img src="/media/known_hit_probe/video_crops/munkacs_1933_yt/munkacs_1933_yt_t00033.0s_miss.jpg" loading="lazy" alt="munkacs_1933_yt @ 33.0s" />
+      <div class="meta">
+        <div class="score">+0.050</div>
+        <div class="vid"> munkacs_1933_yt @ 33.0s</div>
+        <div class="cue">Orthodox Jewish man with curled payot sidelocks and black yarmulke or </div>
+      </div>
+    </article>
+
+    <article class="card miss">
+      <img src="/media/known_hit_probe/video_crops/munkacs_1933_yt/munkacs_1933_yt_t00052.1s_miss.jpg" loading="lazy" alt="munkacs_1933_yt @ 52.1s" />
+      <div class="meta">
+        <div class="score">+0.050</div>
+        <div class="vid"> munkacs_1933_yt @ 52.1s</div>
+        <div class="cue">Hasidic rebbe with white beard sidelocks and shtreimel fur hat</div>
+      </div>
+    </article>
+
+    <article class="card miss">
+      <img src="/media/known_hit_probe/video_crops/munkacs_1933_yt/munkacs_1933_yt_t00053.1s_miss.jpg" loading="lazy" alt="munkacs_1933_yt @ 53.1s" />
+      <div class="meta">
+        <div class="score">+0.050</div>
+        <div class="vid"> munkacs_1933_yt @ 53.1s</div>
+        <div class="cue">Hasidic rebbe with white beard sidelocks and shtreimel fur hat</div>
+      </div>
+    </article>
+
+    <article class="card miss">
+      <img src="/media/known_hit_probe/video_crops/munkacs_1933_yt/munkacs_1933_yt_t00054.1s_miss.jpg" loading="lazy" alt="munkacs_1933_yt @ 54.1s" />
+      <div class="meta">
+        <div class="score">+0.050</div>
+        <div class="vid"> munkacs_1933_yt @ 54.1s</div>
+        <div class="cue">Litvish yeshiva man with beard black hat and dark frock coat</div>
+      </div>
+    </article>
+
+    <article class="card miss">
+      <img src="/media/known_hit_probe/video_crops/munkacs_1933_yt/munkacs_1933_yt_t00055.1s_miss.jpg" loading="lazy" alt="munkacs_1933_yt @ 55.1s" />
+      <div class="meta">
+        <div class="score">+0.050</div>
+        <div class="vid"> munkacs_1933_yt @ 55.1s</div>
+        <div class="cue">Hasidic rebbe with white beard sidelocks and shtreimel fur hat</div>
+      </div>
+    </article>
+
+    <article class="card miss">
+      <img src="/media/known_hit_probe/video_crops/munkacs_1933_yt/munkacs_1933_yt_t00056.1s_miss.jpg" loading="lazy" alt="munkacs_1933_yt @ 56.1s" />
+      <div class="meta">
+        <div class="score">+0.050</div>
+        <div class="vid"> munkacs_1933_yt @ 56.1s</div>
+        <div class="cue">Hasidic rebbe with white beard sidelocks and shtreimel fur hat</div>
+      </div>
+    </article>
+
+    <article class="card miss">
+      <img src="/media/known_hit_probe/video_crops/munkacs_1933_yt/munkacs_1933_yt_t00057.1s_miss.jpg" loading="lazy" alt="munkacs_1933_yt @ 57.1s" />
+      <div class="meta">
+        <div class="score">+0.050</div>
+        <div class="vid"> munkacs_1933_yt @ 57.1s</div>
+        <div class="cue">Hasidic rebbe with white beard sidelocks and shtreimel fur hat</div>
+      </div>
+    </article>
+
+    <article class="card miss">
+      <img src="/media/known_hit_probe/video_crops/munkacs_1933_yt/munkacs_1933_yt_t00058.1s_miss.jpg" loading="lazy" alt="munkacs_1933_yt @ 58.1s" />
+      <div class="meta">
+        <div class="score">+0.050</div>
+        <div class="vid"> munkacs_1933_yt @ 58.1s</div>
+        <div class="cue">Litvish yeshiva man with beard black hat and dark frock coat</div>
+      </div>
+    </article>
+
+    <article class="card miss">
+      <img src="/media/known_hit_probe/video_crops/munkacs_1933_yt/munkacs_1933_yt_t00059.1s_miss.jpg" loading="lazy" alt="munkacs_1933_yt @ 59.1s" />
+      <div class="meta">
+        <div class="score">+0.050</div>
+        <div class="vid"> munkacs_1933_yt @ 59.1s</div>
+        <div class="cue">Hasidic rebbe with white beard sidelocks and shtreimel fur hat</div>
+      </div>
+    </article>
+
+    <article class="card miss">
+      <img src="/media/known_hit_probe/video_crops/munkacs_1933_yt/munkacs_1933_yt_t00064.1s_miss.jpg" loading="lazy" alt="munkacs_1933_yt @ 64.1s" />
+      <div class="meta">
+        <div class="score">+0.050</div>
+        <div class="vid"> munkacs_1933_yt @ 64.1s</div>
+        <div class="cue">Hasidic rebbe with white beard sidelocks and shtreimel fur hat</div>
+      </div>
+    </article>
+
+    <article class="card miss">
+      <img src="/media/known_hit_probe/video_crops/munkacs_1933_yt/munkacs_1933_yt_t00066.1s_miss.jpg" loading="lazy" alt="munkacs_1933_yt @ 66.1s" />
+      <div class="meta">
+        <div class="score">+0.050</div>
+        <div class="vid"> munkacs_1933_yt @ 66.1s</div>
+        <div class="cue">Hasidic rebbe with white beard sidelocks and shtreimel fur hat</div>
+      </div>
+    </article>
+
+    <article class="card miss">
+      <img src="/media/known_hit_probe/video_crops/munkacs_1933_yt/munkacs_1933_yt_t00067.1s_miss.jpg" loading="lazy" alt="munkacs_1933_yt @ 67.1s" />
+      <div class="meta">
+        <div class="score">+0.050</div>
+        <div class="vid"> munkacs_1933_yt @ 67.1s</div>
+        <div class="cue">Hasidic rebbe with white beard sidelocks and shtreimel fur hat</div>
+      </div>
+    </article>
+
+    <article class="card miss">
+      <img src="/media/known_hit_probe/video_crops/munkacs_1933_yt/munkacs_1933_yt_t00069.1s_miss.jpg" loading="lazy" alt="munkacs_1933_yt @ 69.1s" />
+      <div class="meta">
+        <div class="score">+0.050</div>
+        <div class="vid"> munkacs_1933_yt @ 69.1s</div>
+        <div class="cue">Hasidic rebbe with white beard sidelocks and shtreimel fur hat</div>
+      </div>
+    </article>
+
+    <article class="card miss">
+      <img src="/media/known_hit_probe/video_crops/munkacs_1933_yt/munkacs_1933_yt_t00071.1s_miss.jpg" loading="lazy" alt="munkacs_1933_yt @ 71.1s" />
+      <div class="meta">
+        <div class="score">+0.050</div>
+        <div class="vid"> munkacs_1933_yt @ 71.1s</div>
+        <div class="cue">Hasidic Jewish man wearing a large round shtreimel fur hat and black c</div>
+      </div>
+    </article>
+
+    <article class="card miss">
+      <img src="/media/known_hit_probe/video_crops/munkacs_1933_yt/munkacs_1933_yt_t00072.1s_miss.jpg" loading="lazy" alt="munkacs_1933_yt @ 72.1s" />
+      <div class="meta">
+        <div class="score">+0.050</div>
+        <div class="vid"> munkacs_1933_yt @ 72.1s</div>
+        <div class="cue">Hasidic Jewish man wearing a large round shtreimel fur hat and black c</div>
+      </div>
+    </article>
+
+    <article class="card miss">
+      <img src="/media/known_hit_probe/video_crops/munkacs_1933_yt/munkacs_1933_yt_t00073.1s_miss.jpg" loading="lazy" alt="munkacs_1933_yt @ 73.1s" />
+      <div class="meta">
+        <div class="score">+0.050</div>
+        <div class="vid"> munkacs_1933_yt @ 73.1s</div>
+        <div class="cue">Hasidic Jewish man wearing a large round shtreimel fur hat and black c</div>
+      </div>
+    </article>
+
+    <article class="card miss">
+      <img src="/media/known_hit_probe/video_crops/munkacs_1933_yt/munkacs_1933_yt_t00074.1s_miss.jpg" loading="lazy" alt="munkacs_1933_yt @ 74.1s" />
+      <div class="meta">
+        <div class="score">+0.050</div>
+        <div class="vid"> munkacs_1933_yt @ 74.1s</div>
+        <div class="cue">Hasidic Jewish man wearing a large round shtreimel fur hat and black c</div>
+      </div>
+    </article>
+
+    <article class="card miss">
+      <img src="/media/known_hit_probe/video_crops/munkacs_1933_yt/munkacs_1933_yt_t00075.1s_miss.jpg" loading="lazy" alt="munkacs_1933_yt @ 75.1s" />
+      <div class="meta">
+        <div class="score">+0.050</div>
+        <div class="vid"> munkacs_1933_yt @ 75.1s</div>
+        <div class="cue">Hasidic rebbe with white beard sidelocks and shtreimel fur hat</div>
+      </div>
+    </article>
+
+    <article class="card miss">
+      <img src="/media/known_hit_probe/video_crops/munkacs_1933_yt/munkacs_1933_yt_t00077.1s_miss.jpg" loading="lazy" alt="munkacs_1933_yt @ 77.1s" />
+      <div class="meta">
+        <div class="score">+0.050</div>
+        <div class="vid"> munkacs_1933_yt @ 77.1s</div>
+        <div class="cue">Hasidic rebbe with white beard sidelocks and shtreimel fur hat</div>
+      </div>
+    </article>
+
+    <article class="card miss">
+      <img src="/media/known_hit_probe/video_crops/munkacs_1933_yt/munkacs_1933_yt_t00078.1s_miss.jpg" loading="lazy" alt="munkacs_1933_yt @ 78.1s" />
+      <div class="meta">
+        <div class="score">+0.050</div>
+        <div class="vid"> munkacs_1933_yt @ 78.1s</div>
+        <div class="cue">group of Hasidic Jewish men in black coats streimels hats and payot</div>
+      </div>
+    </article>
+
+    <article class="card miss">
+      <img src="/media/known_hit_probe/video_crops/munkacs_1933_yt/munkacs_1933_yt_t00079.1s_miss.jpg" loading="lazy" alt="munkacs_1933_yt @ 79.1s" />
+      <div class="meta">
+        <div class="score">+0.050</div>
+        <div class="vid"> munkacs_1933_yt @ 79.1s</div>
+        <div class="cue">Hasidic Jewish man wearing a large round shtreimel fur hat and black c</div>
+      </div>
+    </article>
+
+    <article class="card miss">
+      <img src="/media/known_hit_probe/video_crops/munkacs_1933_yt/munkacs_1933_yt_t00080.1s_miss.jpg" loading="lazy" alt="munkacs_1933_yt @ 80.1s" />
+      <div class="meta">
+        <div class="score">+0.050</div>
+        <div class="vid"> munkacs_1933_yt @ 80.1s</div>
+        <div class="cue">Hasidic Jewish man wearing a large round shtreimel fur hat and black c</div>
+      </div>
+    </article>
+
+    <article class="card miss">
+      <img src="/media/known_hit_probe/video_crops/munkacs_1933_yt/munkacs_1933_yt_t00081.1s_miss.jpg" loading="lazy" alt="munkacs_1933_yt @ 81.1s" />
+      <div class="meta">
+        <div class="score">+0.050</div>
+        <div class="vid"> munkacs_1933_yt @ 81.1s</div>
+        <div class="cue">Hasidic rebbe with white beard sidelocks and shtreimel fur hat</div>
+      </div>
+    </article>
+
+    <article class="card miss">
+      <img src="/media/known_hit_probe/video_crops/munkacs_1933_yt/munkacs_1933_yt_t00082.1s_miss.jpg" loading="lazy" alt="munkacs_1933_yt @ 82.1s" />
+      <div class="meta">
+        <div class="score">+0.050</div>
+        <div class="vid"> munkacs_1933_yt @ 82.1s</div>
+        <div class="cue">Hasidic Jewish man wearing a large round shtreimel fur hat and black c</div>
+      </div>
+    </article>
+
+    <article class="card miss">
+      <img src="/media/known_hit_probe/video_crops/munkacs_1933_yt/munkacs_1933_yt_t00083.1s_miss.jpg" loading="lazy" alt="munkacs_1933_yt @ 83.1s" />
+      <div class="meta">
+        <div class="score">+0.050</div>
+        <div class="vid"> munkacs_1933_yt @ 83.1s</div>
+        <div class="cue">Hasidic rebbe with white beard sidelocks and shtreimel fur hat</div>
+      </div>
+    </article>
+
+    <article class="card miss">
+      <img src="/media/known_hit_probe/video_crops/munkacs_1933_yt/munkacs_1933_yt_t00084.1s_miss.jpg" loading="lazy" alt="munkacs_1933_yt @ 84.1s" />
+      <div class="meta">
+        <div class="score">+0.050</div>
+        <div class="vid"> munkacs_1933_yt @ 84.1s</div>
+        <div class="cue">Hasidic rebbe with white beard sidelocks and shtreimel fur hat</div>
+      </div>
+    </article>
+
+    <article class="card miss">
+      <img src="/media/known_hit_probe/video_crops/munkacs_1933_yt/munkacs_1933_yt_t00085.1s_miss.jpg" loading="lazy" alt="munkacs_1933_yt @ 85.1s" />
+      <div class="meta">
+        <div class="score">+0.050</div>
+        <div class="vid"> munkacs_1933_yt @ 85.1s</div>
+        <div class="cue">Hasidic Jewish man wearing a large round shtreimel fur hat and black c</div>
+      </div>
+    </article>
+
+    <article class="card miss">
+      <img src="/media/known_hit_probe/video_crops/munkacs_1933_yt/munkacs_1933_yt_t00086.1s_miss.jpg" loading="lazy" alt="munkacs_1933_yt @ 86.1s" />
+      <div class="meta">
+        <div class="score">+0.050</div>
+        <div class="vid"> munkacs_1933_yt @ 86.1s</div>
+        <div class="cue">Hasidic Jewish man wearing a large round shtreimel fur hat and black c</div>
+      </div>
+    </article>
+
+    <article class="card miss">
+      <img src="/media/known_hit_probe/video_crops/kolbuszowa_yt/kolbuszowa_yt_t00107.0s_miss.jpg" loading="lazy" alt="kolbuszowa_yt @ 107.0s" />
+      <div class="meta">
+        <div class="score">+0.050</div>
+        <div class="vid"> kolbuszowa_yt @ 107.0s</div>
+        <div class="cue">Hasidic Jewish man with beard sidelocks payot and black hat or shtreim</div>
+      </div>
+    </article>
+
+    <article class="card miss">
+      <img src="/media/known_hit_probe/video_crops/kolbuszowa_yt/kolbuszowa_yt_t00109.0s_miss.jpg" loading="lazy" alt="kolbuszowa_yt @ 109.0s" />
+      <div class="meta">
+        <div class="score">+0.050</div>
+        <div class="vid"> kolbuszowa_yt @ 109.0s</div>
+        <div class="cue">Hasidic rebbe with white beard sidelocks and shtreimel fur hat</div>
+      </div>
+    </article>
+
+    <article class="card miss">
+      <img src="/media/known_hit_probe/video_crops/kolbuszowa_yt/kolbuszowa_yt_t00110.0s_miss.jpg" loading="lazy" alt="kolbuszowa_yt @ 110.0s" />
+      <div class="meta">
+        <div class="score">+0.050</div>
+        <div class="vid"> kolbuszowa_yt @ 110.0s</div>
+        <div class="cue">Hasidic rebbe with white beard sidelocks and shtreimel fur hat</div>
+      </div>
+    </article>
+
+    <article class="card miss">
+      <img src="/media/known_hit_probe/video_crops/kolbuszowa_yt/kolbuszowa_yt_t00112.0s_miss.jpg" loading="lazy" alt="kolbuszowa_yt @ 112.0s" />
+      <div class="meta">
+        <div class="score">+0.050</div>
+        <div class="vid"> kolbuszowa_yt @ 112.0s</div>
+        <div class="cue">Hasidic rebbe with white beard sidelocks and shtreimel fur hat</div>
+      </div>
+    </article>
+
+    <article class="card miss">
+      <img src="/media/known_hit_probe/video_crops/kolbuszowa_yt/kolbuszowa_yt_t00113.0s_miss.jpg" loading="lazy" alt="kolbuszowa_yt @ 113.0s" />
+      <div class="meta">
+        <div class="score">+0.050</div>
+        <div class="vid"> kolbuszowa_yt @ 113.0s</div>
+        <div class="cue">Hasidic rebbe with white beard sidelocks and shtreimel fur hat</div>
+      </div>
+    </article>
+
+    <article class="card miss">
+      <img src="/media/known_hit_probe/video_crops/kolbuszowa_yt/kolbuszowa_yt_t00114.0s_miss.jpg" loading="lazy" alt="kolbuszowa_yt @ 114.0s" />
+      <div class="meta">
+        <div class="score">+0.050</div>
+        <div class="vid"> kolbuszowa_yt @ 114.0s</div>
+        <div class="cue">Hasidic rebbe with white beard sidelocks and shtreimel fur hat</div>
+      </div>
+    </article>
+
+    <article class="card miss">
+      <img src="/media/known_hit_probe/video_crops/kolbuszowa_yt/kolbuszowa_yt_t00126.0s_miss.jpg" loading="lazy" alt="kolbuszowa_yt @ 126.0s" />
+      <div class="meta">
+        <div class="score">+0.050</div>
+        <div class="vid"> kolbuszowa_yt @ 126.0s</div>
+        <div class="cue">Hasidic rebbe with white beard sidelocks and shtreimel fur hat</div>
+      </div>
+    </article>
+
+    <article class="card miss">
+      <img src="/media/known_hit_probe/video_crops/kolbuszowa_yt/kolbuszowa_yt_t00128.0s_miss.jpg" loading="lazy" alt="kolbuszowa_yt @ 128.0s" />
+      <div class="meta">
+        <div class="score">+0.050</div>
+        <div class="vid"> kolbuszowa_yt @ 128.0s</div>
+        <div class="cue">Hasidic rebbe with white beard sidelocks and shtreimel fur hat</div>
+      </div>
+    </article>
+
+    <article class="card miss">
+      <img src="/media/known_hit_probe/video_crops/kolbuszowa_yt/kolbuszowa_yt_t00130.0s_miss.jpg" loading="lazy" alt="kolbuszowa_yt @ 130.0s" />
+      <div class="meta">
+        <div class="score">+0.050</div>
+        <div class="vid"> kolbuszowa_yt @ 130.0s</div>
+        <div class="cue">Hasidic rebbe with white beard sidelocks and shtreimel fur hat</div>
+      </div>
+    </article>
+
+    <article class="card miss">
+      <img src="/media/known_hit_probe/video_crops/kolbuszowa_yt/kolbuszowa_yt_t00131.0s_miss.jpg" loading="lazy" alt="kolbuszowa_yt @ 131.0s" />
+      <div class="meta">
+        <div class="score">+0.050</div>
+        <div class="vid"> kolbuszowa_yt @ 131.0s</div>
+        <div class="cue">Hasidic rebbe with white beard sidelocks and shtreimel fur hat</div>
+      </div>
+    </article>
+
+    <article class="card miss">
+      <img src="/media/known_hit_probe/video_crops/kolbuszowa_yt/kolbuszowa_yt_t00133.0s_miss.jpg" loading="lazy" alt="kolbuszowa_yt @ 133.0s" />
+      <div class="meta">
+        <div class="score">+0.050</div>
+        <div class="vid"> kolbuszowa_yt @ 133.0s</div>
+        <div class="cue">Hasidic rebbe with white beard sidelocks and shtreimel fur hat</div>
+      </div>
+    </article>
+
+    <article class="card miss">
+      <img src="/media/known_hit_probe/video_crops/kolbuszowa_yt/kolbuszowa_yt_t00135.0s_miss.jpg" loading="lazy" alt="kolbuszowa_yt @ 135.0s" />
+      <div class="meta">
+        <div class="score">+0.050</div>
+        <div class="vid"> kolbuszowa_yt @ 135.0s</div>
+        <div class="cue">Hasidic rebbe with white beard sidelocks and shtreimel fur hat</div>
+      </div>
+    </article>
+
+    <article class="card miss">
+      <img src="/media/known_hit_probe/video_crops/kolbuszowa_yt/kolbuszowa_yt_t00137.0s_miss.jpg" loading="lazy" alt="kolbuszowa_yt @ 137.0s" />
+      <div class="meta">
+        <div class="score">+0.050</div>
+        <div class="vid"> kolbuszowa_yt @ 137.0s</div>
+        <div class="cue">Hasidic rebbe with white beard sidelocks and shtreimel fur hat</div>
+      </div>
+    </article>
+
+    <article class="card miss">
+      <img src="/media/known_hit_probe/video_crops/kolbuszowa_yt/kolbuszowa_yt_t00138.0s_miss.jpg" loading="lazy" alt="kolbuszowa_yt @ 138.0s" />
+      <div class="meta">
+        <div class="score">+0.050</div>
+        <div class="vid"> kolbuszowa_yt @ 138.0s</div>
+        <div class="cue">Hasidic rebbe with white beard sidelocks and shtreimel fur hat</div>
+      </div>
+    </article>
+
+    <article class="card miss">
+      <img src="/media/known_hit_probe/video_crops/kolbuszowa_yt/kolbuszowa_yt_t00139.0s_miss.jpg" loading="lazy" alt="kolbuszowa_yt @ 139.0s" />
+      <div class="meta">
+        <div class="score">+0.050</div>
+        <div class="vid"> kolbuszowa_yt @ 139.0s</div>
+        <div class="cue">Hasidic rebbe with white beard sidelocks and shtreimel fur hat</div>
+      </div>
+    </article>
+
+    <article class="card miss">
+      <img src="/media/known_hit_probe/video_crops/kolbuszowa_yt/kolbuszowa_yt_t00140.0s_miss.jpg" loading="lazy" alt="kolbuszowa_yt @ 140.0s" />
+      <div class="meta">
+        <div class="score">+0.050</div>
+        <div class="vid"> kolbuszowa_yt @ 140.0s</div>
+        <div class="cue">Hasidic rebbe with white beard sidelocks and shtreimel fur hat</div>
+      </div>
+    </article>
+
+    <article class="card miss">
+      <img src="/media/known_hit_probe/video_crops/kolbuszowa_yt/kolbuszowa_yt_t00141.0s_miss.jpg" loading="lazy" alt="kolbuszowa_yt @ 141.0s" />
+      <div class="meta">
+        <div class="score">+0.050</div>
+        <div class="vid"> kolbuszowa_yt @ 141.0s</div>
+        <div class="cue">Hasidic rebbe with white beard sidelocks and shtreimel fur hat</div>
+      </div>
+    </article>
+
+    <article class="card miss">
+      <img src="/media/known_hit_probe/video_crops/kolbuszowa_yt/kolbuszowa_yt_t00142.0s_miss.jpg" loading="lazy" alt="kolbuszowa_yt @ 142.0s" />
+      <div class="meta">
+        <div class="score">+0.050</div>
+        <div class="vid"> kolbuszowa_yt @ 142.0s</div>
+        <div class="cue">Hasidic rebbe with white beard sidelocks and shtreimel fur hat</div>
+      </div>
+    </article>
+
+    <article class="card miss">
+      <img src="/media/known_hit_probe/video_crops/kolbuszowa_yt/kolbuszowa_yt_t00143.0s_miss.jpg" loading="lazy" alt="kolbuszowa_yt @ 143.0s" />
+      <div class="meta">
+        <div class="score">+0.050</div>
+        <div class="vid"> kolbuszowa_yt @ 143.0s</div>
+        <div class="cue">Hasidic rebbe with white beard sidelocks and shtreimel fur hat</div>
+      </div>
+    </article>
+
+    <article class="card miss">
+      <img src="/media/known_hit_probe/video_crops/kolbuszowa_yt/kolbuszowa_yt_t00147.0s_miss.jpg" loading="lazy" alt="kolbuszowa_yt @ 147.0s" />
+      <div class="meta">
+        <div class="score">+0.050</div>
+        <div class="vid"> kolbuszowa_yt @ 147.0s</div>
+        <div class="cue">Hasidic rebbe with white beard sidelocks and shtreimel fur hat</div>
+      </div>
+    </article>
+
+    <article class="card miss">
+      <img src="/media/known_hit_probe/video_crops/kolbuszowa_yt/kolbuszowa_yt_t00148.0s_miss.jpg" loading="lazy" alt="kolbuszowa_yt @ 148.0s" />
+      <div class="meta">
+        <div class="score">+0.050</div>
+        <div class="vid"> kolbuszowa_yt @ 148.0s</div>
+        <div class="cue">Hasidic rebbe with white beard sidelocks and shtreimel fur hat</div>
+      </div>
+    </article>
+
+    <article class="card miss">
+      <img src="/media/known_hit_probe/video_crops/kolbuszowa_yt/kolbuszowa_yt_t00157.0s_miss.jpg" loading="lazy" alt="kolbuszowa_yt @ 157.0s" />
+      <div class="meta">
+        <div class="score">+0.050</div>
+        <div class="vid"> kolbuszowa_yt @ 157.0s</div>
+        <div class="cue">Hasidic rebbe with white beard sidelocks and shtreimel fur hat</div>
+      </div>
+    </article>
+
+    <article class="card miss">
+      <img src="/media/known_hit_probe/video_crops/kolbuszowa_yt/kolbuszowa_yt_t00158.0s_miss.jpg" loading="lazy" alt="kolbuszowa_yt @ 158.0s" />
+      <div class="meta">
+        <div class="score">+0.050</div>
+        <div class="vid"> kolbuszowa_yt @ 158.0s</div>
+        <div class="cue">Hasidic rebbe with white beard sidelocks and shtreimel fur hat</div>
+      </div>
+    </article>
+
+    <article class="card miss">
+      <img src="/media/known_hit_probe/video_crops/kolbuszowa_yt/kolbuszowa_yt_t00159.0s_miss.jpg" loading="lazy" alt="kolbuszowa_yt @ 159.0s" />
+      <div class="meta">
+        <div class="score">+0.050</div>
+        <div class="vid"> kolbuszowa_yt @ 159.0s</div>
+        <div class="cue">Hasidic rebbe with white beard sidelocks and shtreimel fur hat</div>
+      </div>
+    </article>
+
+    <article class="card miss">
+      <img src="/media/known_hit_probe/video_crops/kolbuszowa_yt/kolbuszowa_yt_t00162.0s_miss.jpg" loading="lazy" alt="kolbuszowa_yt @ 162.0s" />
+      <div class="meta">
+        <div class="score">+0.050</div>
+        <div class="vid"> kolbuszowa_yt @ 162.0s</div>
+        <div class="cue">Hasidic Jewish man wearing a large round shtreimel fur hat and black c</div>
+      </div>
+    </article>
+
+    <article class="card miss">
+      <img src="/media/known_hit_probe/video_crops/kolbuszowa_yt/kolbuszowa_yt_t00174.0s_miss.jpg" loading="lazy" alt="kolbuszowa_yt @ 174.0s" />
+      <div class="meta">
+        <div class="score">+0.050</div>
+        <div class="vid"> kolbuszowa_yt @ 174.0s</div>
+        <div class="cue">Hasidic rebbe with white beard sidelocks and shtreimel fur hat</div>
+      </div>
+    </article>
+
+    <article class="card miss">
+      <img src="/media/known_hit_probe/video_crops/kolbuszowa_yt/kolbuszowa_yt_t00176.0s_miss.jpg" loading="lazy" alt="kolbuszowa_yt @ 176.0s" />
+      <div class="meta">
+        <div class="score">+0.050</div>
+        <div class="vid"> kolbuszowa_yt @ 176.0s</div>
+        <div class="cue">Hasidic rebbe with white beard sidelocks and shtreimel fur hat</div>
+      </div>
+    </article>
+
+    <article class="card miss">
+      <img src="/media/known_hit_probe/video_crops/kolbuszowa_yt/kolbuszowa_yt_t00177.0s_miss.jpg" loading="lazy" alt="kolbuszowa_yt @ 177.0s" />
+      <div class="meta">
+        <div class="score">+0.050</div>
+        <div class="vid"> kolbuszowa_yt @ 177.0s</div>
+        <div class="cue">Hasidic rebbe with white beard sidelocks and shtreimel fur hat</div>
+      </div>
+    </article>
+
+    <article class="card miss">
+      <img src="/media/known_hit_probe/video_crops/kolbuszowa_yt/kolbuszowa_yt_t00184.0s_miss.jpg" loading="lazy" alt="kolbuszowa_yt @ 184.0s" />
+      <div class="meta">
+        <div class="score">+0.050</div>
+        <div class="vid"> kolbuszowa_yt @ 184.0s</div>
+        <div class="cue">Hasidic rebbe with white beard sidelocks and shtreimel fur hat</div>
+      </div>
+    </article>
+
+    <article class="card miss">
+      <img src="/media/known_hit_probe/video_crops/kolbuszowa_yt/kolbuszowa_yt_t00186.0s_miss.jpg" loading="lazy" alt="kolbuszowa_yt @ 186.0s" />
+      <div class="meta">
+        <div class="score">+0.050</div>
+        <div class="vid"> kolbuszowa_yt @ 186.0s</div>
+        <div class="cue">Hasidic rebbe with white beard sidelocks and shtreimel fur hat</div>
+      </div>
+    </article>
+
+    <article class="card miss">
+      <img src="/media/known_hit_probe/video_crops/kolbuszowa_yt/kolbuszowa_yt_t00187.0s_miss.jpg" loading="lazy" alt="kolbuszowa_yt @ 187.0s" />
+      <div class="meta">
+        <div class="score">+0.050</div>
+        <div class="vid"> kolbuszowa_yt @ 187.0s</div>
+        <div class="cue">Hasidic rebbe with white beard sidelocks and shtreimel fur hat</div>
+      </div>
+    </article>
+
+    <article class="card miss">
+      <img src="/media/known_hit_probe/video_crops/kolbuszowa_yt/kolbuszowa_yt_t00188.0s_miss.jpg" loading="lazy" alt="kolbuszowa_yt @ 188.0s" />
+      <div class="meta">
+        <div class="score">+0.050</div>
+        <div class="vid"> kolbuszowa_yt @ 188.0s</div>
+        <div class="cue">Hasidic rebbe with white beard sidelocks and shtreimel fur hat</div>
+      </div>
+    </article>
+
+    <article class="card miss">
+      <img src="/media/known_hit_probe/video_crops/kolbuszowa_yt/kolbuszowa_yt_t00197.0s_miss.jpg" loading="lazy" alt="kolbuszowa_yt @ 197.0s" />
+      <div class="meta">
+        <div class="score">+0.050</div>
+        <div class="vid"> kolbuszowa_yt @ 197.0s</div>
+        <div class="cue">Hasidic rebbe with white beard sidelocks and shtreimel fur hat</div>
+      </div>
+    </article>
+
+    <article class="card miss">
+      <img src="/media/known_hit_probe/video_crops/kolbuszowa_yt/kolbuszowa_yt_t00198.0s_miss.jpg" loading="lazy" alt="kolbuszowa_yt @ 198.0s" />
+      <div class="meta">
+        <div class="score">+0.050</div>
+        <div class="vid"> kolbuszowa_yt @ 198.0s</div>
+        <div class="cue">Hasidic rebbe with white beard sidelocks and shtreimel fur hat</div>
+      </div>
+    </article>
+
+    <article class="card miss">
+      <img src="/media/known_hit_probe/video_crops/kolbuszowa_yt/kolbuszowa_yt_t00199.0s_miss.jpg" loading="lazy" alt="kolbuszowa_yt @ 199.0s" />
+      <div class="meta">
+        <div class="score">+0.050</div>
+        <div class="vid"> kolbuszowa_yt @ 199.0s</div>
+        <div class="cue">Hasidic rebbe with white beard sidelocks and shtreimel fur hat</div>
+      </div>
+    </article>
+
+    <article class="card miss">
+      <img src="/media/known_hit_probe/video_crops/kolbuszowa_yt/kolbuszowa_yt_t00201.0s_miss.jpg" loading="lazy" alt="kolbuszowa_yt @ 201.0s" />
+      <div class="meta">
+        <div class="score">+0.050</div>
+        <div class="vid"> kolbuszowa_yt @ 201.0s</div>
+        <div class="cue">Hasidic rebbe with white beard sidelocks and shtreimel fur hat</div>
+      </div>
+    </article>
+
+    <article class="card miss">
+      <img src="/media/known_hit_probe/video_crops/kolbuszowa_yt/kolbuszowa_yt_t00202.0s_miss.jpg" loading="lazy" alt="kolbuszowa_yt @ 202.0s" />
+      <div class="meta">
+        <div class="score">+0.050</div>
+        <div class="vid"> kolbuszowa_yt @ 202.0s</div>
+        <div class="cue">Hasidic Jewish man wearing a large round shtreimel fur hat and black c</div>
+      </div>
+    </article>
+
+    <article class="card miss">
+      <img src="/media/known_hit_probe/video_crops/kolbuszowa_yt/kolbuszowa_yt_t00203.0s_miss.jpg" loading="lazy" alt="kolbuszowa_yt @ 203.0s" />
+      <div class="meta">
+        <div class="score">+0.050</div>
+        <div class="vid"> kolbuszowa_yt @ 203.0s</div>
+        <div class="cue">Hasidic rebbe with white beard sidelocks and shtreimel fur hat</div>
+      </div>
+    </article>
+
+    <article class="card miss">
+      <img src="/media/known_hit_probe/video_crops/kolbuszowa_yt/kolbuszowa_yt_t00204.0s_miss.jpg" loading="lazy" alt="kolbuszowa_yt @ 204.0s" />
+      <div class="meta">
+        <div class="score">+0.050</div>
+        <div class="vid"> kolbuszowa_yt @ 204.0s</div>
+        <div class="cue">Hasidic rebbe with white beard sidelocks and shtreimel fur hat</div>
+      </div>
+    </article>
+
+    <article class="card miss">
+      <img src="/media/known_hit_probe/video_crops/kolbuszowa_yt/kolbuszowa_yt_t00205.0s_miss.jpg" loading="lazy" alt="kolbuszowa_yt @ 205.0s" />
+      <div class="meta">
+        <div class="score">+0.050</div>
+        <div class="vid"> kolbuszowa_yt @ 205.0s</div>
+        <div class="cue">Hasidic rebbe with white beard sidelocks and shtreimel fur hat</div>
+      </div>
+    </article>
+
+    <article class="card miss">
+      <img src="/media/known_hit_probe/video_crops/kolbuszowa_yt/kolbuszowa_yt_t00206.0s_miss.jpg" loading="lazy" alt="kolbuszowa_yt @ 206.0s" />
+      <div class="meta">
+        <div class="score">+0.050</div>
+        <div class="vid"> kolbuszowa_yt @ 206.0s</div>
+        <div class="cue">group of Hasidic Jewish men in black coats streimels hats and payot</div>
+      </div>
+    </article>
+
+    <article class="card miss">
+      <img src="/media/known_hit_probe/video_crops/kolbuszowa_yt/kolbuszowa_yt_t00207.0s_miss.jpg" loading="lazy" alt="kolbuszowa_yt @ 207.0s" />
+      <div class="meta">
+        <div class="score">+0.050</div>
+        <div class="vid"> kolbuszowa_yt @ 207.0s</div>
+        <div class="cue">Hasidic rebbe with white beard sidelocks and shtreimel fur hat</div>
+      </div>
+    </article>
+
+    <article class="card miss">
+      <img src="/media/known_hit_probe/video_crops/kolbuszowa_yt/kolbuszowa_yt_t00208.0s_miss.jpg" loading="lazy" alt="kolbuszowa_yt @ 208.0s" />
+      <div class="meta">
+        <div class="score">+0.050</div>
+        <div class="vid"> kolbuszowa_yt @ 208.0s</div>
+        <div class="cue">Hasidic rebbe with white beard sidelocks and shtreimel fur hat</div>
+      </div>
+    </article>
+
+    <article class="card miss">
+      <img src="/media/known_hit_probe/video_crops/kolbuszowa_yt/kolbuszowa_yt_t00209.0s_miss.jpg" loading="lazy" alt="kolbuszowa_yt @ 209.0s" />
+      <div class="meta">
+        <div class="score">+0.050</div>
+        <div class="vid"> kolbuszowa_yt @ 209.0s</div>
+        <div class="cue">Litvish yeshiva man with beard black hat and dark frock coat</div>
+      </div>
+    </article>
+
+    <article class="card miss">
+      <img src="/media/known_hit_probe/video_crops/kolbuszowa_yt/kolbuszowa_yt_t00210.0s_miss.jpg" loading="lazy" alt="kolbuszowa_yt @ 210.0s" />
+      <div class="meta">
+        <div class="score">+0.050</div>
+        <div class="vid"> kolbuszowa_yt @ 210.0s</div>
+        <div class="cue">Hasidic rebbe with white beard sidelocks and shtreimel fur hat</div>
+      </div>
+    </article>
+
+    <article class="card miss">
+      <img src="/media/known_hit_probe/video_crops/kolbuszowa_yt/kolbuszowa_yt_t00212.0s_miss.jpg" loading="lazy" alt="kolbuszowa_yt @ 212.0s" />
+      <div class="meta">
+        <div class="score">+0.050</div>
+        <div class="vid"> kolbuszowa_yt @ 212.0s</div>
+        <div class="cue">Hasidic rebbe with white beard sidelocks and shtreimel fur hat</div>
+      </div>
+    </article>
+
+    <article class="card miss">
+      <img src="/media/known_hit_probe/video_crops/kolbuszowa_yt/kolbuszowa_yt_t00215.0s_miss.jpg" loading="lazy" alt="kolbuszowa_yt @ 215.0s" />
+      <div class="meta">
+        <div class="score">+0.050</div>
+        <div class="vid"> kolbuszowa_yt @ 215.0s</div>
+        <div class="cue">Hasidic rebbe with white beard sidelocks and shtreimel fur hat</div>
+      </div>
+    </article>
+
+    <article class="card miss">
+      <img src="/media/known_hit_probe/video_crops/kolbuszowa_yt/kolbuszowa_yt_t00216.0s_miss.jpg" loading="lazy" alt="kolbuszowa_yt @ 216.0s" />
+      <div class="meta">
+        <div class="score">+0.050</div>
+        <div class="vid"> kolbuszowa_yt @ 216.0s</div>
+        <div class="cue">Hasidic rebbe with white beard sidelocks and shtreimel fur hat</div>
+      </div>
+    </article>
+
+    <article class="card miss">
+      <img src="/media/known_hit_probe/video_crops/kolbuszowa_yt/kolbuszowa_yt_t00217.0s_miss.jpg" loading="lazy" alt="kolbuszowa_yt @ 217.0s" />
+      <div class="meta">
+        <div class="score">+0.050</div>
+        <div class="vid"> kolbuszowa_yt @ 217.0s</div>
+        <div class="cue">Hasidic rebbe with white beard sidelocks and shtreimel fur hat</div>
+      </div>
+    </article>
+
+    <article class="card miss">
+      <img src="/media/known_hit_probe/video_crops/kolbuszowa_yt/kolbuszowa_yt_t00218.0s_miss.jpg" loading="lazy" alt="kolbuszowa_yt @ 218.0s" />
+      <div class="meta">
+        <div class="score">+0.050</div>
+        <div class="vid"> kolbuszowa_yt @ 218.0s</div>
+        <div class="cue">Litvish yeshiva man with beard black hat and dark frock coat</div>
+      </div>
+    </article>
+
+    <article class="card miss">
+      <img src="/media/known_hit_probe/video_crops/kolbuszowa_yt/kolbuszowa_yt_t00221.0s_miss.jpg" loading="lazy" alt="kolbuszowa_yt @ 221.0s" />
+      <div class="meta">
+        <div class="score">+0.050</div>
+        <div class="vid"> kolbuszowa_yt @ 221.0s</div>
+        <div class="cue">Hasidic rebbe with white beard sidelocks and shtreimel fur hat</div>
+      </div>
+    </article>
+
+    <article class="card miss">
+      <img src="/media/known_hit_probe/video_crops/kolbuszowa_yt/kolbuszowa_yt_t00222.0s_miss.jpg" loading="lazy" alt="kolbuszowa_yt @ 222.0s" />
+      <div class="meta">
+        <div class="score">+0.050</div>
+        <div class="vid"> kolbuszowa_yt @ 222.0s</div>
+        <div class="cue">Hasidic rebbe with white beard sidelocks and shtreimel fur hat</div>
+      </div>
+    </article>
+
+    <article class="card miss">
+      <img src="/media/known_hit_probe/video_crops/kolbuszowa_yt/kolbuszowa_yt_t00223.0s_miss.jpg" loading="lazy" alt="kolbuszowa_yt @ 223.0s" />
+      <div class="meta">
+        <div class="score">+0.050</div>
+        <div class="vid"> kolbuszowa_yt @ 223.0s</div>
+        <div class="cue">Hasidic rebbe with white beard sidelocks and shtreimel fur hat</div>
+      </div>
+    </article>
+
+    <article class="card miss">
+      <img src="/media/known_hit_probe/video_crops/kolbuszowa_yt/kolbuszowa_yt_t00224.0s_miss.jpg" loading="lazy" alt="kolbuszowa_yt @ 224.0s" />
+      <div class="meta">
+        <div class="score">+0.050</div>
+        <div class="vid"> kolbuszowa_yt @ 224.0s</div>
+        <div class="cue">Hasidic rebbe with white beard sidelocks and shtreimel fur hat</div>
+      </div>
+    </article>
+
+    <article class="card miss">
+      <img src="/media/known_hit_probe/video_crops/kolbuszowa_yt/kolbuszowa_yt_t00225.0s_miss.jpg" loading="lazy" alt="kolbuszowa_yt @ 225.0s" />
+      <div class="meta">
+        <div class="score">+0.050</div>
+        <div class="vid"> kolbuszowa_yt @ 225.0s</div>
+        <div class="cue">Hasidic Jewish man wearing a large round shtreimel fur hat and black c</div>
+      </div>
+    </article>
+
+    <article class="card miss">
+      <img src="/media/known_hit_probe/video_crops/kolbuszowa_yt/kolbuszowa_yt_t00226.0s_miss.jpg" loading="lazy" alt="kolbuszowa_yt @ 226.0s" />
+      <div class="meta">
+        <div class="score">+0.050</div>
+        <div class="vid"> kolbuszowa_yt @ 226.0s</div>
+        <div class="cue">Hasidic Jewish man wearing a large round shtreimel fur hat and black c</div>
+      </div>
+    </article>
+
+    <article class="card miss">
+      <img src="/media/known_hit_probe/video_crops/kolbuszowa_yt/kolbuszowa_yt_t00230.0s_miss.jpg" loading="lazy" alt="kolbuszowa_yt @ 230.0s" />
+      <div class="meta">
+        <div class="score">+0.050</div>
+        <div class="vid"> kolbuszowa_yt @ 230.0s</div>
+        <div class="cue">Hasidic Jewish man wearing a large round shtreimel fur hat and black c</div>
+      </div>
+    </article>
+
+    <article class="card miss">
+      <img src="/media/known_hit_probe/video_crops/kolbuszowa_yt/kolbuszowa_yt_t00232.0s_miss.jpg" loading="lazy" alt="kolbuszowa_yt @ 232.0s" />
+      <div class="meta">
+        <div class="score">+0.050</div>
+        <div class="vid"> kolbuszowa_yt @ 232.0s</div>
+        <div class="cue">Hasidic rebbe with white beard sidelocks and shtreimel fur hat</div>
+      </div>
+    </article>
+
+    <article class="card miss">
+      <img src="/media/known_hit_probe/video_crops/kolbuszowa_yt/kolbuszowa_yt_t00234.0s_miss.jpg" loading="lazy" alt="kolbuszowa_yt @ 234.0s" />
+      <div class="meta">
+        <div class="score">+0.050</div>
+        <div class="vid"> kolbuszowa_yt @ 234.0s</div>
+        <div class="cue">Hasidic rebbe with white beard sidelocks and shtreimel fur hat</div>
+      </div>
+    </article></div></section>
+  
+</main>
+</body>
+</html>

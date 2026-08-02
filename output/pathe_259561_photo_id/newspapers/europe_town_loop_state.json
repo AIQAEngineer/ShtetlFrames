@@ -1,0 +1,73 @@
+{
+  "purpose": "europe_towns",
+  "started": "2026-07-31T19:23:00Z",
+  "status": "stopped_by_user",
+  "stopped": "2026-07-31T21:40:00Z",
+  "found_europe_towns": false,
+  "other_sources_tick3": {
+    "n": 3,
+    "summary": "Tick 3 (other sources): HathiTrust, Archive.org, Europeana, USHMM, NLI, NY Heritage/Empire ADC = no Kaufman+Palestine 1935 Europe-town hits. WorldCat 404 via Scrapfly; Chronicling America 422; AJHS 404. Memoir confirmed: 'Tales of the Kaufman Family' (2004, self-published, Bernie Kaufman Jr.) — no digitized copy found online; JFCS 2005-0013 on-site only. New corroboration that Kaufman Sr. taught medicine in Vienna and met Freud there (1920s, not 1935 trip).",
+    "next_vectors": [
+      "NY arrival manifests ~10-14 Sep 1935 Kaufman (FamilySearch/Ellis full manifest, not just GG Special-class)",
+      "GG Archives other Italia Line lists (Conte di Savoia/Roma/Conte Grande) late Aug-mid Sep 1935",
+      "SF Chronicle/Examiner/Oakland Tribune society columns Sep 1935",
+      "Interlibrary-loan / email JFCS Tauber for Tales of the Kaufman Family Europe itinerary",
+      "NLI 1.28M-len result: drill for Kaufman film/photo records"
+    ]
+  },
+  "tick4": {
+    "n": 4,
+    "summary": "Tick 4 (loop wake): Israel Film Archive, LoC, IA 1935 movies, Calisphere, WWU Home Movies, AV Geeks = 0. Bancroft Edith Kaufman papers (BANC MSS 2010/729) = different branch (German exile), no 1935 Kaufman trip itinerary. UCSF Mount Zion oral history + psychoanalysis history = 1920s Vienna only. NEW LEAD: Central Zionist Archives holds Palestine arrival lists (would show European port of departure); CZA + FamilySearch/Ellis APIs 401/422/login-gated. NLI page 1.28MB but no parseable Kaufman record via Scrapfly.",
+    "next_vectors": [
+      "Central Zionist Archives Palestine arrival lists ~Jun-Jul 1935 Kaufman (email/inquiry)",
+      "UCSF Mount Zion 'Mount Zion Memories' Bernard Kaufman Jr. oral-history recording",
+      "Bancroft Edith Kaufman papers on-site check for 1935 travel album",
+      "NY arrival manifest ~12 Sep 1935 Kaufman (Ancestry/AncestryLibrary, NARA T715 roll)",
+      "Email JFCS Tauber for Tales of the Kaufman Family Europe itinerary"
+    ]
+  },
+  "tick5": {
+    "n": 5,
+    "summary": "Tick 5 (loop wake): Concrete access paths found. (1) Central Zionist Archives Family Research Dept holds Palestine arrival registers 1919-1974 incl. TOURISTS, chronologically by arrival date — not online; email familyresearch@jazo.org.il with surname Kaufman + arrival month/year (Jun-Jul 1935) to get European port. (2) NARA T715 NY passenger manifests organized by arrival date (not name); need roll covering ~12 Sep 1935; T621 Soundex indexes to 1943. (3) newspapers.com confirms 'Bernard Kaufman Palestine 1935' matches exist but paywalled. SF Chronicle/SFGate search returned no archive text. GG Archives Italia Line = only Rex 21 Aug + 13 Sep 1935 lists (no Kaufman).",
+    "contact": {
+      "CZA_family_research": "familyresearch@jazo.org.il",
+      "CZA_note": "Immigrants Registers 1919-1974 include tourists; request Kaufman arrival Jun-Jul 1935 for European port of embarkation",
+      "NARA": "T715 NY arrivals roll for 12 Sep 1935; T621 Soundex K-150 Kaufman"
+    },
+    "next_vectors": [
+      "Email CZA familyresearch@jazo.org.il: Kaufman Palestine arrival Jun-Jul 1935 (tourist register) for European port",
+      "newspapers.com paid/library access: 'Bernard Kaufman Palestine 1935' CA hits for itinerary detail",
+      "NARA T715 roll ~12 Sep 1935 / Ancestry NY manifest for Bernard Kaufman (embarkation port + last residence)",
+      "Email JFCS Tauber (HolocaustCenter@jfcs.org) re: 2005-0013 memoir Europe itinerary",
+      "UCSF Mount Zion oral-history recording request"
+    ]
+  },
+  "ticks": [
+    {
+      "n": 1,
+      "summary": "Tick 1: Rex Aug/Sep 1935 Special-class lists (GG Archives) have no Kaufman. Web/press still only Palestine towns + Central Europe. Memoir Tales of the Kaufman Family not online. Vienna is 1920s residence, not 1935 itinerary. CDNC fall-1935 return scan in progress.",
+      "next_vectors": [
+        "FamilySearch/Ellis NY arrivals Kaufman Rex mid-late 1935 via Scrapfly",
+        "Finish CDNC Sep–Nov 1935 return notices",
+        "SF Examiner / Chronicle / Oakland Tribune Kaufman Palestine Europe",
+        "JFCS 2005-0013 / Magnes catalog deeper",
+        "Mrs. Bernard Kaufman / Joy Kaufman place hits"
+      ]
+    },
+    {
+      "n": 2,
+      "summary": "Tick 2: CDNC 1934–37 Kaufman+(Europe/Poland/Italy/etc.) yields no named European towns on the 1935 trip. New SOCIETY note JW19350906.2.18: family to arrive NY 12 Sep 1935 after Central Europe and Palestine (still no town names). Same-page England/Switzerland/Austria/Italy itinerary is Max C. Sloss, not Kaufman. Poland/Kutno/Otwock query: 0 trip hits. Magnes.org search dead (spam). JFCS 2005-0013 memoir confirmed on-site only. FamilySearch/Ellis need interactive login; Stanford SearchWorks JS-blocked.",
+      "artifacts": [
+        "newspapers/JW19350906_p18_society_return.txt",
+        "scripts/kaufman_europe_tick2.py"
+      ],
+      "next_vectors": [
+        "NY arrival manifests ~10–14 Sep 1935 for Bernard Kaufman (any ship, not only Rex Special)",
+        "GG Archives Conte di Savoia / Roma / other Italia lists late Aug–mid Sep 1935",
+        "SF Chronicle / Examiner society columns Sep 1935 (non-CDNC Jewish Weekly)",
+        "Email/query JFCS Tauber Library about 2005-0013 memoir Europe itinerary",
+        "WorldCat / WorldCat Libraries hold of Tales of the Kaufman Family (2004)"
+      ]
+    }
+  ]
+}

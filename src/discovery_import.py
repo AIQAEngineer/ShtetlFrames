@@ -41,11 +41,58 @@ EFG_CSVS = [
 EUROPEANA_CSV = OUTPUT_DIR / "europeana_discovery_1980.csv"
 
 DOWNLOADABLE_KINDS = {"embedded", "youtube", "ina"}
+# Provider pages we can JIT-resolve locally (see provider_resolvers.py).
+_LINKED_OUT_OK = {
+    "filmarkivet.se",
+    "tv.nrk.no",
+    "av.tib.eu",
+    "patrimonio.archivioluce.com",
+    "elonet.finna.fi",
+    "urn.nb.no",
+    "www.nb.no",
+    "nb.no",
+    "euscreen.eu",
+    "iwm.org.uk",
+}
+_DENY_HOSTS = (
+    "videocinecitta.bytewise.it",
+    "bytewise.it",
+    "fn.org.pl",
+    "repozytorium.fn.org.pl",
+)
 
 
 def _is_direct_video(url: str) -> bool:
     u = (url or "").lower()
     return ".mp4" in u or u.endswith((".mp4", ".m4v", ".mov", ".webm"))
+
+
+def _host(url: str) -> str:
+    try:
+        from urllib.parse import urlparse
+
+        return (urlparse(url).hostname or "").lower()
+    except Exception:
+        return ""
+
+
+def _denied(url: str) -> bool:
+    h = _host(url)
+    return any(d in h for d in _DENY_HOSTS)
+
+
+def _linked_out_resolvable(url: str) -> bool:
+    h = _host(url)
+    if not h:
+        return False
+    if any(ok in h for ok in _LINKED_OUT_OK):
+        return True
+    try:
+        from provider_resolvers import needs_resolve
+
+        return needs_resolve(url)
+    except Exception:
+        return False
 
 
 def efg_rows() -> list[dict]:
@@ -56,10 +103,20 @@ def efg_rows() -> list[dict]:
             continue
         for r in csv.DictReader(path.open(encoding="utf-8")):
             kind = (r.get("kind") or "").strip().lower()
-            if kind not in DOWNLOADABLE_KINDS:
-                continue
             url = (r.get("stream_url") or "").strip()
+            if kind == "linked_out":
+                # Prefer external provider page when stream_url empty
+                url = url or (r.get("external_url") or "").strip()
+                if not url or not _linked_out_resolvable(url):
+                    continue
+            elif kind not in DOWNLOADABLE_KINDS:
+                continue
             if not url:
+                continue
+            if _denied(url):
+                continue
+            # Skip digilab portal pages without a real media suffix
+            if "digilab.nfa.cz" in url.lower() and not _is_direct_video(url) and ".m3u8" not in url.lower():
                 continue
             rid = (r.get("record_id") or "").strip()
             if rid and rid in seen:
@@ -165,7 +222,18 @@ def europeana_rows(*, resolve: bool = True, limit_resolve: int = 0, on_progress=
     if not resolve:
         for r in rows_in:
             url = (r.get("edm_is_shown_at") or "").strip()
-            if not url:
+            if not url or _denied(url):
+                continue
+            u_l = url.lower()
+            keep = (
+                _is_direct_video(url)
+                or ".m3u8" in u_l
+                or "youtube.com" in u_l
+                or "youtu.be" in u_l
+                or "ina.fr" in u_l
+                or _linked_out_resolvable(url)
+            )
+            if not keep:
                 continue
             title = (r.get("title") or r.get("record_id") or "europeana video").strip()
             provider = (r.get("provider_name") or "").strip()
@@ -212,6 +280,21 @@ def europeana_rows(*, resolve: bool = True, limit_resolve: int = 0, on_progress=
         rid = (r.get("record_id") or "").strip()
         url = cache.get(rid) or (r.get("edm_is_shown_at") or "").strip()
         if not url:
+            continue
+        if _denied(url):
+            continue
+        # Only enqueue Europeana rows that are direct media, YouTube, or
+        # a host we can JIT-resolve — skip bare catalog pages.
+        u_l = url.lower()
+        keep = (
+            _is_direct_video(url)
+            or ".m3u8" in u_l
+            or "youtube.com" in u_l
+            or "youtu.be" in u_l
+            or "ina.fr" in u_l
+            or _linked_out_resolvable(url)
+        )
+        if not keep:
             continue
         title = (r.get("title") or rid or "europeana video").strip()
         provider = (r.get("provider_name") or "").strip()

@@ -34,6 +34,8 @@ PAGES = {
     "/catalogs.html": "catalogs.html",
 }
 
+KNOWN_HIT_PROBE_DIR = OUTPUT_DIR / "known_hit_probe"
+
 PAGE_REDIRECTS = {
     "/health": "/?tab=ops",
     "/health.html": "/?tab=ops",
@@ -253,6 +255,39 @@ class Handler(BaseHTTPRequestHandler):
                 self._json(404, {"error": "frame not found", "path": rel})
                 return
             ctype = mimetypes.guess_type(f.name)[0] or "image/jpeg"
+            self._file(f, ctype)
+            return
+
+        if path in ("/known-hits", "/known-hits/", "/known_hits.html"):
+            report = KNOWN_HIT_PROBE_DIR / "index.html"
+            if not report.is_file():
+                self._json(
+                    404,
+                    {
+                        "error": "known-hit probe report missing",
+                        "hint": "run scripts/score_known_hits_probe.py",
+                    },
+                )
+                return
+            self._file(report, "text/html; charset=utf-8")
+            return
+
+        if path.startswith("/media/known_hit_probe/"):
+            rel = path.split("/media/known_hit_probe/", 1)[1]
+            rel = rel.replace("\\", "/").lstrip("/")
+            if ".." in rel or not rel:
+                self._json(400, {"error": "bad known_hit_probe path"})
+                return
+            f = (KNOWN_HIT_PROBE_DIR / rel).resolve()
+            try:
+                f.relative_to(KNOWN_HIT_PROBE_DIR.resolve())
+            except ValueError:
+                self._json(400, {"error": "path escape"})
+                return
+            if not f.is_file():
+                self._json(404, {"error": "not found", "path": rel})
+                return
+            ctype = mimetypes.guess_type(f.name)[0] or "application/octet-stream"
             self._file(f, ctype)
             return
 

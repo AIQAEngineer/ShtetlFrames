@@ -1,0 +1,70 @@
+﻿miss 13sk|D|Lazega|*: total=1 filtered=1
+python.exe : Traceback (most recent call last):
+At C:\Users\Avi Schwartz\AppData\Local\Temp\ps-script-555d4cde-ffca-4301-86e3-ecc30e6e5bb7.ps1:107 char:1
++ & "C:\Users\Avi Schwartz\Documents\hasidic-footage-scan\.venv\Scripts ...
++ ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+    + CategoryInfo          : NotSpecified: (Traceback (most recent call last)::String) [], RemoteException
+    + FullyQualifiedErrorId : NativeCommandError
+ 
+miss 13sk|B|Lazega|*: total=4 filtered=4
+miss 13sk|S|Lazega|*: total=0 filtered=0
+miss 13sk|D|Lazega|Abram: total=0 filtered=0
+miss 13sk|B|Lazega|Abram: total=0 filtered=0
+miss 13sk|S|Lazega|Abram: total=0 filtered=0
+miss 13sk|D|Lazega|Abraham: total=0 filtered=0
+miss 13sk|B|Lazega|Abraham: total=0 filtered=0
+miss 13sk|S|Lazega|Abraham: total=0 filtered=0
+miss 13sk|D|Lazega|Wulf: total=0 filtered=0
+miss 13sk|B|Lazega|Wulf: total=0 filtered=0
+miss 13sk|S|Lazega|Wulf: total=0 filtered=0
+miss 13sk|D|Lazega|Wolf: total=0 filtered=0
+miss 13sk|B|Lazega|Wolf: total=0 filtered=0
+miss 13sk|S|Lazega|Wolf: total=0 filtered=0
+miss 13sk|D|Lazega|Beniamin: total=0 filtered=0
+miss 13sk|B|Lazega|Beniamin: total=0 filtered=0
+miss 13sk|S|Lazega|Beniamin: total=0 filtered=0
+miss 13sk|D|Lazega|Benjamin: total=0 filtered=0
+miss 13sk|B|Lazega|Benjamin: total=0 filtered=0
+miss 13sk|S|Lazega|Benjamin: total=0 filtered=0
+miss 13sk|D|Lazenga|*: total=1 filtered=1
+HIT 13sk|B|Lazenga|*: 3 / filtered=4
+miss 13sk|S|Lazenga|*: total=0 filtered=0
+miss 13sk|D|Lazenga|Abram: total=0 filtered=0
+miss 13sk|B|Lazenga|Abram: total=0 filtered=0
+miss 13sk|S|Lazenga|Abram: total=0 filtered=0
+miss 13sk|D|Lazenga|Abraham: total=0 filtered=0
+miss 13sk|B|Lazenga|Abraham: total=0 filtered=0
+miss 13sk|S|Lazenga|Abraham: total=0 filtered=0
+miss 13sk|D|Lazenga|Wulf: total=0 filtered=0
+miss 13sk|B|Lazenga|Wulf: total=0 filtered=0
+miss 13sk|S|Lazenga|Wulf: total=0 filtered=0
+miss 13sk|D|Lazenga|Wolf: total=0 filtered=0
+miss 13sk|B|Lazenga|Wolf: total=0 filtered=0
+miss 13sk|S|Lazenga|Wolf: total=0 filtered=0
+miss 13sk|D|Lazenga|Beniamin: total=0 filtered=0
+miss 13sk|B|Lazenga|Beniamin: total=0 filtered=0
+miss 13sk|S|Lazenga|Beniamin: total=0 filtered=0
+miss 13sk|D|Lazenga|Benjamin: total=0 filtered=0
+miss 13sk|B|Lazenga|Benjamin: total=0 filtered=0
+miss 13sk|S|Lazenga|Benjamin: total=0 filtered=0
+  File "C:\Users\Avi Schwartz\Documents\hasidic-footage-scan\output\lazega_record_search\query_geneteka.py", line 92, 
+in main
+    print(f"miss {key}: total={rec['recordsTotal']} filtered={rec['recordsFiltered']}")
+  File "C:\Users\Avi Schwartz\AppData\Local\Programs\Python\Python312\Lib\encodings\cp1252.py", line 19, in encode
+    return codecs.charmap_encode(input,self.errors,encoding_table)[0]
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+UnicodeEncodeError: 'charmap' codec can't encode character '\u0141' in position 12: character maps to <undefined>
+
+During handling of the above exception, another exception occurred:
+
+Traceback (most recent call last):
+  File "C:\Users\Avi Schwartz\Documents\hasidic-footage-scan\output\lazega_record_search\query_geneteka.py", line 109, 
+in <module>
+    main()
+  File "C:\Users\Avi Schwartz\Documents\hasidic-footage-scan\output\lazega_record_search\query_geneteka.py", line 95, 
+in main
+    print(f"ERR {key}: {e}")
+  File "C:\Users\Avi Schwartz\AppData\Local\Programs\Python\Python312\Lib\encodings\cp1252.py", line 19, in encode
+    return codecs.charmap_encode(input,self.errors,encoding_table)[0]
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+UnicodeEncodeError: 'charmap' codec can't encode character '\u0141' in position 11: character maps to <undefined>

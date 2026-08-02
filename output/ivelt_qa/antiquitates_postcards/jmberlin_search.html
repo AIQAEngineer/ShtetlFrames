@@ -1,0 +1,596 @@
+ 
+
+
+
+
+
+
+  <!doctype html>
+  <html lang="de">
+    <head>
+  <meta charset="UTF-8">
+  <link rel="shortcut icon" href="/images/favicon.ico" type="image/x-icon" />
+  <link rel="icon" href="/images/favicon.ico" type="image/x-icon" />
+  <meta name="description" content="Jüdisches Museum Berlin – Sammlung online. Recherchieren Sie Objekte, Fotos und Dokumente zu aktuellem und historischem jüdischen Leben in Deutschland">
+  <meta name="viewport" content="width=device-width,initial-scale=1">
+  <meta name="google-site-verification" content="bUs4k8NJ1e_DpddgcVbzRBoSuclJ8_UDWo1F3_GawjQ" />
+
+  <link rel="stylesheet" media="all" href="https://www.jmberlin.de/modules/custom/jmb_cookie_consent/css/jmb_cc_klaro.min.css"/>
+  <script defer type="application/javascript" src="/js/cookies/matomo_tracking.js"></script>
+  <script defer src="https://www.jmberlin.de/modules/custom/jmb_cookie_consent/sites/objekte/klaro_config.min.js"></script>
+  <script defer data-config="klaroConfig" src="https://www.jmberlin.de/modules/custom/jmb_cookie_consent/js/klaro-no-translations-no-css.js"></script>
+  <title>Jüdisches Museum Berlin – Sammlung online</title>
+      <link rel="stylesheet" type="text/css" href="/css/jmb.css">
+      <link rel="stylesheet" type="text/css" href="/css/uv.css">
+      <script type="application/javascript" src="/uv/UV.js"></script>
+      <script type="text/javascript" src="/js/js.cookie.js"></script>
+      <script type="text/javascript" src="/js/custom.js"></script>
+    </head>
+
+    <body class="page-body">
+  <header id="page-header" class="page-header">
+  <nav class="menu--admin page-header--admin-nav" aria-label="Admin Navigation">
+    <div class="menu--admin--content">
+      <ul class="menu--admin--list">
+          <li class="menu--admin--list--item"><A href="/auth">Login</A></li>
+      </ul>
+    </div>
+  </nav>
+        <div class="page-header--content">
+  <a href="/" title="Zur Homepage" class="page-header--logo">
+    <img src="/images/logo/JMB_SammlungOnline_wwwLogo.svg" alt="JMB Logo" />
+  </a>
+  <button id="mobile-menu-open-btn" class="page-header--mobile-menu-button menu--mobile--button" aria-haspopup="menu" aria-expanded="false" onclick="onClickMobileMenuButton(this.id)">
+    <img src="/images/icons/16_Menu_White.svg" alt="Menü anzeigen" />
+  </button>
+  <div class="menu--default page-header--navigation">
+  <nav class="menu--navigation" aria-label="Hauptnavigation">
+    <ul class="menu--navigation--list">
+      <li class="menu--navigation--list-item "><A href="/">Start</A></li>
+      <li class="menu--navigation--list-item active"><A href="/Suche">Suche</A></li>
+      <li class="menu--navigation--list-item "><A href="/Schlagworte">Schlagwortsuche</A></li>
+      <li class="menu--navigation--list-item "><A href="/Systematik">Systematische Suche</A></li>
+    </ul>
+  </nav>
+  </div>
+        </div>
+  </header>
+
+
+      <div id="maincontent" class=searchpage>
+  <section class="search-section" id="content">
+    <div class="search-section--content ">
+<div class="search-section--hits">1 Treffer</div>
+  <div id="search-box" class="search-section--searchbox">
+    <form method="get" action="/Suche">
+      <input type="search" name="q" value="Antiquitates" placeholder="Suche starten" class="search-input-default" />
+      <button type="submit" class="search-section--searchbox--button">
+        <img src="/images/icons/icon-search.svg" alt="Suche starten" />
+      </button>
+    </form>
+  </div>
+  <div class="search-section--view-controls">
+    <a class="search-section--view-controls--button list-button active" href="/Suche?f.content=Architekturdarstellung&amp;q=Antiquitates&amp;f.category=Druckerzeugnis">
+        <img src="/images/icons/icon-list-on.svg" alt="Ergebnisse als Liste anzeigen"/>
+    </a>
+    <a class="search-section--view-controls--button grid-button " href="/Suche?f.content=Architekturdarstellung&amp;q=Antiquitates&amp;f.category=Druckerzeugnis&v=grid">
+        <img src="/images/icons/icon-masonry-off.svg" alt="Ergebnisse als Gitter anzeigen"/>
+    </a>
+  </div>
+    </div>
+  </section>
+
+
+  <section class="search--content" id="results">
+
+  <div class="pager">
+    <ul class="pager--list">
+    <li class="pager--list--item page-first pager--button disabled">
+        <img src="/images/icons/JMB_Erste_Seite_RGB.svg" alt="Zur ersten Ergebnisseite" />
+    </li>
+      
+    <li class="pager--list--item page-prev pager--button disabled">
+        <img src="/images/icons/JMB_Vorherige_Seite_RGB.svg" alt="Zur vorherigen Ergebnisseite" />
+    </li>
+
+          <li class="pager--list--item pager--page active"><span>1</span></li>
+
+    <li class="pager--list--item page-next pager--button disabled">
+        <img src="/images/icons/JMB_Naechste_Seite_RGB.svg" alt="zur nächsten Ergebnisseite" />
+    </li>
+      
+    <li class="pager--list--item page-last pager--button disabled">
+        <img src="/images/icons/JMB_Letzte_Seite_RGB.svg" alt="Zur letzten Ergebnisseite" />
+    </li>
+    </ul>
+  </div>
+
+  <a href="#facetpanel" id="facets--toggle-filters-btn" class="facetpanel--toggler" data-role="none">
+    <img src="/images/icons/icon_search_filter.svg" alt=""/>
+    <span>Suchergebnis eingrenzen</span>
+  </a>
+  <div class="filters">
+    <div class="filters--label">Gefiltert nach:</div>
+      <ul class="filters--list">
+    <li class="filters--button">
+      <a href="/Suche?q=Antiquitates&amp;f.category=Druckerzeugnis">
+        <div>Architekturdarstellung</div>
+        <img src="/images/icons/icon_delete_filter.svg" alt="Filter schließen" />
+      </a>
+    </li>
+    <li class="filters--button">
+      <a href="/Suche?f.content=Architekturdarstellung&amp;q=Antiquitates">
+        <div>Druckerzeugnis</div>
+        <img src="/images/icons/icon_delete_filter.svg" alt="Filter schließen" />
+      </a>
+    </li>
+      </ul>
+  </div>
+
+  <div class="search--main-content search--main-content--list-view">
+    <div class="search--results">
+  <ul class="searchresult--list">  
+  <li class="searchresult--list--item" id="ac-529792">
+    <div class="searchresult--thumbnail">
+      <A href="/gobject/jmb-obj-529792/Postkartenalbum+%22Antiquitates+Judaicae+Pragenses%22?se=Suche&amp;qps=f.content%3DArchitekturdarstellung%26q%3DAntiquitates%26f.category%3DDruckerzeugnis" class="searchresult--thumbnail--link">
+        <div class="searchresult--thumbnail--list-view">
+          <img src="/image/9908/400" alt="Postkartenalbum &quot;&lt;em&gt;Antiquitates&lt;/em&gt; Judaicae Pragenses&quot;" class="portrait"/>
+        </div>
+      </A>
+    </div>
+
+    <div class="searchresult--list--item--content">
+  <div>Inv.-Nr.: VAR 81/501/0</div>
+  <A class="searchresult--title" href="/gobject/jmb-obj-529792/Postkartenalbum+%22Antiquitates+Judaicae+Pragenses%22?se=Suche&amp;qps=f.content%3DArchitekturdarstellung%26q%3DAntiquitates%26f.category%3DDruckerzeugnis">
+    <h2 class="searchresult--title--header">
+      Postkartenalbum "<em>Antiquitates</em> Judaicae Pragenses"
+      <img src="/images/icons/JMB_Go_RGB.svg" alt="" />
+    </h2>
+  </A>
+        <p class="attr attr-default">
+          Papier, Karton, Prag ca. 1910
+        </p>
+    <div class="attr attr-default">
+        <label class="attr--label">Schlagworte: </label>
+      <ul class="attr--list">
+          <li class="attr--list-item">
+              <a class="link" href="/Schlagworte/ART395627?q=Altneu-Synagoge (Prag)">Altneu-Synagoge (Prag)</a>;</li>
+          <li class="attr--list-item">
+              <a class="link" href="/Schlagworte/63240cd6-c458-4238-b4e6-628b7f29e2e2?q=Architekturdarstellung">Architekturdarstellung</a>;</li>
+          <li class="attr--list-item">
+              <a class="link" href="/Schlagworte/9f952bd8-e96d-40d7-8c2b-e0d6b1c30076?q=Bild">Bild</a>;</li>
+          <li class="attr--list-item">
+              <a class="link" href="/Schlagworte/b51964d4-a988-4a5d-84ec-a8b99debc8ef?q=Denkmal">Denkmal</a>;</li>
+          <li class="attr--list-item">
+              <a class="link" href="/Schlagworte/8fd8aab7-4aa4-4dfa-96dd-71a820fc2867?q=Judentum">Judentum</a>;</li>
+          <li class="attr--list-item">
+              <a class="link" href="/Schlagworte/706c148f-0427-4d26-80af-9f6c26a47443?q=Kunstwerk">Kunstwerk</a>;</li>
+          <li class="attr--list-item">
+              <a class="link" href="/Schlagworte/da4a0926-1466-4961-98a0-a1a14259fb9c?q=Lokalgeschichte">Lokalgeschichte</a>;</li>
+          <li class="attr--list-item">
+              <a class="link" href="/Schlagworte/ART493740?q=Alter Jüdischer Friedhof (Prag)">Alter Jüdischer Friedhof (Prag)</a>;</li>
+          <li class="attr--list-item">
+              <a class="link" href="/Schlagworte/6fa87d5e-1680-4123-8a65-6cdd0a374211?q=Prag">Prag</a>;</li>
+          <li class="attr--list-item">
+              <a class="link" href="/Schlagworte/f9047452-e489-461d-883a-7fc2646e00dd?q=Album">Album</a>;</li>
+          <li class="attr--list-item">
+              <a class="link" href="/Schlagworte/10bf9176-8570-421f-a0b5-546d9016ee7f?q=Druckerzeugnis">Druckerzeugnis</a></li>
+      </ul>
+    </div>
+    </div>
+  </li>
+  </ul>
+
+  <div class="pager">
+    <ul class="pager--list">
+    <li class="pager--list--item page-first pager--button disabled">
+        <img src="/images/icons/JMB_Erste_Seite_RGB.svg" alt="Zur ersten Ergebnisseite" />
+    </li>
+      
+    <li class="pager--list--item page-prev pager--button disabled">
+        <img src="/images/icons/JMB_Vorherige_Seite_RGB.svg" alt="Zur vorherigen Ergebnisseite" />
+    </li>
+
+          <li class="pager--list--item pager--page active"><span>1</span></li>
+
+    <li class="pager--list--item page-next pager--button disabled">
+        <img src="/images/icons/JMB_Naechste_Seite_RGB.svg" alt="zur nächsten Ergebnisseite" />
+    </li>
+      
+    <li class="pager--list--item page-last pager--button disabled">
+        <img src="/images/icons/JMB_Letzte_Seite_RGB.svg" alt="Zur letzten Ergebnisseite" />
+    </li>
+    </ul>
+  </div>
+    </div>
+
+<div class="facetpanel" id="facetpanel">
+  <h3 class="facetpanel--title">Suchergebnis eingrenzen:</h3>
+  <div class="facets">
+      <a class="facets--item facets--check facets--link" href="/Suche?f.content=Architekturdarstellung&amp;q=Antiquitates&amp;f.category=Druckerzeugnis&amp;f.hasImage=true">
+        <img class="form--checkbox--image" src="/images/icons/icon-check-off.svg" alt="" />
+        <span class="facets--check--label">  Objekte mit Bild suchen (1)
+</span>
+      </a>
+  <div class="facets--item facets--check">
+      <img class="form--checkbox--image" src="/images/icons/icon-check-off.svg" alt="" />
+    <span class="facets--check--label--no-link">  Person/Organisation suchen (0)
+</span>
+  </div>
+    
+    
+
+    <div class="facets--item facets--group" id="facet--location">
+  <div class="facets--group--header">
+    <div class="facets--group--title">Ort</div>
+
+  <div class="facets--settings">
+    <button class="facets--settings--btn" type="button" onclick="onClickFacetSettings('Ort', 'facet-settings--location', 'facet-icon--location')">
+      <img src="/images/icons/icon-more-facet.svg" alt="Ort Facetteneinstellungen öffnen" id="facet-icon--location" />
+    </button>
+
+    <div class="facets--settings--content hidden" id="facet-settings--location">
+      <button type="button" onclick="onMinimizeFacet('location', 'facet-content--location', 'facet-settings--location')">
+        <span class="">
+          Facette minimieren
+        </span>
+        <span class="hidden">
+          Facette maximieren
+        </span>
+      </button>
+
+      <form method="post" action="/Suche/sort?f.content=Architekturdarstellung&amp;q=Antiquitates&amp;f.category=Druckerzeugnis#facet--location">
+        <input type="hidden" name="sort" value="index asc" />
+        <input type="hidden" name="facetId" value="location" />
+        <button type="submit">Sortieren nach Alphabet</button>
+      </form>
+
+      <form method="post" action="/Suche/sort?f.content=Architekturdarstellung&amp;q=Antiquitates&amp;f.category=Druckerzeugnis#facet--location">
+        <input type="hidden" name="sort" value="count desc" />
+        <input type="hidden" name="facetId" value="location" />
+        <button type="submit">Sortieren nach Häufigkeit</button>
+      </form>
+    </div>
+  </div>
+  </div>
+  <div class="facets--group--content" id="facet-content--location">
+        <ul>
+            <li class="facets--list--item">
+              <a href="/Suche?f.content=Architekturdarstellung&amp;q=Antiquitates&amp;f.category=Druckerzeugnis&amp;f.location=Alter+J%C3%BCdischer+Friedhof+%28Prag%29">
+  Alter Jüdischer Friedhof (Prag) (1)
+              </a>;
+            </li>
+            <li class="facets--list--item">
+              <a href="/Suche?f.content=Architekturdarstellung&amp;q=Antiquitates&amp;f.category=Druckerzeugnis&amp;f.location=Prag">
+  Prag (1)
+              </a>
+            </li>
+        </ul>
+  <div class="facets--pagination">
+  </div>
+  </div>
+    </div>
+    <div class="facets--item facets--group" id="facet--content">
+  <div class="facets--group--header">
+    <div class="facets--group--title">Inhalt</div>
+
+  <div class="facets--settings">
+    <button class="facets--settings--btn" type="button" onclick="onClickFacetSettings('Inhalt', 'facet-settings--content', 'facet-icon--content')">
+      <img src="/images/icons/icon-more-facet.svg" alt="Inhalt Facetteneinstellungen öffnen" id="facet-icon--content" />
+    </button>
+
+    <div class="facets--settings--content hidden" id="facet-settings--content">
+      <button type="button" onclick="onMinimizeFacet('content', 'facet-content--content', 'facet-settings--content')">
+        <span class="">
+          Facette minimieren
+        </span>
+        <span class="hidden">
+          Facette maximieren
+        </span>
+      </button>
+
+      <form method="post" action="/Suche/sort?f.content=Architekturdarstellung&amp;q=Antiquitates&amp;f.category=Druckerzeugnis#facet--content">
+        <input type="hidden" name="sort" value="index asc" />
+        <input type="hidden" name="facetId" value="content" />
+        <button type="submit">Sortieren nach Alphabet</button>
+      </form>
+
+      <form method="post" action="/Suche/sort?f.content=Architekturdarstellung&amp;q=Antiquitates&amp;f.category=Druckerzeugnis#facet--content">
+        <input type="hidden" name="sort" value="count desc" />
+        <input type="hidden" name="facetId" value="content" />
+        <button type="submit">Sortieren nach Häufigkeit</button>
+      </form>
+    </div>
+  </div>
+  </div>
+  <div class="facets--group--content" id="facet-content--content">
+        <ul>
+            <li class="facets--list--item">
+              <a href="/Suche?f.content=Architekturdarstellung&amp;q=Antiquitates&amp;f.category=Druckerzeugnis&amp;f.content=Altneu-Synagoge+%28Prag%29">
+  Altneu-Synagoge (Prag) (1)
+              </a>;
+            </li>
+            <li class="facets--list--item active">
+              <a href="/Suche?q=Antiquitates&amp;f.category=Druckerzeugnis">
+  Architekturdarstellung (1)
+              </a>;
+            </li>
+            <li class="facets--list--item">
+              <a href="/Suche?f.content=Architekturdarstellung&amp;q=Antiquitates&amp;f.category=Druckerzeugnis&amp;f.content=Bild">
+  Bild (1)
+              </a>;
+            </li>
+            <li class="facets--list--item">
+              <a href="/Suche?f.content=Architekturdarstellung&amp;q=Antiquitates&amp;f.category=Druckerzeugnis&amp;f.content=Denkmal">
+  Denkmal (1)
+              </a>;
+            </li>
+            <li class="facets--list--item">
+              <a href="/Suche?f.content=Architekturdarstellung&amp;q=Antiquitates&amp;f.category=Druckerzeugnis&amp;f.content=Judentum">
+  Judentum (1)
+              </a>;
+            </li>
+            <li class="facets--list--item">
+              <a href="/Suche?f.content=Architekturdarstellung&amp;q=Antiquitates&amp;f.category=Druckerzeugnis&amp;f.content=Kunstwerk">
+  Kunstwerk (1)
+              </a>
+            </li>
+        </ul>
+    <div class="facets--group--reset">
+      <A href="/Suche?q=Antiquitates&amp;f.category=Druckerzeugnis">
+        <span>Einschränkung aufheben</span>
+        <img src="/images/icons/icon_delete_filter.svg" alt="" />
+      </A>
+    </div>
+  <div class="facets--pagination">
+  </div>
+  </div>
+    </div>
+    <div class="facets--item facets--group" id="facet--century">
+  <div class="facets--group--header">
+    <div class="facets--group--title">Datierung</div>
+
+  <div class="facets--settings">
+    <button class="facets--settings--btn" type="button" onclick="onClickFacetSettings('Datierung', 'facet-settings--century', 'facet-icon--century')">
+      <img src="/images/icons/icon-more-facet.svg" alt="Datierung Facetteneinstellungen öffnen" id="facet-icon--century" />
+    </button>
+
+    <div class="facets--settings--content hidden" id="facet-settings--century">
+      <button type="button" onclick="onMinimizeFacet('century', 'facet-content--century', 'facet-settings--century')">
+        <span class="">
+          Facette minimieren
+        </span>
+        <span class="hidden">
+          Facette maximieren
+        </span>
+      </button>
+
+      <form method="post" action="/Suche/sort?f.content=Architekturdarstellung&amp;q=Antiquitates&amp;f.category=Druckerzeugnis#facet--century">
+        <input type="hidden" name="sort" value="index desc" />
+        <input type="hidden" name="facetId" value="century" />
+        <button type="submit">Sortieren nach Alphabet</button>
+      </form>
+
+      <form method="post" action="/Suche/sort?f.content=Architekturdarstellung&amp;q=Antiquitates&amp;f.category=Druckerzeugnis#facet--century">
+        <input type="hidden" name="sort" value="count desc" />
+        <input type="hidden" name="facetId" value="century" />
+        <button type="submit">Sortieren nach Häufigkeit</button>
+      </form>
+    </div>
+  </div>
+  </div>
+  <div class="facets--group--content" id="facet-content--century">
+        <ul>
+            <li class="facets--list--item"">
+              <a href="/Suche?f.content=Architekturdarstellung&amp;q=Antiquitates&amp;f.category=Druckerzeugnis&amp;f.century=20">
+  20. Jh. (1)
+              </a>
+            </li>
+        </ul>
+  <div class="facets--pagination">
+  </div>
+  </div>
+    </div>
+    <div class="facets--item facets--group" id="facet--sammlungsbereich">
+  <div class="facets--group--header">
+    <div class="facets--group--title">Sammlungsbereich</div>
+
+  <div class="facets--settings">
+    <button class="facets--settings--btn" type="button" onclick="onClickFacetSettings('Sammlungsbereich', 'facet-settings--sammlungsbereich', 'facet-icon--sammlungsbereich')">
+      <img src="/images/icons/icon-more-facet.svg" alt="Sammlungsbereich Facetteneinstellungen öffnen" id="facet-icon--sammlungsbereich" />
+    </button>
+
+    <div class="facets--settings--content hidden" id="facet-settings--sammlungsbereich">
+      <button type="button" onclick="onMinimizeFacet('sammlungsbereich', 'facet-content--sammlungsbereich', 'facet-settings--sammlungsbereich')">
+        <span class="">
+          Facette minimieren
+        </span>
+        <span class="hidden">
+          Facette maximieren
+        </span>
+      </button>
+
+      <form method="post" action="/Suche/sort?f.content=Architekturdarstellung&amp;q=Antiquitates&amp;f.category=Druckerzeugnis#facet--sammlungsbereich">
+        <input type="hidden" name="sort" value="index asc" />
+        <input type="hidden" name="facetId" value="sammlungsbereich" />
+        <button type="submit">Sortieren nach Alphabet</button>
+      </form>
+
+      <form method="post" action="/Suche/sort?f.content=Architekturdarstellung&amp;q=Antiquitates&amp;f.category=Druckerzeugnis#facet--sammlungsbereich">
+        <input type="hidden" name="sort" value="count desc" />
+        <input type="hidden" name="facetId" value="sammlungsbereich" />
+        <button type="submit">Sortieren nach Häufigkeit</button>
+      </form>
+    </div>
+  </div>
+  </div>
+  <div class="facets--group--content" id="facet-content--sammlungsbereich">
+        <ul>
+            <li class="facets--list--item">
+              <a href="/Suche?f.content=Architekturdarstellung&amp;q=Antiquitates&amp;f.category=Druckerzeugnis&amp;f.sammlungsbereich=Archiv">
+  Archiv (1)
+              </a>
+            </li>
+        </ul>
+  <div class="facets--pagination">
+  </div>
+  </div>
+    </div>
+    <div class="facets--item facets--group" id="facet--category">
+  <div class="facets--group--header">
+    <div class="facets--group--title">Gattung</div>
+
+  <div class="facets--settings">
+    <button class="facets--settings--btn" type="button" onclick="onClickFacetSettings('Gattung', 'facet-settings--category', 'facet-icon--category')">
+      <img src="/images/icons/icon-more-facet.svg" alt="Gattung Facetteneinstellungen öffnen" id="facet-icon--category" />
+    </button>
+
+    <div class="facets--settings--content hidden" id="facet-settings--category">
+      <button type="button" onclick="onMinimizeFacet('category', 'facet-content--category', 'facet-settings--category')">
+        <span class="">
+          Facette minimieren
+        </span>
+        <span class="hidden">
+          Facette maximieren
+        </span>
+      </button>
+
+      <form method="post" action="/Suche/sort?f.content=Architekturdarstellung&amp;q=Antiquitates&amp;f.category=Druckerzeugnis#facet--category">
+        <input type="hidden" name="sort" value="index asc" />
+        <input type="hidden" name="facetId" value="category" />
+        <button type="submit">Sortieren nach Alphabet</button>
+      </form>
+
+      <form method="post" action="/Suche/sort?f.content=Architekturdarstellung&amp;q=Antiquitates&amp;f.category=Druckerzeugnis#facet--category">
+        <input type="hidden" name="sort" value="count desc" />
+        <input type="hidden" name="facetId" value="category" />
+        <button type="submit">Sortieren nach Häufigkeit</button>
+      </form>
+    </div>
+  </div>
+  </div>
+  <div class="facets--group--content" id="facet-content--category">
+        <ul>
+            <li class="facets--list--item active">
+              <a href="/Suche?f.content=Architekturdarstellung&amp;q=Antiquitates">
+  Druckerzeugnis (1)
+              </a>
+            </li>
+        </ul>
+    <div class="facets--group--reset">
+      <A href="/Suche?f.content=Architekturdarstellung&amp;q=Antiquitates">
+        <span>Einschränkung aufheben</span>
+        <img src="/images/icons/icon_delete_filter.svg" alt="" />
+      </A>
+    </div>
+  <div class="facets--pagination">
+  </div>
+  </div>
+    </div>
+    <div class="facets--item facets--group" id="facet--person">
+  <div class="facets--group--header">
+    <div class="facets--group--title">Personen</div>
+
+  <div class="facets--settings">
+    <button class="facets--settings--btn" type="button" onclick="onClickFacetSettings('Personen', 'facet-settings--person', 'facet-icon--person')">
+      <img src="/images/icons/icon-more-facet.svg" alt="Personen Facetteneinstellungen öffnen" id="facet-icon--person" />
+    </button>
+
+    <div class="facets--settings--content hidden" id="facet-settings--person">
+      <button type="button" onclick="onMinimizeFacet('person', 'facet-content--person', 'facet-settings--person')">
+        <span class="">
+          Facette minimieren
+        </span>
+        <span class="hidden">
+          Facette maximieren
+        </span>
+      </button>
+
+      <form method="post" action="/Suche/sort?f.content=Architekturdarstellung&amp;q=Antiquitates&amp;f.category=Druckerzeugnis#facet--person">
+        <input type="hidden" name="sort" value="index asc" />
+        <input type="hidden" name="facetId" value="person" />
+        <button type="submit">Sortieren nach Alphabet</button>
+      </form>
+
+      <form method="post" action="/Suche/sort?f.content=Architekturdarstellung&amp;q=Antiquitates&amp;f.category=Druckerzeugnis#facet--person">
+        <input type="hidden" name="sort" value="count desc" />
+        <input type="hidden" name="facetId" value="person" />
+        <button type="submit">Sortieren nach Häufigkeit</button>
+      </form>
+    </div>
+  </div>
+  </div>
+  <div class="facets--group--content" id="facet-content--person">
+      <div class="facets--no-facets">Keine Facetten gefunded</div>
+  </div>
+    </div>
+  </div>
+</div>
+  </div>
+  </section>
+      </div>
+      
+<footer id="page-footer" class="page-footer">
+  <nav class="page-footer--navigation">
+    <ul class="page-footer--menu-1">
+      <li><A href="/">Start</A></li>
+      <li><A href="/Suche">Suche</A></li>
+      <li><A href="/Schlagworte">Schlagwortsuche</A></li>
+      <li><A href="/Systematik">Systematische Suche</A></li>
+      <li><A href="/" onclick="return klaro.show();">Cookie-Einstellungen</A></li>
+      <li><A href="/impressum">Impressum</A></li>
+      <li><A href="/datenschutz">Datenschutzerklärung</A></li>
+      <li><A href="/barrierefreiheit">Barrierefreiheitserklärung</A></li>
+    </ul>
+      
+    <ul class="page-footer--menu-2">
+      <li><img src="/images/icons/JMB_Externer_Link_RGB.svg" alt="" /><A href="https://www.jmberlin.de/lesesaal" target="_blank">Lesesaal</A></li>
+      <li><img src="/images/icons/JMB_Externer_Link_RGB.svg" alt="" /><A href="https://www.jmberlin.de/sammlung" target="_blank">Sammlung</A></li>
+      <li><img src="/images/icons/JMB_Externer_Link_RGB.svg" alt="" /><A href="https://www.jewish-places.de/" target="_blank">Jewish Places</A></li>
+      <li><img src="/images/icons/JMB_Externer_Link_RGB.svg" alt="" /><A href="https://www.jmberlin.de/" target="_blank">jmberlin.de</A></li>
+      <li><img src="/images/icons/JMB_Externer_Link_RGB.svg" alt="" /><A href="https://www.jmberlin.de/ANOHA" target="_blank">ANOHA</A></li>
+    </ul>
+
+    <div class="page-footer--branding">
+      <img src="/images/logo/JMB_SammlungOnline_wwwLogo_blk.svg" title="JMBerlin" class="page-footer--branding--logo" />
+    </div>
+  </nav>
+</footer>
+    <div>
+        <div class="page-footer--navigation" style="padding: 0;">
+            <img src="/images/logo/BKM_web_farbig.svg" title="BKM" class="page-footer--branding--logo" style="height: auto;">
+        </div>
+    </div>
+      
+  <div id="mobile-menu-panel" class="menu--mobile">
+        <div class="menu--mobile--panel-header">
+  <a href="/" title="Zur Homepage" class="page-header--logo">
+    <img src="/images/logo/JMB_SammlungOnline_wwwLogo.svg" alt="JMB Logo" />
+  </a>
+  <button id="mobile-menu-close-btn" class="page-header--mobile-menu-button menu--mobile--button" aria-haspopup="menu" aria-expanded="true" onclick="onClickMobileMenuButton(this.id)">
+    <img src="/images/icons/27_Schliessen_White.svg" alt="Menü ausblenden" />
+  </button>
+        </div>
+  <nav class="menu--navigation" aria-label="Hauptnavigation">
+    <ul class="menu--navigation--list">
+      <li class="menu--navigation--list-item "><A href="/">Start</A></li>
+      <li class="menu--navigation--list-item active"><A href="/Suche">Suche</A></li>
+      <li class="menu--navigation--list-item "><A href="/Schlagworte">Schlagwortsuche</A></li>
+      <li class="menu--navigation--list-item "><A href="/Systematik">Systematische Suche</A></li>
+    </ul>
+  </nav>
+  <nav class="menu--admin " aria-label="Admin Navigation">
+    <div class="menu--admin--content">
+      <ul class="menu--admin--list">
+          <li class="menu--admin--list--item"><A href="/auth">Login</A></li>
+      </ul>
+    </div>
+  </nav>
+  </div>
+
+  <a href="#maincontent" class="scroll-top-button">
+    <img src="/images/icons/icon-up.svg" alt="Nach oben springen" />
+  </a>
+
+    </body>
+  </html>

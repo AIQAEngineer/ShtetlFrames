@@ -1,0 +1,187 @@
+{
+  "distinct_text_count": 12,
+  "distinct": [
+    {
+      "t": 0.0,
+      "t_start": 0.0,
+      "t_end": 0.0,
+      "kind": "intertitle",
+      "language_guess": "Czech; Latin",
+      "texts": [
+        "ŽIDOVSKÝ HŘBITOV",
+        "na Starém městě pražském (Antiquitates Judaicae Pragenses)"
+      ],
+      "joined": "ŽIDOVSKÝ HŘBITOV\nna Starém městě pražském (Antiquitates Judaicae Pragenses)",
+      "path": "C:\\Users\\Avi Schwartz\\Documents\\hasidic-footage-scan\\output\\0063535_ocr\\ocr_frames\\t0000.00s_c034.jpg",
+      "notes": "Ignore watermark/logo in lower right.",
+      "variants": 1
+    },
+    {
+      "t": 8.16,
+      "t_start": 8.16,
+      "t_end": 8.16,
+      "kind": "caption",
+      "language_guess": "Czech",
+      "texts": [
+        "Staronová synagoga."
+      ],
+      "joined": "Staronová synagoga.",
+      "path": "C:\\Users\\Avi Schwartz\\Documents\\hasidic-footage-scan\\output\\0063535_ocr\\ocr_frames\\t0008.16s_c000.jpg",
+      "notes": "Ignoring NFA watermark/logo in the corner.",
+      "variants": 1
+    },
+    {
+      "t": 11.52,
+      "t_start": 10.56,
+      "t_end": 29.28,
+      "kind": "intertitle",
+      "language_guess": "Czech",
+      "texts": [
+        "Spodní část stavby",
+        "(byzantinská) pochází ještě",
+        "z roku 592 (hebr.) - -"
+      ],
+      "joined": "Spodní část stavby\n(byzantinská) pochází ještě\nz roku 592 (hebr.) - -",
+      "path": "C:\\Users\\Avi Schwartz\\Documents\\hasidic-footage-scan\\output\\0063535_ocr\\ocr_frames\\t0012.96s_c004.jpg",
+      "notes": "Ignored NFA watermark/logo in bottom-right.",
+      "variants": 2
+    },
+    {
+      "t": 27.84,
+      "t_start": 24.0,
+      "t_end": 28.8,
+      "kind": "intertitle",
+      "language_guess": "Czech",
+      "texts": [
+        "-- kdežto hořejší část stavby (gotická) jest z roku 1316."
+      ],
+      "joined": "-- kdežto hořejší část stavby (gotická) jest z roku 1316.",
+      "path": "C:\\Users\\Avi Schwartz\\Documents\\hasidic-footage-scan\\output\\0063535_ocr\\ocr_frames\\t0027.84s_c006.jpg",
+      "notes": "Ignored NFA watermark in lower right.",
+      "variants": 1
+    },
+    {
+      "t": 34.08,
+      "t_start": 34.08,
+      "t_end": 34.08,
+      "kind": "caption",
+      "language_guess": "cs",
+      "texts": [
+        "Není přesných záznamů,",
+        "kdy byl tento hřbitov zalo-",
+        "žen. Náhrobní kámen,",
+        "mající letopočet 606 (hebr.),",
+        "je považován za nejstarší."
+      ],
+      "joined": "Není přesných záznamů,\nkdy byl tento hřbitov zalo-\nžen. Náhrobní kámen,\nmající letopočet 606 (hebr.),\nje považován za nejstarší.",
+      "path": "C:\\Users\\Avi Schwartz\\Documents\\hasidic-footage-scan\\output\\0063535_ocr\\ocr_frames\\t0034.08s_c055.jpg",
+      "notes": "Ignore watermark/logo in lower right.",
+      "variants": 1
+    },
+    {
+      "t": 51.36,
+      "t_start": 51.36,
+      "t_end": 82.56,
+      "kind": "intertitle",
+      "language_guess": "Czech",
+      "texts": [
+        "a přece vzdálen jeho hluku, stojí starý židovský hřbitov.",
+        "V 17. století se přestává zde pochovávat a klid mrtvých není rušen až v roce 1903, kdy rozhodnutím pražské obce musí být hranice hřbitova posunuta o celou šířku dnešní ulice Sanytrové, kde"
+      ],
+      "joined": "a přece vzdálen jeho hluku, stojí starý židovský hřbitov.\nV 17. století se přestává zde pochovávat a klid mrtvých není rušen až v roce 1903, kdy rozhodnutím pražské obce musí být hranice hřbitova posunuta o celou šířku dnešní ulice Sanytrové, kde",
+      "path": "C:\\Users\\Avi Schwartz\\Documents\\hasidic-footage-scan\\output\\0063535_ocr\\ocr_frames\\extra_t0066.72s.jpg",
+      "notes": "Bottom-right NFA watermark ignored.",
+      "variants": 27
+    },
+    {
+      "t": 87.84,
+      "t_start": 87.84,
+      "t_end": 89.76,
+      "kind": "caption",
+      "language_guess": "Czech",
+      "texts": [
+        "Zachovalé náhrobní kameny vloženy do zdi, obklopující návrší Nefele."
+      ],
+      "joined": "Zachovalé náhrobní kameny vloženy do zdi, obklopující návrší Nefele.",
+      "path": "C:\\Users\\Avi Schwartz\\Documents\\hasidic-footage-scan\\output\\0063535_ocr\\ocr_frames\\extra_t0087.84s.jpg",
+      "notes": "Ignoring NFA watermark/logo in the lower right.",
+      "variants": 1
+    },
+    {
+      "t": 100.8,
+      "t_start": 100.8,
+      "t_end": 104.64,
+      "kind": "intertitle",
+      "language_guess": "cs",
+      "texts": [
+        "Procházíme zarostlými",
+        "cestami a stavíme se u - -"
+      ],
+      "joined": "Procházíme zarostlými\ncestami a stavíme se u - -",
+      "path": "C:\\Users\\Avi Schwartz\\Documents\\hasidic-footage-scan\\output\\0063535_ocr\\ocr_frames\\t0100.80s_c013.jpg",
+      "notes": "Ignore NFA watermark.",
+      "variants": 2
+    },
+    {
+      "t": 116.64,
+      "t_start": 113.28,
+      "t_end": 141.12,
+      "kind": "caption",
+      "language_guess": "Czech",
+      "texts": [
+        "Weisela - syna Samuelova",
+        "- který zemřel v roce 106 (hebr.). Tento velký dobro-dinec vystavěl svým nákla-dem tak zvanou Vysokou synagogu i synagogu, jež má po něm jméno, dal zří-diti lázně pro ženy, chudý binec, nemocnici a na svůj"
+      ],
+      "joined": "Weisela - syna Samuelova\n- který zemřel v roce 106 (hebr.). Tento velký dobro-dinec vystavěl svým nákla-dem tak zvanou Vysokou synagogu i synagogu, jež má po něm jméno, dal zří-diti lázně pro ženy, chudý binec, nemocnici a na svůj",
+      "path": "C:\\Users\\Avi Schwartz\\Documents\\hasidic-footage-scan\\output\\0063535_ocr\\ocr_frames\\extra_t0129.12s.jpg",
+      "notes": "Bottom line is cut off; transcription best-effort. Ignored watermark/logo in lower right.",
+      "variants": 9
+    },
+    {
+      "t": 314.88,
+      "t_start": 314.88,
+      "t_end": 314.88,
+      "kind": "intertitle",
+      "language_guess": "Czech",
+      "texts": [
+        "Ještě se nám při zachá-",
+        "zejícím slunci podařilo",
+        "zachytiti krásné pohledy",
+        "na hřbitov -"
+      ],
+      "joined": "Ještě se nám při zachá-\nzejícím slunci podařilo\nzachytiti krásné pohledy\nna hřbitov -",
+      "path": "C:\\Users\\Avi Schwartz\\Documents\\hasidic-footage-scan\\output\\0063535_ocr\\ocr_frames\\t0314.88s_c032.jpg",
+      "notes": "Ignore NFA watermark.",
+      "variants": 1
+    },
+    {
+      "t": 338.88,
+      "t_start": 337.92,
+      "t_end": 339.84,
+      "kind": "intertitle",
+      "language_guess": "Czech",
+      "texts": [
+        "- a při odchodu jsme upo-zorněni na náhrobek, na němž je vytesán ve středu desky mnich a kolem dva kohouti. Pověst tvrdí, že jakýsi žid dav se pokřtít, vstoupil do kláštera. Po-sledním jeho přáním před smrtí bylo, aby byl poch..."
+      ],
+      "joined": "- a při odchodu jsme upo-zorněni na náhrobek, na němž je vytesán ve středu desky mnich a kolem dva kohouti. Pověst tvrdí, že jakýsi žid dav se pokřtít, vstoupil do kláštera. Po-sledním jeho přáním před smrtí bylo, aby byl poch...",
+      "path": "C:\\Users\\Avi Schwartz\\Documents\\hasidic-footage-scan\\output\\0063535_ocr\\ocr_frames\\extra_t0339.84s.jpg",
+      "notes": "Bottom line is cut off and partially obscured by the watermark; last word(s) are illegible.",
+      "variants": 2
+    },
+    {
+      "t": 383.04,
+      "t_start": 380.64,
+      "t_end": 386.88,
+      "kind": "intertitle",
+      "language_guess": "Czech",
+      "texts": [
+        "KONEC",
+        "ŽIDOVSKÝ HŘBITOV."
+      ],
+      "joined": "KONEC\nŽIDOVSKÝ HŘBITOV.",
+      "path": "C:\\Users\\Avi Schwartz\\Documents\\hasidic-footage-scan\\output\\0063535_ocr\\ocr_frames\\extra_t0383.04s.jpg",
+      "notes": "Ignore NFA watermark/logo in lower right.",
+      "variants": 1
+    }
+  ]
+}
