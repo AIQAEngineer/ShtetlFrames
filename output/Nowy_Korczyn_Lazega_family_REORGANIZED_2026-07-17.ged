@@ -1,0 +1,2045 @@
+0 HEAD
+1 SOUR Nowy_Korczyn_Lazega_family_research_REORGANIZED_2026-07-17
+2 NAME Łazęga family research — reorganized evidence report
+2 VERS 2026-07-17
+1 DEST OTHER
+1 DATE 02 AUG 2026
+1 FILE Nowy_Korczyn_Lazega_family_REORGANIZED_2026-07-17.ged
+1 GEDC
+2 VERS 5.5.1
+2 FORM LINEAGE-LINKED
+1 CHAR UTF-8
+1 NOTE Extracted from the reorganized Łazęga research PDF (17 July 2026).
+2 CONT Root, collateral, and unlinked households are preserved as separate families.
+2 CONT Surname alone never creates a connection. See NOTE tags for STATUS.
+2 CONT Source PDF: Nowy_Korczyn_Lazega_family_research_REORGANIZED_2026-07-17.pdf
+0 @I1@ INDI
+1 NAME Abram /Łazęga/
+2 GIVN Abram
+2 SURN Łazęga
+1 SEX M
+1 FAMS @F1@
+1 NOTE Named via patronymic Abramowicz of Wulf; generation before Wulf.
+1 NOTE STATUS: inferred from patronymic; not independently documented as vital-event subject.
+0 @I2@ INDI
+1 NAME Ojzer //
+2 GIVN Ojzer
+1 SEX M
+1 FAMS @F2@
+1 NOTE Father of Mirla (z Ojzerów); surname unknown in 1839 marriage act.
+1 NOTE STATUS: named by patronymic only.
+0 @I3@ INDI
+1 NAME Wulf or Wolf /Łazęga/
+2 GIVN Wulf or Wolf
+2 SURN Łazęga
+1 NAME Wulf Abramowicz /Łazęga/
+2 TYPE also known as
+1 NAME Wolf /Łazęga/
+2 TYPE also known as
+1 SEX M
+1 BIRT
+2 DATE ABT 1775
+1 DEAT
+2 DATE 20 MAR 1852
+2 PLAC Wiślica, Poland
+1 OCCU Synagogue attendant (szkolnik)
+1 FAMC @F1@
+1 FAMS @F8@
+1 NOTE Wiślica death act 6/1852: age 77; widow Mira; five children (3 sons, 2 daughters) not named individually.
+1 NOTE STATUS: ROOT — anchored individual; high-confidence parents of Beniamin, Gitla, Cypa.
+0 @I4@ INDI
+1 NAME Mirla or Mira /Łazęga/
+2 GIVN Mirla or Mira
+2 SURN Łazęga
+1 NAME Mirla z /Ojzerów/
+2 TYPE also known as
+1 NAME Mira
+2 TYPE also known as
+1 SEX F
+1 FAMC @F2@
+1 FAMS @F8@
+1 NOTE Daughter of Ojzer; adopted surname unknown in 1839 act.
+1 NOTE Survived Wolf (1852). STATUS: ROOT.
+0 @I5@ INDI
+1 NAME Gitla /Łazęga/
+2 GIVN Gitla
+2 SURN Łazęga
+1 SEX F
+1 BIRT
+2 DATE ABT 1810
+2 PLAC Wiślica, Poland
+1 FAMC @F8@
+1 FAMS @F9@
+1 NOTE Married Izrael Byk 12 Jun 1829, Wiślica act 4; parents Wulf + Mirla.
+1 NOTE STATUS: ROOT collateral — probable sister of Beniamin (high confidence).
+0 @I6@ INDI
+1 NAME Izrael /Byk/
+2 GIVN Izrael
+2 SURN Byk
+1 SEX M
+1 BIRT
+2 DATE ABT 1809
+1 OCCU Merchant
+1 FAMC @F3@
+1 FAMS @F9@
+1 NOTE Son of Mosiek Byk and Sora; married Gitla 1829.
+0 @I7@ INDI
+1 NAME Mosiek /Byk/
+2 GIVN Mosiek
+2 SURN Byk
+1 SEX M
+1 FAMS @F3@
+0 @I8@ INDI
+1 NAME Sora /Byk/
+2 GIVN Sora
+2 SURN Byk
+1 SEX F
+1 FAMS @F3@
+0 @I9@ INDI
+1 NAME Cypa or Cypra /Łazęga/
+2 GIVN Cypa or Cypra
+2 SURN Łazęga
+1 NAME Cypa /Luft/
+2 TYPE also known as
+1 SEX F
+1 BIRT
+2 DATE ABT 1810
+1 DEAT
+2 DATE 1879
+1 FAMC @F8@
+1 FAMS @F10@
+1 NOTE Indexed death 1879 act 27, age 66; parents Wolf and Mirla (JRI-Poland).
+1 NOTE 1834 birth of daughter Haja Rajzla uses Wolf patronymic.
+1 NOTE STATUS: ROOT collateral — high-confidence sister of Beniamin.
+0 @I10@ INDI
+1 NAME Szmul Moszkowicz /Luft/
+2 GIVN Szmul Moszkowicz
+2 SURN Luft
+1 SEX M
+1 BIRT
+2 DATE ABT 1799
+1 DEAT
+2 DATE 26 FEB 1855
+2 PLAC Nowy Korczyn, Poland
+1 OCCU Laborer
+1 FAMC @F4@
+1 FAMS @F10@
+1 NOTE Death act 8/1855, age 56; parents Mosiek Luft and Rajzla Blada.
+1 NOTE Seven surviving children named in 1855.
+0 @I11@ INDI
+1 NAME Mosiek /Luft/
+2 GIVN Mosiek
+2 SURN Luft
+1 SEX M
+1 FAMS @F4@
+0 @I12@ INDI
+1 NAME Rajzla /Blada/
+2 GIVN Rajzla
+2 SURN Blada
+1 SEX F
+1 FAMS @F4@
+0 @I13@ INDI
+1 NAME Haja Rajzla /Luft/
+2 GIVN Haja Rajzla
+2 SURN Luft
+1 SEX F
+1 BIRT
+2 DATE 5 NOV 1834
+2 PLAC Nowy Korczyn, Poland
+1 FAMC @F10@
+1 NOTE Birth act 56/1834; mother Cypa née Łazęga.
+0 @I14@ INDI
+1 NAME Mosiek /Luft/
+2 GIVN Mosiek
+2 SURN Luft
+1 SEX M
+1 FAMC @F10@
+1 NOTE Named among Szmul Luft's surviving sons in 1855 death act.
+0 @I15@ INDI
+1 NAME Sendla /Luft/
+2 GIVN Sendla
+2 SURN Luft
+1 SEX M
+1 FAMC @F10@
+1 NOTE Named among Szmul Luft's surviving sons in 1855.
+0 @I16@ INDI
+1 NAME Choryn /Luft/
+2 GIVN Choryn
+2 SURN Luft
+1 SEX M
+1 FAMC @F10@
+1 NOTE Named among Szmul Luft's surviving sons in 1855.
+0 @I17@ INDI
+1 NAME Dawid /Luft/
+2 GIVN Dawid
+2 SURN Luft
+1 SEX M
+1 FAMC @F10@
+1 NOTE Named among Szmul Luft's surviving sons in 1855.
+0 @I18@ INDI
+1 NAME Bajla /Luft/
+2 GIVN Bajla
+2 SURN Luft
+1 SEX F
+1 FAMC @F10@
+1 NOTE Named among Szmul Luft's surviving daughters in 1855.
+1 NOTE May be same Bajla Rochla Luft mother of Szmul Jankel (merge not forced).
+0 @I19@ INDI
+1 NAME Frajdla /Luft/
+2 GIVN Frajdla
+2 SURN Luft
+1 SEX F
+1 FAMC @F10@
+1 NOTE Named among Szmul Luft's surviving daughters in 1855.
+0 @I20@ INDI
+1 NAME Beniamin Wulfowicz /Łazęga/
+2 GIVN Beniamin Wulfowicz
+2 SURN Łazęga
+1 NAME Beniamin /Łazęga/
+2 TYPE also known as
+1 NAME Biniamin /Łazęga/
+2 TYPE also known as
+1 NAME Benjamin /Lazenga/
+2 TYPE also known as
+1 SEX M
+1 BIRT
+2 DATE ABT 1815
+2 PLAC Wiślica, Poland
+1 DEAT
+2 DATE 15 APR 1904
+2 PLAC Nowy Korczyn, Poland
+1 OCCU Laborer
+1 FAMC @F8@
+1 FAMS @F11@
+1 FAMS @F12@
+1 NOTE Death act 15/1904 age 88, parents Wolf and Mirla.
+1 NOTE 1839 marriage age 20 (~1819). Age drift common.
+1 NOTE STATUS: ROOT — founding male of established Nowy Korczyn–Kraków line.
+0 @I21@ INDI
+1 NAME Icek /Kozuch/
+2 GIVN Icek
+2 SURN Kozuch
+1 SEX M
+1 DEAT
+2 DATE BEF 1839
+1 FAMS @F6@
+1 NOTE Deceased before daughter Rywka's 1839 marriage.
+0 @I22@ INDI
+1 NAME Hencia or Hania //
+2 GIVN Hencia or Hania
+1 NAME Hania z /Icków/
+2 TYPE also known as
+1 SEX F
+1 FAMC @F5@
+1 FAMS @F6@
+1 NOTE Widow of Icek Kozuch; mother of Rywka; present at 1839 marriage.
+1 NOTE Adopted surname unknown.
+0 @I23@ INDI
+1 NAME Icek //
+2 GIVN Icek
+1 SEX M
+1 FAMS @F5@
+1 NOTE Patronymic father of Hencia.
+0 @I24@ INDI
+1 NAME Rywka Ickowna /Kozuch/
+2 GIVN Rywka Ickowna
+2 SURN Kozuch
+1 NAME Rywka /Kozuch/
+2 TYPE also known as
+1 SEX F
+1 BIRT
+2 DATE ABT 1820
+1 DEAT
+2 DATE BEF 7 FEB 1852
+2 PLAC Nowy Korczyn, Poland
+1 FAMC @F6@
+1 FAMS @F11@
+1 NOTE Married Beniamin 1/13 Jun 1839, Nowy Korczyn act 8.
+1 NOTE Proven deceased before Mortka Lejb death act 8 Feb 1852.
+1 NOTE STATUS: ROOT — first wife of Beniamin; NOT the same person as Blima.
+0 @I25@ INDI
+1 NAME Mortka Lejb /Łazęga/
+2 GIVN Mortka Lejb
+2 SURN Łazęga
+1 SEX M
+1 BIRT
+2 DATE ABT 1842
+1 DEAT
+2 DATE 7 FEB 1852
+2 PLAC Nowy Korczyn, Poland
+1 FAMC @F11@
+1 NOTE Death act 8/1852 age 10; son of Beniamin and Rywka Kozuch.
+1 NOTE STATUS: ROOT.
+0 @I26@ INDI
+1 NAME Abram /Kołacz/
+2 GIVN Abram
+2 SURN Kołacz
+1 SEX M
+1 FAMS @F7@
+0 @I27@ INDI
+1 NAME Mindla /Kołacz/
+2 GIVN Mindla
+2 SURN Kołacz
+1 SEX F
+1 FAMS @F7@
+0 @I28@ INDI
+1 NAME Blima /Kołacz/
+2 GIVN Blima
+2 SURN Kołacz
+1 NAME Blima /Lazega/
+2 TYPE also known as
+1 NAME Blima /Kolacz/
+2 TYPE also known as
+1 SEX F
+1 BIRT
+2 DATE ABT 1820
+1 DEAT
+2 DATE 6 AUG 1890
+2 PLAC Nowy Korczyn, Poland
+1 FAMC @F7@
+1 FAMS @F12@
+1 NOTE Death act 44/1890 age 70; wife of Beniamin; parents Abram and Mindla Kołacz.
+1 NOTE STATUS: ROOT — second wife; founding parental couple with Beniamin.
+0 @I29@ INDI
+1 NAME Haja or Fajga Rochla /Łazęga/
+2 GIVN Haja or Fajga Rochla
+2 SURN Łazęga
+1 SEX F
+1 BIRT
+2 DATE ABT 1856
+1 DEAT
+2 DATE 5 SEP 1857
+2 PLAC Nowy Korczyn, Poland
+1 FAMC @F12@
+1 NOTE Death act 39/1857 age 1; daughter of Beniamin and Blima.
+1 NOTE STATUS: ROOT.
+0 @I30@ INDI
+1 NAME Rojza Rejla /Łazęga/
+2 GIVN Rojza Rejla
+2 SURN Łazęga
+1 SEX F
+1 BIRT
+2 DATE ABT 1861
+1 FAMC @F12@
+1 FAMS @F14@
+1 NOTE Married Szmul Jankel Miodownik 1887 act 8; age 26; parents Beniamin + Blima.
+1 NOTE STATUS: ROOT.
+0 @I31@ INDI
+1 NAME Abram Chersz or Hersz /Łazęga/
+2 GIVN Abram Chersz or Hersz
+2 SURN Łazęga
+1 NAME Abram Hersz /Łazęga/
+2 TYPE also known as
+1 NAME Abram Chersz /Lazenga/
+2 TYPE also known as
+1 SEX M
+1 BIRT
+2 DATE ABT 1851
+2 PLAC Nowy Korczyn, Poland
+1 OCCU Glazier / carpenter
+1 FAMC @F12@
+1 FAMS @F18@
+1 NOTE Married Laja Gemzowicz 1879 act 44 age 28.
+1 NOTE STATUS: ROOT — bridge generation to Józef Mendel.
+0 @I32@ INDI
+1 NAME Abram /Miodownik/
+2 GIVN Abram
+2 SURN Miodownik
+1 SEX M
+1 FAMS @F13@
+0 @I33@ INDI
+1 NAME Bajla Rochla /Luft/
+2 GIVN Bajla Rochla
+2 SURN Luft
+1 SEX F
+1 FAMS @F13@
+1 NOTE Mother of Szmul Jankel Miodownik; may be same Bajla Luft daughter of Cypa (unproven merge not forced).
+0 @I34@ INDI
+1 NAME Szmul Jankel /Miodownik/
+2 GIVN Szmul Jankel
+2 SURN Miodownik
+1 SEX M
+1 BIRT
+2 DATE ABT 1862
+1 DEAT
+2 DATE 11 JAN 1907
+2 PLAC Nowy Korczyn, Poland
+1 FAMC @F13@
+1 FAMS @F14@
+1 NOTE Death act 30/1906 (29 Dec OS / 11 Jan NS 1907) age 44.
+1 NOTE Married Rojza Rejla 1887.
+0 @I35@ INDI
+1 NAME Mordka /Gemzowicz/
+2 GIVN Mordka
+2 SURN Gemzowicz
+1 SEX M
+1 BIRT
+2 DATE ABT 1836
+1 OCCU podenszczyk [uncertain]
+1 FAMS @F15@
+0 @I36@ INDI
+1 NAME Chinda or Chindla /Blausztajn/
+2 GIVN Chinda or Chindla
+2 SURN Blausztajn
+1 NAME Chinda /Blumsztajn/
+2 TYPE also known as
+1 SEX F
+1 BIRT
+2 DATE ABT 1838
+1 FAMS @F15@
+0 @I37@ INDI
+1 NAME Lejbus /Gemzowicz/
+2 GIVN Lejbus
+2 SURN Gemzowicz
+1 SEX M
+1 BIRT
+2 DATE 28 APR 1876
+2 PLAC Nowy Korczyn, Poland
+1 DEAT
+2 DATE 24 JAN 1877
+2 PLAC Nowy Korczyn, Poland
+1 FAMC @F15@
+1 NOTE Birth act 32/1876; death act 36/1877 age 9 months.
+0 @I38@ INDI
+1 NAME Laja or Laia /Gemzowicz/
+2 GIVN Laja or Laia
+2 SURN Gemzowicz
+1 NAME Laia /Gemzowicz/
+2 TYPE also known as
+1 SEX F
+1 BIRT
+2 DATE ABT 1860
+2 PLAC Nowy Korczyn, Poland
+1 FAMC @F15@
+1 FAMS @F18@
+1 NOTE Married Abram Chersz 1879 age 19. STATUS: ROOT.
+0 @I39@ INDI
+1 NAME Chawa /Gemzowicz/
+2 GIVN Chawa
+2 SURN Gemzowicz
+1 SEX F
+1 BIRT
+2 DATE ABT 1868
+1 FAMC @F15@
+1 FAMS @F17@
+1 NOTE Married Berek Koplik 1892 act 22 age 24.
+0 @I40@ INDI
+1 NAME Pinches /Koplik/
+2 GIVN Pinches
+2 SURN Koplik
+1 SEX M
+1 FAMS @F16@
+0 @I41@ INDI
+1 NAME Sora /Rzeznik/
+2 GIVN Sora
+2 SURN Rzeznik
+1 SEX F
+1 FAMS @F16@
+0 @I42@ INDI
+1 NAME Berek /Koplik/
+2 GIVN Berek
+2 SURN Koplik
+1 SEX M
+1 BIRT
+2 DATE ABT 1862
+1 FAMC @F16@
+1 FAMS @F17@
+0 @I43@ INDI
+1 NAME Szmul /Łazęga/
+2 GIVN Szmul
+2 SURN Łazęga
+1 SEX M
+1 BIRT
+2 DATE 17 MAY 1885
+2 PLAC Nowy Korczyn, Poland
+1 FAMC @F18@
+1 NOTE Birth act 106/1885 (5/17 May OS/NS). STATUS: ROOT.
+0 @I44@ INDI
+1 NAME Józef or Josek Mendel /Łazęga/
+2 GIVN Józef or Josek Mendel
+2 SURN Łazęga
+1 NAME Josek Mendel /Lazenga/
+2 TYPE also known as
+1 NAME Józef Mendel /Łazęga/
+2 TYPE also known as
+1 NAME J. /Łazęga/
+2 TYPE also known as
+1 SEX M
+1 BIRT
+2 DATE 16 MAR 1887
+2 PLAC Nowy Korczyn, Poland
+1 OCCU Paper merchant, Rynek Podgórski 2, Kraków
+1 FAMC @F18@
+1 FAMS @F23@
+1 NOTE Birth act 28/1887 (4/16 Mar OS/NS); tree often cites 3 Mar 1887.
+1 NOTE Kraków paper business 1920–1931 documented.
+1 NOTE STATUS: ROOT — Kraków merchant generation.
+0 @I45@ INDI
+1 NAME Blima /Łazęga/
+2 GIVN Blima
+2 SURN Łazęga
+1 SEX F
+1 BIRT
+2 DATE ABT 1896
+1 FAMC @F18@
+1 NOTE Secondary-source lead only; no original birth act found.
+1 NOTE STATUS: LEAD — not elevated to proven child.
+0 @I46@ INDI
+1 NAME Chana /Łazęga/
+2 GIVN Chana
+2 SURN Łazęga
+1 SEX F
+1 BIRT
+2 DATE 18 NOV 1897
+2 PLAC Nowy Korczyn, Poland
+1 FAMC @F18@
+1 NOTE Birth act 100/1897 (6/18 Nov OS/NS). STATUS: ROOT.
+0 @I47@ INDI
+1 NAME Jakob /Feig/
+2 GIVN Jakob
+2 SURN Feig
+1 SEX M
+1 FAMS @F19@
+0 @I48@ INDI
+1 NAME Mesche /Feig/
+2 GIVN Mesche
+2 SURN Feig
+1 SEX F
+1 FAMS @F19@
+0 @I49@ INDI
+1 NAME Markus /Feig/
+2 GIVN Markus
+2 SURN Feig
+1 SEX M
+1 BIRT
+2 DATE ABT 1831
+1 DEAT
+2 DATE 25 NOV 1877
+2 PLAC Klasno, Poland
+1 OCCU Butcher
+1 FAMC @F19@
+1 FAMS @F20@
+1 NOTE Death act 44/1877 age 46; parents Jakob and Mesche.
+1 NOTE STATUS: ROOT spouse-ancestry (Feig).
+0 @I50@ INDI
+1 NAME Breindl or Breindla /Feig/
+2 GIVN Breindl or Breindla
+2 SURN Feig
+1 NAME Breindel
+2 TYPE also known as
+1 SEX F
+1 FAMS @F20@
+1 NOTE Wife of Markus; mother of Hersch and siblings. STATUS: ROOT Feig.
+0 @I51@ INDI
+1 NAME Hersch /Feig/
+2 GIVN Hersch
+2 SURN Feig
+1 SEX M
+1 BIRT
+2 DATE 11 MAR 1863
+2 PLAC Klasno, Poland
+1 OCCU Butcher in Wieliczka
+1 FAMC @F20@
+1 FAMS @F22@
+1 NOTE Klasno birth 1863; married 11 Sep 1887. STATUS: ROOT Feig.
+0 @I52@ INDI
+1 NAME Welman or Wolfman /Feig/
+2 GIVN Welman or Wolfman
+2 SURN Feig
+1 SEX M
+1 BIRT
+2 DATE 19 MAY 1867
+2 PLAC Klasno, Poland
+1 FAMC @F20@
+1 NOTE Klasno entry 209/1867; spelling Welman or Wolfman unresolved.
+0 @I53@ INDI
+1 NAME Mosche /Feig/
+2 GIVN Mosche
+2 SURN Feig
+1 SEX M
+1 BIRT
+2 DATE 15 MAY 1869
+2 PLAC Klasno, Poland
+1 FAMC @F20@
+0 @I54@ INDI
+1 NAME Rachel /Feig/
+2 GIVN Rachel
+2 SURN Feig
+1 SEX F
+1 BIRT
+2 DATE 19 MAY 1871
+2 PLAC Klasno, Poland
+1 FAMC @F20@
+1 NOTE Sister of Hersch; not Rachela wife of Józef Mendel.
+0 @I55@ INDI
+1 NAME Jacob /Feig/
+2 GIVN Jacob
+2 SURN Feig
+1 SEX M
+1 BIRT
+2 DATE 20 NOV 1872
+2 PLAC Klasno, Poland
+1 FAMC @F20@
+0 @I56@ INDI
+1 NAME Chaim //
+2 GIVN Chaim
+1 SEX M
+1 OCCU Merchant in Mielec
+1 FAMS @F21@
+1 NOTE Maternal grandfather of Rachela Feig; surname not confidently legible on 1890 act.
+1 NOTE Earlier 'Feigl' expansion withdrawn.
+0 @I57@ INDI
+1 NAME Chana /Braunstein/
+2 GIVN Chana
+2 SURN Braunstein
+1 SEX F
+1 OCCU Merchant in Mielec
+1 FAMS @F21@
+0 @I58@ INDI
+1 NAME Hinda or Ryfka /Braunstein/
+2 GIVN Hinda or Ryfka
+2 SURN Braunstein
+1 NAME Ryfka /Braun/
+2 TYPE also known as
+1 NAME Ryfka /Braunstein/
+2 TYPE also known as
+1 SEX F
+1 FAMC @F21@
+1 FAMS @F22@
+1 NOTE Mother of Rachela Feig; residing Wieliczka 1890.
+1 NOTE STATUS: ROOT Feig maternal line.
+0 @I59@ INDI
+1 NAME Rachela or Rachel /Feig/
+2 GIVN Rachela or Rachel
+2 SURN Feig
+1 SEX F
+1 BIRT
+2 DATE 8 SEP 1890
+2 PLAC Wieliczka, Poland
+1 FAMC @F22@
+1 FAMS @F23@
+1 NOTE Birth act 85/1890 Klasno-Podgórze register. STATUS: ROOT spouse.
+0 @I60@ INDI
+1 NAME Frajdla Łaja /Łazęga/
+2 GIVN Frajdla Łaja
+2 SURN Łazęga
+1 NAME Fryda
+2 TYPE also known as
+1 NAME Fryderika Rapaport (probable lead with /conflict)/
+2 TYPE also known as
+1 SEX F
+1 BIRT
+2 DATE 19 SEP 1912
+1 FAMC @F23@
+1 FAMS @F24@
+1 NOTE Married Mendel Rapaport; child Abraham 1937. IPN wartime Kraków. STATUS: ROOT.
+0 @I61@ INDI
+1 NAME Henryka /Łazęga/
+2 GIVN Henryka
+2 SURN Łazęga
+1 NAME Henia
+2 TYPE also known as
+1 NAME Schachner (later /identity)/
+2 TYPE also known as
+1 SEX F
+1 BIRT
+2 DATE 23 NOV 1915
+1 FAMC @F23@
+1 NOTE IPN wartime Kraków shelter. STATUS: ROOT.
+0 @I62@ INDI
+1 NAME Szymon or Szyja Beer /Łazęga/
+2 GIVN Szymon or Szyja Beer
+2 SURN Łazęga
+1 NAME Szijek
+2 TYPE also known as
+1 NAME Schije /Lazega/
+2 TYPE also known as
+1 SEX M
+1 BIRT
+2 DATE 21 JUL 1918
+2 PLAC Kraków, Poland
+1 FAMC @F23@
+1 NOTE Paris emigration 1949; Częstochowa 1942; AJDC with Olga. STATUS: ROOT.
+0 @I63@ INDI
+1 NAME Jan or Jakub /Łazęga/
+2 GIVN Jan or Jakub
+2 SURN Łazęga
+1 SEX M
+1 BIRT
+2 DATE 2 JUL 1919
+1 FAMC @F23@
+1 NOTE IPN wartime Kraków. STATUS: ROOT.
+0 @I64@ INDI
+1 NAME Mendel /Rapaport/
+2 GIVN Mendel
+2 SURN Rapaport
+1 NAME Mendel /Rappaport/
+2 TYPE also known as
+1 SEX M
+1 FAMS @F24@
+1 NOTE Husband of Fryda; IPN wartime Kraków.
+0 @I65@ INDI
+1 NAME Abraham /Rapaport/
+2 GIVN Abraham
+2 SURN Rapaport
+1 SEX M
+1 BIRT
+2 DATE 1937
+1 FAMC @F24@
+1 NOTE Son of Fryda and Mendel. STATUS: ROOT descendant.
+0 @I66@ INDI
+1 NAME Olga /Łazęga/
+2 GIVN Olga
+2 SURN Łazęga
+1 SEX F
+1 NOTE Appears with Szyja on AJDC/Arolsen; kinship degree NOT stated.
+1 NOTE STATUS: UNLINKED companion/contact — not merged as spouse/sibling.
+0 @I67@ INDI
+1 NAME Mordka /Łazęga/
+2 GIVN Mordka
+2 SURN Łazęga
+1 SEX M
+1 FAMS @F25@
+1 NOTE Father of Herszla; deceased before 1850. STATUS: SEPARATE collateral.
+0 @I68@ INDI
+1 NAME Sora /Łazęga/
+2 GIVN Sora
+2 SURN Łazęga
+1 NAME Sora Moskow (patronymic or form)
+2 TYPE also known as
+1 SEX F
+1 FAMS @F25@
+1 NOTE Mother of Herszla; form after Sora indexed as Moskow.
+0 @I69@ INDI
+1 NAME Herszla /Łazęga/
+2 GIVN Herszla
+2 SURN Łazęga
+1 SEX M
+1 BIRT
+2 DATE ABT 1779
+1 DEAT
+2 DATE 24 JUN 1850
+2 PLAC Nowy Korczyn, Poland
+1 FAMC @F25@
+1 FAMS @F26@
+1 NOTE Death act 14/1850 age 71; son of Mordka and Sora.
+1 NOTE STATUS: SEPARATE — not merged with Wulf/Beniamin.
+0 @I70@ INDI
+1 NAME Chwała /Hercberg/
+2 GIVN Chwała
+2 SURN Hercberg
+1 NAME Chwała
+2 TYPE also known as
+1 SEX F
+1 FAMS @F26@
+0 @I71@ INDI
+1 NAME Ejzyk Herszlowicz /Łazęga/
+2 GIVN Ejzyk Herszlowicz
+2 SURN Łazęga
+1 NAME Eyzik
+2 TYPE also known as
+1 NAME Icek
+2 TYPE also known as
+1 NAME Isaac
+2 TYPE also known as
+1 SEX M
+1 BIRT
+2 DATE ABT 1804
+2 PLAC Nowy Korczyn, Poland
+1 OCCU Trader
+1 FAMC @F26@
+1 FAMS @F28@
+0 @I72@ INDI
+1 NAME Józef /Łazęga/
+2 GIVN Józef
+2 SURN Łazęga
+1 SEX M
+1 FAMC @F26@
+1 NOTE Named son of Herszla in 1850 death act; living Nowy Korczyn.
+0 @I73@ INDI
+1 NAME Abram /Łazęga/
+2 GIVN Abram
+2 SURN Łazęga
+1 SEX M
+1 FAMC @F26@
+1 NOTE Named son of Herszla in 1850 death act; living Nowy Korczyn.
+1 NOTE Not the same as Abram Chersz of the root line.
+0 @I74@ INDI
+1 NAME Chaja /Łazęga/
+2 GIVN Chaja
+2 SURN Łazęga
+1 SEX F
+1 FAMC @F26@
+1 NOTE Named daughter of Herszla in 1850 death act.
+0 @I75@ INDI
+1 NAME Fajgla /Łazęga/
+2 GIVN Fajgla
+2 SURN Łazęga
+1 SEX F
+1 FAMC @F26@
+1 NOTE Named daughter of Herszla in 1850 death act.
+0 @I76@ INDI
+1 NAME Mania /Łazęga/
+2 GIVN Mania
+2 SURN Łazęga
+1 SEX F
+1 FAMC @F26@
+1 NOTE Named daughter of Herszla in 1850 death act.
+0 @I77@ INDI
+1 NAME Haia or Chaia Herszlowna /Łazęga/
+2 GIVN Haia or Chaia Herszlowna
+2 SURN Łazęga
+1 SEX F
+1 BIRT
+2 DATE ABT 1810
+1 FAMC @F26@
+1 FAMS @F30@
+1 NOTE Married Abram Maier Pinkus 1834 act 6; parents Herszla + Chwała Hercberg.
+0 @I78@ INDI
+1 NAME Mosiek /Wollman/
+2 GIVN Mosiek
+2 SURN Wollman
+1 SEX M
+1 FAMS @F27@
+0 @I79@ INDI
+1 NAME Sora /Wollman/
+2 GIVN Sora
+2 SURN Wollman
+1 SEX F
+1 FAMS @F27@
+1 NOTE Surname for Sora uncertain/indexer-supplied in JRI; keep cautious.
+0 @I80@ INDI
+1 NAME Rachma or Rochema /Wollman/
+2 GIVN Rachma or Rochema
+2 SURN Wollman
+1 SEX F
+1 BIRT
+2 DATE ABT 1806
+1 FAMC @F27@
+1 FAMS @F28@
+0 @I81@ INDI
+1 NAME Mosiek Abram /Łazęga/
+2 GIVN Mosiek Abram
+2 SURN Łazęga
+1 SEX M
+1 BIRT
+2 DATE 5 APR 1832
+2 PLAC Nowy Korczyn, Poland
+1 FAMC @F28@
+1 NOTE Birth act 4/1832.
+0 @I82@ INDI
+1 NAME Josek /Pinkus/
+2 GIVN Josek
+2 SURN Pinkus
+1 SEX M
+1 FAMS @F29@
+0 @I83@ INDI
+1 NAME Krajdla /Wolman/
+2 GIVN Krajdla
+2 SURN Wolman
+1 SEX F
+1 FAMS @F29@
+0 @I84@ INDI
+1 NAME Abram Maier /Pinkus/
+2 GIVN Abram Maier
+2 SURN Pinkus
+1 SEX M
+1 BIRT
+2 DATE ABT 1812
+1 FAMC @F29@
+1 FAMS @F30@
+0 @I85@ INDI
+1 NAME Mortka or Mordka /Łazęga/
+2 GIVN Mortka or Mordka
+2 SURN Łazęga
+1 SEX M
+1 BIRT
+2 DATE ABT 1810
+1 DEAT
+2 DATE BET 1862 AND 1866
+1 OCCU Merchant / grain merchant
+1 FAMS @F31@
+1 NOTE Alive at Małka 1862 marriage; deceased by Frymeta 1866 marriage.
+1 NOTE STATUS: SEPARATE Wiślica–Dębiany branch — not merged with Beniamin.
+0 @I86@ INDI
+1 NAME Ruchla or Rochla /Łazęga/
+2 GIVN Ruchla or Rochla
+2 SURN Łazęga
+1 NAME Ruchla /Lewkowicz/
+2 TYPE also known as
+1 NAME Rochla /Tuchmajer/
+2 TYPE also known as
+1 SEX F
+1 FAMS @F31@
+1 NOTE Maternal forms Lewkowicz (1846, 1866) and Tuchmajer (1852) both original.
+1 NOTE Alive 1866. STATUS: SEPARATE.
+0 @I87@ INDI
+1 NAME Icyk or Icek /Łazęga/
+2 GIVN Icyk or Icek
+2 SURN Łazęga
+1 SEX M
+1 BIRT
+2 DATE ABT 1841
+2 PLAC Wiślica, Poland
+1 OCCU Trader / colonist
+1 FAMC @F31@
+1 FAMS @F33@
+0 @I88@ INDI
+1 NAME Małka /Łazęga/
+2 GIVN Małka
+2 SURN Łazęga
+1 SEX F
+1 BIRT
+2 DATE ABT 1843
+2 PLAC Dębiany, Poland
+1 FAMC @F31@
+1 FAMS @F35@
+0 @I89@ INDI
+1 NAME Frymet or Frymeta /Łazęga/
+2 GIVN Frymet or Frymeta
+2 SURN Łazęga
+1 SEX F
+1 BIRT
+2 DATE 23 APR 1846
+2 PLAC Wiślica, Poland
+1 FAMC @F31@
+1 FAMS @F37@
+0 @I90@ INDI
+1 NAME Abram /Łazęga/
+2 GIVN Abram
+2 SURN Łazęga
+1 SEX M
+1 BIRT
+2 DATE 12 JUN 1852
+2 PLAC Wiślica, Poland
+1 DEAT
+2 DATE 16 JUN 1852
+2 PLAC Wiślica, Poland
+1 FAMC @F31@
+1 NOTE Birth act 35 and death act 9/1852; lived four days.
+0 @I91@ INDI
+1 NAME Lewek /Łazęga/
+2 GIVN Lewek
+2 SURN Łazęga
+1 SEX M
+1 BIRT
+2 DATE ABT 1839
+1 FAMC @F31@
+1 NOTE JRI-Poland Wiślica index lead as child of Mordka/Rochla; not original-verified in report.
+1 NOTE STATUS: INDEX LEAD.
+0 @I92@ INDI
+1 NAME Chaja /Łazęga/
+2 GIVN Chaja
+2 SURN Łazęga
+1 SEX F
+1 BIRT
+2 DATE ABT 1849
+1 FAMC @F31@
+1 NOTE JRI-Poland Wiślica index lead; not original-verified here. STATUS: INDEX LEAD.
+0 @I93@ INDI
+1 NAME Joachim /Mendlowicz/
+2 GIVN Joachim
+2 SURN Mendlowicz
+1 SEX M
+1 FAMS @F32@
+0 @I94@ INDI
+1 NAME Itta /Mendlowicz/
+2 GIVN Itta
+2 SURN Mendlowicz
+1 SEX F
+1 FAMS @F32@
+0 @I95@ INDI
+1 NAME Kajla Laja /Mendlowicz/
+2 GIVN Kajla Laja
+2 SURN Mendlowicz
+1 SEX F
+1 BIRT
+2 DATE ABT 1841
+2 PLAC Byczów, Poland
+1 FAMC @F32@
+1 FAMS @F33@
+0 @I96@ INDI
+1 NAME Dobra Rejla or Rojza /Łazęga/
+2 GIVN Dobra Rejla or Rojza
+2 SURN Łazęga
+1 SEX F
+1 BIRT
+2 DATE 1 JAN 1861
+2 PLAC Wiślica, Poland
+1 FAMC @F33@
+1 NOTE Birth act 1/1861; manuscript Rejla, JRI Rojza.
+0 @I97@ INDI
+1 NAME Bajla Etla /Łazęga/
+2 GIVN Bajla Etla
+2 SURN Łazęga
+1 SEX F
+1 BIRT
+2 DATE 6 DEC 1864
+2 PLAC Byczów, Poland
+1 FAMC @F33@
+0 @I98@ INDI
+1 NAME Haja /Łazęga/
+2 GIVN Haja
+2 SURN Łazęga
+1 SEX F
+1 BIRT
+2 DATE 27 DEC 1865
+2 PLAC Byczów, Poland
+1 FAMC @F33@
+0 @I99@ INDI
+1 NAME Helman or Zelman /Milnarski/
+2 GIVN Helman or Zelman
+2 SURN Milnarski
+1 NAME Helman /Milnarski/
+2 TYPE also known as
+1 NAME Zelman /Milnorski/
+2 TYPE also known as
+1 SEX M
+1 FAMS @F34@
+1 NOTE 1862 original: Helman; JRI/index sometimes Zelman.
+0 @I100@ INDI
+1 NAME Rojza or Rajzla /Milnarski/
+2 GIVN Rojza or Rajzla
+2 SURN Milnarski
+1 SEX F
+1 FAMS @F34@
+0 @I101@ INDI
+1 NAME Wolf /Milnarski/
+2 GIVN Wolf
+2 SURN Milnarski
+1 NAME Wólf /Milnorski/
+2 TYPE also known as
+1 SEX M
+1 BIRT
+2 DATE ABT 1844
+2 PLAC Kopernia, Poland
+1 FAMC @F34@
+1 FAMS @F35@
+0 @I102@ INDI
+1 NAME Symcha /Ptasznik/
+2 GIVN Symcha
+2 SURN Ptasznik
+1 SEX M
+1 DEAT
+2 DATE BEF 1866
+1 FAMS @F36@
+0 @I103@ INDI
+1 NAME Gitla /Ptasznik/
+2 GIVN Gitla
+2 SURN Ptasznik
+1 SEX F
+1 FAMS @F36@
+0 @I104@ INDI
+1 NAME Wolf /Ptasznik/
+2 GIVN Wolf
+2 SURN Ptasznik
+1 SEX M
+1 BIRT
+2 DATE ABT 1846
+1 FAMC @F36@
+1 FAMS @F37@
+0 @I105@ INDI
+1 NAME Abram /Łazęga/
+2 GIVN Abram
+2 SURN Łazęga
+1 SEX M
+1 FAMS @F38@
+1 NOTE Father of Icek Boruch; spouse Szajndla Ita Kwietner.
+1 NOTE STATUS: SEPARATE — not Abram Chersz of root line.
+0 @I106@ INDI
+1 NAME Szajndla Ita /Kwietner/
+2 GIVN Szajndla Ita
+2 SURN Kwietner
+1 SEX F
+1 DEAT
+2 DATE BEF AUG 1895
+1 FAMS @F38@
+0 @I107@ INDI
+1 NAME Icek Boruch /Łazęga/
+2 GIVN Icek Boruch
+2 SURN Łazęga
+1 SEX M
+1 BIRT
+2 DATE ABT 1870
+1 OCCU Day laborer
+1 FAMC @F38@
+1 FAMS @F40@
+0 @I108@ INDI
+1 NAME Majer /Rosenberg/
+2 GIVN Majer
+2 SURN Rosenberg
+1 SEX M
+1 DEAT
+2 DATE BEF 1895
+1 FAMS @F39@
+0 @I109@ INDI
+1 NAME Mirela /Goldman/
+2 GIVN Mirela
+2 SURN Goldman
+1 SEX F
+1 FAMS @F39@
+0 @I110@ INDI
+1 NAME Hendla /Rosenberg/
+2 GIVN Hendla
+2 SURN Rosenberg
+1 SEX F
+1 BIRT
+2 DATE ABT 1871
+1 FAMC @F39@
+1 FAMS @F40@
+0 @I111@ INDI
+1 NAME Gitla /Łazęga/
+2 GIVN Gitla
+2 SURN Łazęga
+1 SEX F
+1 BIRT
+2 DATE 29 OCT 1895
+2 PLAC Nowy Korczyn, Poland
+1 FAMC @F40@
+1 NOTE Twin; birth act 101/1895.
+0 @I112@ INDI
+1 NAME Laja /Łazęga/
+2 GIVN Laja
+2 SURN Łazęga
+1 SEX F
+1 BIRT
+2 DATE 29 OCT 1895
+2 PLAC Nowy Korczyn, Poland
+1 FAMC @F40@
+1 NOTE Twin; birth act 102/1895.
+0 @I113@ INDI
+1 NAME Gersz /Łazęga/
+2 GIVN Gersz
+2 SURN Łazęga
+1 SEX M
+1 FAMS @F41@
+1 NOTE STATUS: SEPARATE Kwietner household.
+0 @I114@ INDI
+1 NAME Szili Mirla /Kwietner/
+2 GIVN Szili Mirla
+2 SURN Kwietner
+1 SEX F
+1 FAMS @F41@
+0 @I115@ INDI
+1 NAME Josel or Josek /Łazęga/
+2 GIVN Josel or Josek
+2 SURN Łazęga
+1 SEX M
+1 BIRT
+2 DATE ABT JUN 1894
+1 DEAT
+2 DATE 30 AUG 1894
+2 PLAC Nowy Korczyn, Poland
+1 FAMC @F41@
+1 NOTE Death act 131/1894 age 2 months.
+0 @I116@ INDI
+1 NAME Abram /Łazęga/
+2 GIVN Abram
+2 SURN Łazęga
+1 SEX M
+1 FAMS @F42@
+1 NOTE Husband of Szajndla Kwiatek; father of Icek of Chmielnik.
+1 NOTE STATUS: SEPARATE — chronology rules out identity with Abram Chersz.
+0 @I117@ INDI
+1 NAME Szajndla /Kwiatek/
+2 GIVN Szajndla
+2 SURN Kwiatek
+1 SEX F
+1 DEAT
+2 DATE BEF 1892
+1 FAMS @F42@
+0 @I118@ INDI
+1 NAME Icek /Łazęga/
+2 GIVN Icek
+2 SURN Łazęga
+1 SEX M
+1 BIRT
+2 DATE ABT 1871
+1 OCCU Merchant/trader
+1 FAMC @F42@
+1 FAMS @F44@
+0 @I119@ INDI
+1 NAME Abram Lejzer /Świczarczyk/
+2 GIVN Abram Lejzer
+2 SURN Świczarczyk
+1 SEX M
+1 FAMS @F43@
+0 @I120@ INDI
+1 NAME Estera Ita /Raj/
+2 GIVN Estera Ita
+2 SURN Raj
+1 SEX F
+1 FAMS @F43@
+0 @I121@ INDI
+1 NAME Cyrla /Świczarczyk/
+2 GIVN Cyrla
+2 SURN Świczarczyk
+1 SEX F
+1 BIRT
+2 DATE ABT 1870
+1 FAMC @F43@
+1 FAMS @F44@
+0 @I122@ INDI
+1 NAME Lejb or Lejba /Łazęga/
+2 GIVN Lejb or Lejba
+2 SURN Łazęga
+1 SEX M
+1 BIRT
+2 DATE 22 OCT 1894
+2 PLAC Nowy Korczyn, Poland
+1 OCCU Laborer
+1 FAMC @F44@
+1 NOTE Łódź registration 1919 as Liba; same person as Lejb.
+0 @I123@ INDI
+1 NAME Szulim Bejer /Łazęga/
+2 GIVN Szulim Bejer
+2 SURN Łazęga
+1 SEX M
+1 BIRT
+2 DATE 13 NOV 1898
+2 PLAC Chmielnik, Poland
+1 FAMC @F44@
+1 NOTE Birth act 252/1898 (1/13 Nov OS/NS).
+0 @I124@ INDI
+1 NAME Jakub /Łazęga/
+2 GIVN Jakub
+2 SURN Łazęga
+1 SEX M
+1 BIRT
+2 DATE ABT 1863
+1 OCCU Trader / melamed
+1 FAMS @F45@
+1 NOTE Indexed maternal surname Zylberberg. STATUS: SEPARATE Chmielnik–NK cluster.
+0 @I125@ INDI
+1 NAME Curtla /Roter/
+2 GIVN Curtla
+2 SURN Roter
+1 SEX F
+1 BIRT
+2 DATE ABT 1865
+1 FAMS @F45@
+1 NOTE Indexed maternal surname Dzura.
+0 @I126@ INDI
+1 NAME Szajndla /Łazęga/
+2 GIVN Szajndla
+2 SURN Łazęga
+1 SEX F
+1 BIRT
+2 DATE ABT 1900
+1 FAMC @F45@
+1 NOTE Child of Jakub + Curtla Roter per consolidated map.
+0 @I127@ INDI
+1 NAME Kalman or Kalma /Łazęga/
+2 GIVN Kalman or Kalma
+2 SURN Łazęga
+1 SEX M
+1 BIRT
+2 DATE 5 AUG 1901
+2 PLAC Nowy Korczyn, Poland
+1 FAMC @F45@
+1 NOTE Birth act 72/1901 (23 Jul/5 Aug OS/NS).
+0 @I128@ INDI
+1 NAME Jakub /Łazęga/
+2 GIVN Jakub
+2 SURN Łazęga
+1 SEX M
+1 BIRT
+2 DATE ABT 1863
+1 OCCU Religious teacher (melamed)
+1 FAMS @F46@
+1 NOTE Husband of Curtla Hamer/Hammer — NOT merged with Jakub+Roter.
+1 NOTE STATUS: SEPARATE namesake household.
+0 @I129@ INDI
+1 NAME Curtla /Hamer/
+2 GIVN Curtla
+2 SURN Hamer
+1 NAME Curtla /Hammer/
+2 TYPE also known as
+1 SEX F
+1 BIRT
+2 DATE ABT 1865
+1 FAMS @F46@
+0 @I130@ INDI
+1 NAME Izrajel /Łazęga/
+2 GIVN Izrajel
+2 SURN Łazęga
+1 SEX M
+1 BIRT
+2 DATE ABT 1905
+1 FAMC @F46@
+1 NOTE Son of Jakub + Curtla Hamer/Hammer.
+0 @I131@ INDI
+1 NAME Alter /Łazęga/
+2 GIVN Alter
+2 SURN Łazęga
+1 SEX M
+1 BIRT
+2 DATE ABT 1865
+1 OCCU Shoemaker
+1 FAMS @F47@
+1 NOTE Older Alter; spouse Cylka Mirla Luft. STATUS: SEPARATE.
+0 @I132@ INDI
+1 NAME Cylka Mirla /Luft/
+2 GIVN Cylka Mirla
+2 SURN Luft
+1 SEX F
+1 FAMS @F47@
+0 @I133@ INDI
+1 NAME Szmul Herszel or Herszla /Łazęga/
+2 GIVN Szmul Herszel or Herszla
+2 SURN Łazęga
+1 SEX M
+1 BIRT
+2 DATE ABT 1885
+1 FAMC @F47@
+1 FAMS @F48@
+0 @I134@ INDI
+1 NAME Laja /Świczarczyk/
+2 GIVN Laja
+2 SURN Świczarczyk
+1 SEX F
+1 BIRT
+2 DATE ABT 1885
+2 PLAC Chmielnik, Poland
+1 FAMS @F48@
+1 NOTE Married Szmul Herszel; parents named in act (father given name not certain in report).
+0 @I135@ INDI
+1 NAME Szlama Dawid /Łazęga/
+2 GIVN Szlama Dawid
+2 SURN Łazęga
+1 SEX M
+1 BIRT
+2 DATE ABT 1911
+1 FAMC @F48@
+0 @I136@ INDI
+1 NAME Chaja Bajla /Łazęga/
+2 GIVN Chaja Bajla
+2 SURN Łazęga
+1 SEX F
+1 FAMS @F49@
+1 NOTE Mother of younger Alter; father unknown in report.
+1 NOTE STATUS: SEPARATE — not older Alter/Luft.
+0 @I137@ INDI
+1 NAME Alter /Łazęga/
+2 GIVN Alter
+2 SURN Łazęga
+1 SEX M
+1 BIRT
+2 DATE ABT 1868
+1 OCCU Carter/driver
+1 FAMC @F49@
+1 FAMS @F50@
+1 NOTE Younger Alter; bachelor until marriage to Sora Estera Wilczyk.
+1 NOTE Different chronology from older Alter+Luft.
+0 @I138@ INDI
+1 NAME Sora Estera /Wilczyk/
+2 GIVN Sora Estera
+2 SURN Wilczyk
+1 SEX F
+1 BIRT
+2 DATE ABT 1868
+1 FAMS @F50@
+0 @I139@ INDI
+1 NAME Chaim /Łazęga/
+2 GIVN Chaim
+2 SURN Łazęga
+1 SEX M
+1 BIRT
+2 DATE ABT 1899
+1 FAMC @F50@
+0 @I140@ INDI
+1 NAME Gołda /Łazęga/
+2 GIVN Gołda
+2 SURN Łazęga
+1 SEX F
+1 BIRT
+2 DATE ABT 1905
+1 FAMC @F50@
+0 @I141@ INDI
+1 NAME Abram /Łazęga/
+2 GIVN Abram
+2 SURN Łazęga
+1 SEX M
+1 BIRT
+2 DATE ABT 1905
+1 FAMC @F50@
+0 @I142@ INDI
+1 NAME Abram /Łazęga/
+2 GIVN Abram
+2 SURN Łazęga
+1 SEX M
+1 FAMS @F51@
+1 NOTE Husband of Esta Stark; father of Chaja Basza. STATUS: UNLINKED household.
+0 @I143@ INDI
+1 NAME Esta /Stark/
+2 GIVN Esta
+2 SURN Stark
+1 SEX F
+1 FAMS @F51@
+0 @I144@ INDI
+1 NAME Chaja Basza or Basia /Łazęga/
+2 GIVN Chaja Basza or Basia
+2 SURN Łazęga
+1 SEX F
+1 BIRT
+2 DATE ABT 1823
+1 DEAT
+2 DATE 28 APR 1896
+2 PLAC Nowy Korczyn, Poland
+1 FAMC @F51@
+1 NOTE Death act 10/1896 age 73.
+0 @I145@ INDI
+1 NAME Chaja /Łazęga/
+2 GIVN Chaja
+2 SURN Łazęga
+1 SEX F
+1 BIRT
+2 DATE ABT 1876
+1 FAMS @F52@
+1 NOTE Mother of Rywka Likszenberg 1896; parents not named in birth act. STATUS: UNLINKED.
+0 @I146@ INDI
+1 NAME Pinchas or Pinkas /Likszenberg/
+2 GIVN Pinchas or Pinkas
+2 SURN Likszenberg
+1 SEX M
+1 BIRT
+2 DATE ABT 1871
+1 OCCU Merchant/trader
+1 FAMS @F52@
+0 @I147@ INDI
+1 NAME Rywka /Likszenberg/
+2 GIVN Rywka
+2 SURN Likszenberg
+1 SEX F
+1 BIRT
+2 DATE 31 AUG 1896
+2 PLAC Nowy Korczyn, Poland
+1 FAMC @F52@
+1 NOTE Birth act 105/1896 (19/31 Aug OS/NS).
+0 @I148@ INDI
+1 NAME Mortka /Łazęga/
+2 GIVN Mortka
+2 SURN Łazęga
+1 SEX M
+1 FAMS @F53@
+1 NOTE Father of Majzel? Lazenga; different mother (Laja Propinator) from Małka's Mortka/Rochla.
+1 NOTE STATUS: SEPARATE — identity with other Mortkas unproven.
+0 @I149@ INDI
+1 NAME Laja /Propinator/
+2 GIVN Laja
+2 SURN Propinator
+1 SEX F
+1 FAMS @F53@
+0 @I150@ INDI
+1 NAME Majzel? /Lazenga/
+2 GIVN Majzel?
+2 SURN Lazenga
+1 SEX M
+1 BIRT
+2 DATE ABT 1851
+1 FAMC @F53@
+1 FAMS @F55@
+1 NOTE Włoszczowa marriage no. 2/1875 age 24; question mark in source.
+1 NOTE JRI Kielce-Radom SIG Journal vol.7 no.1 2003.
+0 @I151@ INDI
+1 NAME Naftula /Krasowska/
+2 GIVN Naftula
+2 SURN Krasowska
+1 SEX M
+1 FAMS @F54@
+1 NOTE Report: daughter Matla Hawa's parents Naftula and Tauba Krasowska — surname assignment follow source cautiously.
+0 @I152@ INDI
+1 NAME Tauba /Krasowska/
+2 GIVN Tauba
+2 SURN Krasowska
+1 SEX F
+1 FAMS @F54@
+0 @I153@ INDI
+1 NAME Matla Hawa /Wajntrob/
+2 GIVN Matla Hawa
+2 SURN Wajntrob
+1 SEX F
+1 BIRT
+2 DATE ABT 1855
+1 FAMC @F54@
+1 FAMS @F55@
+0 @I154@ INDI
+1 NAME Herszli /Łazęga/
+2 GIVN Herszli
+2 SURN Łazęga
+1 SEX M
+1 FAMS @F56@
+1 NOTE Father of Sura 1819 New Miasto. STATUS: NEW INDEX LEAD.
+0 @I155@ INDI
+1 NAME Laja /Zelmanowicz/
+2 GIVN Laja
+2 SURN Zelmanowicz
+1 SEX F
+1 FAMS @F56@
+0 @I156@ INDI
+1 NAME Sura /Łazęga/
+2 GIVN Sura
+2 SURN Łazęga
+1 NAME Lazegowna
+2 TYPE also known as
+1 SEX F
+1 BIRT
+2 DATE 12 DEC 1819
+2 PLAC Nowy Korczyn / New Miasto, Poland
+1 FAMC @F56@
+1 NOTE Geneteka birth index act 82/1819.
+0 @I157@ INDI
+1 NAME Cetla /Łazęga/
+2 GIVN Cetla
+2 SURN Łazęga
+1 SEX F
+1 FAMS @F57@
+1 NOTE Mother of Toba Fiuk 1824; parents unknown. STATUS: INDEX LEAD.
+0 @I158@ INDI
+1 NAME Herszli /Fiuk/
+2 GIVN Herszli
+2 SURN Fiuk
+1 SEX M
+1 FAMS @F57@
+1 NOTE Father of Toba Fiuk; not proven same as Herszli Łazęga of Sura.
+0 @I159@ INDI
+1 NAME Toba /Fiuk/
+2 GIVN Toba
+2 SURN Fiuk
+1 SEX F
+1 BIRT
+2 DATE 20 JAN 1824
+2 PLAC Nowy Korczyn / New Miasto, Poland
+1 FAMC @F57@
+1 NOTE Geneteka act 19/1824; mother Cetla Łazęga.
+0 @I160@ INDI
+1 NAME Wolf /Berkowicz/
+2 GIVN Wolf
+2 SURN Berkowicz
+1 SEX M
+1 FAMS @F58@
+1 NOTE Father of Mortka Berkowicz 1814; surname is Berkowicz not Łazęga.
+1 NOTE STATUS: REJECTED as Wolf Łazęga identity.
+0 @I161@ INDI
+1 NAME Rochla /Łazęga/
+2 GIVN Rochla
+2 SURN Łazęga
+1 SEX F
+1 FAMS @F58@
+1 NOTE Mother of Mortka Berkowicz 1814 New Miasto act 55.
+1 NOTE Does not establish Wolf's surname as Łazęga.
+0 @I162@ INDI
+1 NAME Mortka /Berkowicz/
+2 GIVN Mortka
+2 SURN Berkowicz
+1 SEX M
+1 BIRT
+2 DATE 9 JUL 1814
+2 PLAC Nowy Korczyn / New Miasto, Poland
+1 FAMC @F58@
+1 NOTE Geneteka act 55/1814.
+0 @I163@ INDI
+1 NAME Józef /Łazęga/
+2 GIVN Józef
+2 SURN Łazęga
+1 SEX M
+1 OCCU Baker (Chmielnik)
+1 FAMS @F59@
+1 NOTE Chmielnik bakery household; probable match to 1929 'Łazęga J.' baker.
+1 NOTE Memorial list LAZENGA Yosef etc. STATUS: UNLINKED secondary source.
+0 @I164@ INDI
+1 NAME Chawa /Łazęga/
+2 GIVN Chawa
+2 SURN Łazęga
+1 SEX F
+1 FAMS @F59@
+1 NOTE Wife in Chmielnik commemorative household with Józef.
+0 @I165@ INDI
+1 NAME Tova or Gitl /Łazęga/
+2 GIVN Tova or Gitl
+2 SURN Łazęga
+1 SEX F
+1 FAMC @F59@
+1 NOTE Commemorative/secondary Chmielnik household child.
+0 @I166@ INDI
+1 NAME Kalman /Łazęga/
+2 GIVN Kalman
+2 SURN Łazęga
+1 SEX M
+1 FAMC @F59@
+1 NOTE Commemorative list; identity with 1901 Kalman unproven.
+0 @I167@ INDI
+1 NAME Zvi or Hershl /Łazęga/
+2 GIVN Zvi or Hershl
+2 SURN Łazęga
+1 SEX M
+1 FAMC @F59@
+0 @I168@ INDI
+1 NAME Estera or Esther /Łazęga/
+2 GIVN Estera or Esther
+2 SURN Łazęga
+1 SEX F
+1 FAMC @F59@
+0 @I169@ INDI
+1 NAME Moshe /Łazęga/
+2 GIVN Moshe
+2 SURN Łazęga
+1 SEX M
+1 FAMC @F59@
+0 @I170@ INDI
+1 NAME Bella /Łazęga/
+2 GIVN Bella
+2 SURN Łazęga
+1 SEX F
+1 FAMC @F59@
+0 @I171@ INDI
+1 NAME Wiktor /Lazega/
+2 GIVN Wiktor
+2 SURN Lazega
+1 SEX M
+1 BIRT
+2 DATE 1895
+2 PLAC Kraków, Poland
+1 NOTE Kraków survivor-list; UNLINKED.
+0 @I172@ INDI
+1 NAME Józef /Lazega/
+2 GIVN Józef
+2 SURN Lazega
+1 SEX M
+1 BIRT
+2 DATE 1915
+2 PLAC Kraków, Poland
+1 NOTE 1915 survivor-list entry — NOT Józef Mendel born 1887. UNLINKED.
+0 @I173@ INDI
+1 NAME Jakob /Lazęga/
+2 GIVN Jakob
+2 SURN Lazęga
+1 SEX M
+1 NOTE KL Płaszów database; ŻIH card. UNLINKED.
+0 @I174@ INDI
+1 NAME Sala /Łazęga/
+2 GIVN Sala
+2 SURN Łazęga
+1 NAME Sala /Wolkowitz/
+2 TYPE also known as
+1 SEX F
+1 BIRT
+2 DATE 15 APR 1922
+2 PLAC Chmielnik, Poland
+1 NOTE Bergen-Belsen list exact date. UNLINKED surname occurrence.
+0 @I175@ INDI
+1 NAME Idzia or Judyta or Idesa /Łazęga/
+2 GIVN Idzia or Judyta or Idesa
+2 SURN Łazęga
+1 SEX F
+1 BIRT
+2 DATE 18 JUN 1924
+2 PLAC Będzin, Poland
+1 NOTE Very probable match to 1939 Będzin census Idesa; parents not stated. UNLINKED.
+0 @I176@ INDI
+1 NAME Szlama /Łazęga/
+2 GIVN Szlama
+2 SURN Łazęga
+1 SEX M
+1 NOTE 1945 survivor registry with Nowy Korczyn; relationships not proved. UNLINKED.
+0 @I177@ INDI
+1 NAME Fela /Łazęga/
+2 GIVN Fela
+2 SURN Łazęga
+1 SEX F
+1 NOTE Survivor registry Langenbielau. UNLINKED.
+0 @I178@ INDI
+1 NAME Pola /Łazęga/
+2 GIVN Pola
+2 SURN Łazęga
+1 SEX F
+1 NOTE Survivor registry Langenbielau. UNLINKED.
+0 @I179@ INDI
+1 NAME Hella /Diamant/
+2 GIVN Hella
+2 SURN Diamant
+1 SEX F
+1 NOTE Survivor-list contact evidence; not treated as family relationship. UNLINKED contact.
+0 @I180@ INDI
+1 NAME Moschek //
+2 GIVN Moschek
+1 SEX M
+1 NOTE Survivor-list contact; no proved parentage. UNLINKED.
+0 @I181@ INDI
+1 NAME Majer /Łazęga/
+2 GIVN Majer
+2 SURN Łazęga
+1 SEX M
+1 NOTE Szczekociny surname occurrence; no proved parentage. UNLINKED.
+0 @I182@ INDI
+1 NAME Sara /Łazęga/
+2 GIVN Sara
+2 SURN Łazęga
+1 SEX F
+1 NOTE Wartime/survivor surname case. UNLINKED.
+0 @I183@ INDI
+1 NAME Ida /Łazęga/
+2 GIVN Ida
+2 SURN Łazęga
+1 SEX F
+1 NOTE Wartime/survivor surname case. UNLINKED.
+0 @I184@ INDI
+1 NAME Sura or Sally /Łazęga/
+2 GIVN Sura or Sally
+2 SURN Łazęga
+1 SEX F
+1 NOTE Wartime/survivor surname case. UNLINKED.
+0 @F1@ FAM
+1 HUSB @I1@
+1 CHIL @I3@
+1 NOTE Patronymic-only link: Wulf Abramowicz.
+0 @F2@ FAM
+1 HUSB @I2@
+1 CHIL @I4@
+1 NOTE Patronymic-only link: Mirla z Ojzerów.
+0 @F3@ FAM
+1 HUSB @I7@
+1 WIFE @I8@
+1 CHIL @I6@
+0 @F4@ FAM
+1 HUSB @I11@
+1 WIFE @I12@
+1 CHIL @I10@
+0 @F5@ FAM
+1 HUSB @I23@
+1 CHIL @I22@
+0 @F6@ FAM
+1 HUSB @I21@
+1 WIFE @I22@
+1 CHIL @I24@
+0 @F7@ FAM
+1 HUSB @I26@
+1 WIFE @I27@
+1 CHIL @I28@
+0 @F8@ FAM
+1 HUSB @I3@
+1 WIFE @I4@
+1 CHIL @I5@
+1 CHIL @I20@
+1 CHIL @I9@
+1 NOTE 1852 death: five children not named. Gitla, Beniamin, Cypa linked by parent-pair records.
+1 NOTE STATUS: ROOT parental couple.
+0 @F9@ FAM
+1 HUSB @I6@
+1 WIFE @I5@
+1 MARR
+2 DATE 12 JUN 1829
+2 PLAC Wiślica, Poland
+1 NOTE Wiślica marriage act 4/1829.
+0 @F10@ FAM
+1 HUSB @I10@
+1 WIFE @I9@
+1 CHIL @I13@
+1 CHIL @I14@
+1 CHIL @I15@
+1 CHIL @I16@
+1 CHIL @I17@
+1 CHIL @I18@
+1 CHIL @I19@
+1 NOTE Cypa/Szmul Luft household; children from 1834 birth and 1855 death.
+0 @F11@ FAM
+1 HUSB @I20@
+1 WIFE @I24@
+1 CHIL @I25@
+1 MARR
+2 DATE 13 JUN 1839
+2 PLAC Nowy Korczyn, Poland
+1 NOTE Marriage act 8/1839 (1/13 Jun OS/NS). Rywka deceased before Feb 1852.
+0 @F12@ FAM
+1 HUSB @I20@
+1 WIFE @I28@
+1 CHIL @I29@
+1 CHIL @I30@
+1 CHIL @I31@
+1 NOTE STATUS: ROOT founding couple of documentary core.
+1 NOTE Additional children may exist; only those proved by acts are listed.
+0 @F13@ FAM
+1 HUSB @I32@
+1 WIFE @I33@
+1 CHIL @I34@
+0 @F14@ FAM
+1 HUSB @I34@
+1 WIFE @I30@
+1 MARR
+2 DATE 9 MAR 1887
+2 PLAC Nowy Korczyn, Poland
+1 NOTE Marriage act 8/1887 (25 Feb OS / 9 Mar NS).
+0 @F15@ FAM
+1 HUSB @I35@
+1 WIFE @I36@
+1 CHIL @I37@
+1 CHIL @I38@
+1 CHIL @I39@
+0 @F16@ FAM
+1 HUSB @I40@
+1 WIFE @I41@
+1 CHIL @I42@
+0 @F17@ FAM
+1 HUSB @I42@
+1 WIFE @I39@
+1 MARR
+2 DATE 3 NOV 1892
+2 PLAC Nowy Korczyn, Poland
+1 NOTE Marriage act 22/1892 (22 Oct OS / 3 Nov NS).
+0 @F18@ FAM
+1 HUSB @I31@
+1 WIFE @I38@
+1 CHIL @I43@
+1 CHIL @I44@
+1 CHIL @I45@
+1 CHIL @I46@
+1 MARR
+2 DATE 17 DEC 1879
+2 PLAC Nowy Korczyn, Poland
+1 NOTE Marriage act 44/1879 (5/17 Dec OS/NS).
+1 NOTE Blima 1896 is a lead only (dashed in tree).
+0 @F19@ FAM
+1 HUSB @I47@
+1 WIFE @I48@
+1 CHIL @I49@
+0 @F20@ FAM
+1 HUSB @I49@
+1 WIFE @I50@
+1 CHIL @I51@
+1 CHIL @I52@
+1 CHIL @I53@
+1 CHIL @I54@
+1 CHIL @I55@
+1 NOTE Confirmed siblings of Hersch from Klasno birth register.
+0 @F21@ FAM
+1 HUSB @I56@
+1 WIFE @I57@
+1 CHIL @I58@
+0 @F22@ FAM
+1 HUSB @I51@
+1 WIFE @I58@
+1 CHIL @I59@
+1 MARR
+2 DATE 11 SEP 1887
+2 PLAC Wieliczka / Klasno area
+1 NOTE Hersch + Ryfka parents of Rachela.
+0 @F23@ FAM
+1 HUSB @I44@
+1 WIFE @I59@
+1 CHIL @I60@
+1 CHIL @I61@
+1 CHIL @I62@
+1 CHIL @I63@
+1 NOTE STATUS: ROOT Kraków household.
+0 @F24@ FAM
+1 HUSB @I64@
+1 WIFE @I60@
+1 CHIL @I65@
+0 @F25@ FAM
+1 HUSB @I67@
+1 WIFE @I68@
+1 CHIL @I69@
+1 NOTE STATUS: SEPARATE older generation of Herszla branch.
+0 @F26@ FAM
+1 HUSB @I69@
+1 WIFE @I70@
+1 CHIL @I71@
+1 CHIL @I72@
+1 CHIL @I73@
+1 CHIL @I74@
+1 CHIL @I75@
+1 CHIL @I76@
+1 CHIL @I77@
+1 NOTE Two additional sons mentioned in 1850 act not safely resolved.
+0 @F27@ FAM
+1 HUSB @I78@
+1 WIFE @I79@
+1 CHIL @I80@
+0 @F28@ FAM
+1 HUSB @I71@
+1 WIFE @I80@
+1 CHIL @I81@
+1 MARR
+2 DATE 27 SEP 1826
+2 PLAC Nowy Korczyn, Poland
+1 NOTE Marriage act 6/1826.
+0 @F29@ FAM
+1 HUSB @I82@
+1 WIFE @I83@
+1 CHIL @I84@
+0 @F30@ FAM
+1 HUSB @I84@
+1 WIFE @I77@
+1 MARR
+2 DATE 22 JUL 1834
+2 PLAC Nowy Korczyn, Poland
+1 NOTE Marriage act 6/1834.
+0 @F31@ FAM
+1 HUSB @I85@
+1 WIFE @I86@
+1 CHIL @I91@
+1 CHIL @I87@
+1 CHIL @I88@
+1 CHIL @I89@
+1 CHIL @I92@
+1 CHIL @I90@
+1 NOTE Original-verified: Icyk, Małka, Frymet, Abram. Index leads: Lewek, Chaja.
+0 @F32@ FAM
+1 HUSB @I93@
+1 WIFE @I94@
+1 CHIL @I95@
+0 @F33@ FAM
+1 HUSB @I87@
+1 WIFE @I95@
+1 CHIL @I96@
+1 CHIL @I97@
+1 CHIL @I98@
+1 MARR
+2 DATE 20 DEC 1859
+2 PLAC Działoszyce, Poland
+1 NOTE Marriage act 36/1859.
+0 @F34@ FAM
+1 HUSB @I99@
+1 WIFE @I100@
+1 CHIL @I101@
+0 @F35@ FAM
+1 HUSB @I101@
+1 WIFE @I88@
+1 MARR
+2 DATE 19 AUG 1862
+2 PLAC Działoszyce, Poland
+1 NOTE Marriage act 28/1862.
+0 @F36@ FAM
+1 HUSB @I102@
+1 WIFE @I103@
+1 CHIL @I104@
+0 @F37@ FAM
+1 HUSB @I104@
+1 WIFE @I89@
+1 MARR
+2 DATE 27 JAN 1866
+2 PLAC Działoszyce, Poland
+1 NOTE Marriage act 5/1866.
+0 @F38@ FAM
+1 HUSB @I105@
+1 WIFE @I106@
+1 CHIL @I107@
+0 @F39@ FAM
+1 HUSB @I108@
+1 WIFE @I109@
+1 CHIL @I110@
+0 @F40@ FAM
+1 HUSB @I107@
+1 WIFE @I110@
+1 CHIL @I111@
+1 CHIL @I112@
+1 MARR
+2 DATE 21 AUG 1895
+2 PLAC Nowy Korczyn, Poland
+1 NOTE Marriage act 13/1895 (9/21 Aug OS/NS). Unlinked to Beniamin.
+0 @F41@ FAM
+1 HUSB @I113@
+1 WIFE @I114@
+1 CHIL @I115@
+0 @F42@ FAM
+1 HUSB @I116@
+1 WIFE @I117@
+1 CHIL @I118@
+0 @F43@ FAM
+1 HUSB @I119@
+1 WIFE @I120@
+1 CHIL @I121@
+0 @F44@ FAM
+1 HUSB @I118@
+1 WIFE @I121@
+1 CHIL @I122@
+1 CHIL @I123@
+1 MARR
+2 DATE 14 AUG 1892
+2 PLAC Chmielnik, Poland
+1 NOTE Marriage act 30/1892 (2/14 Aug OS/NS).
+0 @F45@ FAM
+1 HUSB @I124@
+1 WIFE @I125@
+1 CHIL @I126@
+1 CHIL @I127@
+1 MARR
+2 DATE 28 FEB 1887
+2 PLAC Chmielnik, Poland
+1 NOTE Marriage act 14/1887 (16/28 Feb OS/NS).
+0 @F46@ FAM
+1 HUSB @I128@
+1 WIFE @I129@
+1 CHIL @I130@
+1 NOTE Mothers' surnames prevent merger with Roter household.
+0 @F47@ FAM
+1 HUSB @I131@
+1 WIFE @I132@
+1 CHIL @I133@
+0 @F48@ FAM
+1 HUSB @I133@
+1 WIFE @I134@
+1 CHIL @I135@
+1 NOTE Marriage ~1909 per report chronology.
+0 @F49@ FAM
+1 WIFE @I136@
+1 CHIL @I137@
+1 NOTE Father of Alter unknown.
+0 @F50@ FAM
+1 HUSB @I137@
+1 WIFE @I138@
+1 CHIL @I139@
+1 CHIL @I140@
+1 CHIL @I141@
+1 MARR
+2 DATE ABT 1898
+2 PLAC Nowy Korczyn, Poland
+1 NOTE Married 1898/1899; twins Gołda and Abram 1905.
+0 @F51@ FAM
+1 HUSB @I142@
+1 WIFE @I143@
+1 CHIL @I144@
+0 @F52@ FAM
+1 HUSB @I146@
+1 WIFE @I145@
+1 CHIL @I147@
+0 @F53@ FAM
+1 HUSB @I148@
+1 WIFE @I149@
+1 CHIL @I150@
+0 @F54@ FAM
+1 HUSB @I151@
+1 WIFE @I152@
+1 CHIL @I153@
+1 NOTE Parents of Matla Hawa per indexed marriage.
+0 @F55@ FAM
+1 HUSB @I150@
+1 WIFE @I153@
+1 MARR
+2 DATE 1875
+2 PLAC Włoszczowa, Poland
+1 NOTE Marriage no. 2/1875.
+0 @F56@ FAM
+1 HUSB @I154@
+1 WIFE @I155@
+1 CHIL @I156@
+0 @F57@ FAM
+1 HUSB @I158@
+1 WIFE @I157@
+1 CHIL @I159@
+0 @F58@ FAM
+1 HUSB @I160@
+1 WIFE @I161@
+1 CHIL @I162@
+1 NOTE Rejected as Wolf Łazęga identity on present evidence.
+0 @F59@ FAM
+1 HUSB @I163@
+1 WIFE @I164@
+1 CHIL @I165@
+1 CHIL @I166@
+1 CHIL @I167@
+1 CHIL @I168@
+1 CHIL @I169@
+1 CHIL @I170@
+1 NOTE Modern secondary commemorative source p.237; relationships approximate.
+0 TRLR

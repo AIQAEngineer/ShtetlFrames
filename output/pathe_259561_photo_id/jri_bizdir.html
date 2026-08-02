@@ -1,0 +1,1129 @@
+<!DOCTYPE html>
+<html class="no-js" lang="en-US">
+
+<head>
+	<meta http-equiv="Content-Type" content="text/html; charset=UTF-8">
+
+	<meta name="viewport" content="initial-scale=1.0, user-scalable=no" />
+	<meta name="viewport" content="user-scalable=no, width=device-width, height=device-height, initial-scale=1, maximum-scale=1, minimum-scale=1, minimal-ui" />
+
+	<meta name="theme-color" content="#815858" />
+	<meta name="msapplication-navbutton-color" content="#815858" />
+	<meta name="apple-mobile-web-app-status-bar-style" content="#815858" />
+
+	<!-- Favicons
+	================================================== -->
+	<link rel="shortcut icon" href="https://jri-poland.org/wp-content/themes/jri-publicsite/img/favicon.ico">
+	<link rel="apple-touch-icon" href="https://jri-poland.org/wp-content/themes/jri-publicsite/img/apple-touch-icon.png">
+	<link rel="apple-touch-icon" sizes="72x72" href="https://jri-poland.org/wp-content/themes/jri-publicsite/img/apple-touch-icon-72x72.png">
+	<link rel="apple-touch-icon" sizes="114x114" href="https://jri-poland.org/wp-content/themes/jri-publicsite/img/apple-touch-icon-114x114.png">
+
+	<script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
+	<!-- Hotjar Tracking Code for http://beta.jri-poland.org -->
+	<script type="text/plain" data-cli-class="cli-blocker-script" data-cli-label="Hotjar"  data-cli-script-type="necessary" data-cli-block="true" data-cli-block-if-ccpa-optout="false" data-cli-element-position="head">
+		(function(h,o,t,j,a,r){
+			h.hj=h.hj||function(){(h.hj.q=h.hj.q||[]).push(arguments)};
+			h._hjSettings={hjid:1768668,hjsv:6};
+			a=o.getElementsByTagName('head')[0];
+			r=o.createElement('script');r.async=1;
+			r.src=t+h._hjSettings.hjid+j+h._hjSettings.hjsv;
+			a.appendChild(r);
+		})(window,document,'https://static.hotjar.com/c/hotjar-','.js?sv=');
+	</script>
+
+	<!-- Google Tag Manager -->
+	<script type="text/plain" data-cli-class="cli-blocker-script" data-cli-label="Google Tag Manager"  data-cli-script-type="necessary" data-cli-block="true" data-cli-block-if-ccpa-optout="false" data-cli-element-position="head">(function(w,d,s,l,i){w[l]=w[l]||[];w[l].push({'gtm.start':
+                new Date().getTime(),event:'gtm.js'});var f=d.getElementsByTagName(s)[0],
+            j=d.createElement(s),dl=l!='dataLayer'?'&l='+l:'';j.async=true;j.src=
+            'https://www.googletagmanager.com/gtm.js?id='+i+dl;f.parentNode.insertBefore(j,f);
+        })(window,document,'script','dataLayer','GTM-PBLXMC2');</script>
+	<!-- End Google Tag Manager -->
+
+	<!-- Load other scripts
+	================================================== -->
+	<script type="text/javascript">
+		var _html = document.documentElement,
+			isTouch = (('ontouchstart' in _html) || (navigator.msMaxTouchPoints > 0) || (navigator.maxTouchPoints));
+
+		_html.className = _html.className.replace("no-js","js");
+		_html.classList.add( isTouch ? "touch" : "no-touch");
+	</script>
+
+	<script>
+	document.addEventListener('DOMContentLoaded', function() {
+		document.body.addEventListener('click', function(e) {
+			// Find the closest anchor element (in case of nested elements)
+			const link = e.target.closest('a');
+			if (
+				link &&
+				link.hostname &&
+				link.hostname !== window.location.hostname &&
+				!link.hostname.includes('jri-poland.org') &&
+				!link.href.startsWith('javascript:')
+			) {
+				e.preventDefault();
+				var href = link.href;
+
+				var nBtnExternalLink = document.querySelector('.btn-external-link');
+				if (nBtnExternalLink) {
+					console.log(href + "test");
+					nBtnExternalLink.dataset.href = href;	
+				}
+
+				// update icon and title on external link modal
+				
+				var nModalBody = document.getElementById('modal-external-link');
+				var nTitle = nModalBody.querySelector('.destination-name');
+				var nLogoIcon = nModalBody.querySelector('.destination-logo');
+				var imgUrl = link.dataset.imgUrl;
+				var title = link.dataset.title;
+
+				if (title) {
+					nTitle.innerText = title;
+				} else {
+					nTitle.innerText = "External Link";
+				}
+
+				if (imgUrl) {
+					nLogoIcon.src = g_template_directory_uri + "/" + imgUrl;
+					nLogoIcon.hidden = false;
+				} else {
+					nLogoIcon.hidden = true;
+				}
+				
+				// close fancybox
+				$.fancybox.getInstance() && $.fancybox.getInstance().close();
+				
+				$.fancybox.open({
+					src  : document.getElementById('modal-external-link'),
+					type : 'inline',
+					opts : {
+						autoFocus: false,
+						loop : false,
+						protect: true,
+						wheel : false,
+						touch: false,
+						smallBtn: false,
+						toolbar: false,
+						transitionEffect : "tube"		
+					}
+				});
+			}
+    	});
+
+		document.body.addEventListener("click", function(e) {
+			const btn = e.target.closest(".btn-external-link");
+			if (btn) {
+				e.stopPropagation();
+				e.preventDefault();
+				
+				console.log(btn.dataset.href);
+				if (btn.dataset.href) {
+					window.open(btn.dataset.href, '_blank');
+				}
+
+				// close fancybox
+				const fancyboxInstance = typeof $.fancybox !== 'undefined' && $.fancybox.getInstance();
+				if (fancyboxInstance) {
+					fancyboxInstance.close();
+				}
+			}
+		});
+	});
+	</script>
+	<title>The 1929 Polish Business Directory Project &#8211; JRI-Poland</title>
+<meta name='robots' content='max-image-preview:large' />
+
+<!-- Open Graph Meta Tags generated by Blog2Social 873 - https://www.blog2social.com -->
+<meta property="og:title" content="The 1929 Polish Business Directory Project"/>
+<meta property="og:description" content="Jewish Records Indexing - Poland in cooperation with JewishGen
+
+
+
+Intro | About | Occupations | Evolution | Search the Directory
+
+
+
+
+
+
+
+A valuable source of 20t"/>
+<meta property="og:url" content="/blog/the-1929-polish-business-directory-project/"/>
+<meta property="og:image" content="https://www.jri-poland.org/wp-content/uploads/2001/12/1929-Polish-Business-Directory-Project.png"/>
+<meta property="og:image:width" content="540" />
+<meta property="og:image:height" content="540" />
+<meta property="og:image:type" content="image/png" />
+<meta property="og:type" content="article"/>
+<meta property="og:article:published_time" content="2001-12-31 19:07:26"/>
+<meta property="og:article:modified_time" content="2022-05-18 19:35:24"/>
+<!-- Open Graph Meta Tags generated by Blog2Social 873 - https://www.blog2social.com -->
+
+<!-- Twitter Card generated by Blog2Social 873 - https://www.blog2social.com -->
+<meta name="twitter:card" content="summary">
+<meta name="twitter:title" content="The 1929 Polish Business Directory Project"/>
+<meta name="twitter:description" content="Jewish Records Indexing - Poland in cooperation with JewishGen
+
+
+
+Intro | About | Occupations | Evolution | Search the Directory
+
+
+
+
+
+
+
+A valuable source of 20t"/>
+<meta name="twitter:image" content="https://www.jri-poland.org/wp-content/uploads/2001/12/1929-Polish-Business-Directory-Project.png"/>
+<!-- Twitter Card generated by Blog2Social 873 - https://www.blog2social.com -->
+<meta name="author" content="amonago"/>
+<link rel='dns-prefetch' href='//ajax.googleapis.com' />
+<link rel='dns-prefetch' href='//unpkg.com' />
+<link rel='dns-prefetch' href='//cdn.jsdelivr.net' />
+<link rel='dns-prefetch' href='//fonts.googleapis.com' />
+<link rel="alternate" title="oEmbed (JSON)" type="application/json+oembed" href="https://jri-poland.org/wp-json/oembed/1.0/embed?url=https%3A%2F%2Fjri-poland.org%2Fblog%2Fthe-1929-polish-business-directory-project%2F" />
+<link rel="alternate" title="oEmbed (XML)" type="text/xml+oembed" href="https://jri-poland.org/wp-json/oembed/1.0/embed?url=https%3A%2F%2Fjri-poland.org%2Fblog%2Fthe-1929-polish-business-directory-project%2F&#038;format=xml" />
+<style id='wp-img-auto-sizes-contain-inline-css' type='text/css'>
+img:is([sizes=auto i],[sizes^="auto," i]){contain-intrinsic-size:3000px 1500px}
+/*# sourceURL=wp-img-auto-sizes-contain-inline-css */
+</style>
+<style id='wp-emoji-styles-inline-css' type='text/css'>
+
+	img.wp-smiley, img.emoji {
+		display: inline !important;
+		border: none !important;
+		box-shadow: none !important;
+		height: 1em !important;
+		width: 1em !important;
+		margin: 0 0.07em !important;
+		vertical-align: -0.1em !important;
+		background: none !important;
+		padding: 0 !important;
+	}
+/*# sourceURL=wp-emoji-styles-inline-css */
+</style>
+<link rel='stylesheet' id='wp-block-library-css' href='https://jri-poland.org/wp-includes/css/dist/block-library/style.min.css?ver=b4ba65b27e428b8edfc51b538352d840' type='text/css' media='all' />
+
+<style id='wp-block-heading-inline-css' type='text/css'>
+h1:where(.wp-block-heading).has-background,h2:where(.wp-block-heading).has-background,h3:where(.wp-block-heading).has-background,h4:where(.wp-block-heading).has-background,h5:where(.wp-block-heading).has-background,h6:where(.wp-block-heading).has-background{padding:1.25em 2.375em}h1.has-text-align-left[style*=writing-mode]:where([style*=vertical-lr]),h1.has-text-align-right[style*=writing-mode]:where([style*=vertical-rl]),h2.has-text-align-left[style*=writing-mode]:where([style*=vertical-lr]),h2.has-text-align-right[style*=writing-mode]:where([style*=vertical-rl]),h3.has-text-align-left[style*=writing-mode]:where([style*=vertical-lr]),h3.has-text-align-right[style*=writing-mode]:where([style*=vertical-rl]),h4.has-text-align-left[style*=writing-mode]:where([style*=vertical-lr]),h4.has-text-align-right[style*=writing-mode]:where([style*=vertical-rl]),h5.has-text-align-left[style*=writing-mode]:where([style*=vertical-lr]),h5.has-text-align-right[style*=writing-mode]:where([style*=vertical-rl]),h6.has-text-align-left[style*=writing-mode]:where([style*=vertical-lr]),h6.has-text-align-right[style*=writing-mode]:where([style*=vertical-rl]){rotate:180deg}
+/*# sourceURL=https://jri-poland.org/wp-includes/blocks/heading/style.min.css */
+</style>
+<style id='wp-block-image-inline-css' type='text/css'>
+.wp-block-image>a,.wp-block-image>figure>a{display:inline-block}.wp-block-image img{box-sizing:border-box;height:auto;max-width:100%;vertical-align:bottom}@media not (prefers-reduced-motion){.wp-block-image img.hide{visibility:hidden}.wp-block-image img.show{animation:show-content-image .4s}}.wp-block-image[style*=border-radius] img,.wp-block-image[style*=border-radius]>a{border-radius:inherit}.wp-block-image.has-custom-border img{box-sizing:border-box}.wp-block-image.aligncenter{text-align:center}.wp-block-image.alignfull>a,.wp-block-image.alignwide>a{width:100%}.wp-block-image.alignfull img,.wp-block-image.alignwide img{height:auto;width:100%}.wp-block-image .aligncenter,.wp-block-image .alignleft,.wp-block-image .alignright,.wp-block-image.aligncenter,.wp-block-image.alignleft,.wp-block-image.alignright{display:table}.wp-block-image .aligncenter>figcaption,.wp-block-image .alignleft>figcaption,.wp-block-image .alignright>figcaption,.wp-block-image.aligncenter>figcaption,.wp-block-image.alignleft>figcaption,.wp-block-image.alignright>figcaption{caption-side:bottom;display:table-caption}.wp-block-image .alignleft{float:left;margin:.5em 1em .5em 0}.wp-block-image .alignright{float:right;margin:.5em 0 .5em 1em}.wp-block-image .aligncenter{margin-left:auto;margin-right:auto}.wp-block-image :where(figcaption){margin-bottom:1em;margin-top:.5em}.wp-block-image.is-style-circle-mask img{border-radius:9999px}@supports ((-webkit-mask-image:none) or (mask-image:none)) or (-webkit-mask-image:none){.wp-block-image.is-style-circle-mask img{border-radius:0;-webkit-mask-image:url('data:image/svg+xml;utf8,<svg viewBox="0 0 100 100" xmlns="http://www.w3.org/2000/svg"><circle cx="50" cy="50" r="50"/></svg>');mask-image:url('data:image/svg+xml;utf8,<svg viewBox="0 0 100 100" xmlns="http://www.w3.org/2000/svg"><circle cx="50" cy="50" r="50"/></svg>');mask-mode:alpha;-webkit-mask-position:center;mask-position:center;-webkit-mask-repeat:no-repeat;mask-repeat:no-repeat;-webkit-mask-size:contain;mask-size:contain}}:root :where(.wp-block-image.is-style-rounded img,.wp-block-image .is-style-rounded img){border-radius:9999px}.wp-block-image figure{margin:0}.wp-lightbox-container{display:flex;flex-direction:column;position:relative}.wp-lightbox-container img{cursor:zoom-in}.wp-lightbox-container img:hover+button{opacity:1}.wp-lightbox-container button{align-items:center;backdrop-filter:blur(16px) saturate(180%);background-color:#5a5a5a40;border:none;border-radius:4px;cursor:zoom-in;display:flex;height:20px;justify-content:center;opacity:0;padding:0;position:absolute;right:16px;text-align:center;top:16px;width:20px;z-index:100}@media not (prefers-reduced-motion){.wp-lightbox-container button{transition:opacity .2s ease}}.wp-lightbox-container button:focus-visible{outline:3px auto #5a5a5a40;outline:3px auto -webkit-focus-ring-color;outline-offset:3px}.wp-lightbox-container button:hover{cursor:pointer;opacity:1}.wp-lightbox-container button:focus{opacity:1}.wp-lightbox-container button:focus,.wp-lightbox-container button:hover,.wp-lightbox-container button:not(:hover):not(:active):not(.has-background){background-color:#5a5a5a40;border:none}.wp-lightbox-overlay{box-sizing:border-box;cursor:zoom-out;height:100vh;left:0;overflow:hidden;position:fixed;top:0;visibility:hidden;width:100%;z-index:100000}.wp-lightbox-overlay .close-button{align-items:center;cursor:pointer;display:flex;justify-content:center;min-height:40px;min-width:40px;padding:0;position:absolute;right:calc(env(safe-area-inset-right) + 16px);top:calc(env(safe-area-inset-top) + 16px);z-index:5000000}.wp-lightbox-overlay .close-button:focus,.wp-lightbox-overlay .close-button:hover,.wp-lightbox-overlay .close-button:not(:hover):not(:active):not(.has-background){background:none;border:none}.wp-lightbox-overlay .lightbox-image-container{height:var(--wp--lightbox-container-height);left:50%;overflow:hidden;position:absolute;top:50%;transform:translate(-50%,-50%);transform-origin:top left;width:var(--wp--lightbox-container-width);z-index:9999999999}.wp-lightbox-overlay .wp-block-image{align-items:center;box-sizing:border-box;display:flex;height:100%;justify-content:center;margin:0;position:relative;transform-origin:0 0;width:100%;z-index:3000000}.wp-lightbox-overlay .wp-block-image img{height:var(--wp--lightbox-image-height);min-height:var(--wp--lightbox-image-height);min-width:var(--wp--lightbox-image-width);width:var(--wp--lightbox-image-width)}.wp-lightbox-overlay .wp-block-image figcaption{display:none}.wp-lightbox-overlay button{background:none;border:none}.wp-lightbox-overlay .scrim{background-color:#fff;height:100%;opacity:.9;position:absolute;width:100%;z-index:2000000}.wp-lightbox-overlay.active{visibility:visible}@media not (prefers-reduced-motion){.wp-lightbox-overlay.active{animation:turn-on-visibility .25s both}.wp-lightbox-overlay.active img{animation:turn-on-visibility .35s both}.wp-lightbox-overlay.show-closing-animation:not(.active){animation:turn-off-visibility .35s both}.wp-lightbox-overlay.show-closing-animation:not(.active) img{animation:turn-off-visibility .25s both}.wp-lightbox-overlay.zoom.active{animation:none;opacity:1;visibility:visible}.wp-lightbox-overlay.zoom.active .lightbox-image-container{animation:lightbox-zoom-in .4s}.wp-lightbox-overlay.zoom.active .lightbox-image-container img{animation:none}.wp-lightbox-overlay.zoom.active .scrim{animation:turn-on-visibility .4s forwards}.wp-lightbox-overlay.zoom.show-closing-animation:not(.active){animation:none}.wp-lightbox-overlay.zoom.show-closing-animation:not(.active) .lightbox-image-container{animation:lightbox-zoom-out .4s}.wp-lightbox-overlay.zoom.show-closing-animation:not(.active) .lightbox-image-container img{animation:none}.wp-lightbox-overlay.zoom.show-closing-animation:not(.active) .scrim{animation:turn-off-visibility .4s forwards}}@keyframes show-content-image{0%{visibility:hidden}99%{visibility:hidden}to{visibility:visible}}@keyframes turn-on-visibility{0%{opacity:0}to{opacity:1}}@keyframes turn-off-visibility{0%{opacity:1;visibility:visible}99%{opacity:0;visibility:visible}to{opacity:0;visibility:hidden}}@keyframes lightbox-zoom-in{0%{transform:translate(calc((-100vw + var(--wp--lightbox-scrollbar-width))/2 + var(--wp--lightbox-initial-left-position)),calc(-50vh + var(--wp--lightbox-initial-top-position))) scale(var(--wp--lightbox-scale))}to{transform:translate(-50%,-50%) scale(1)}}@keyframes lightbox-zoom-out{0%{transform:translate(-50%,-50%) scale(1);visibility:visible}99%{visibility:visible}to{transform:translate(calc((-100vw + var(--wp--lightbox-scrollbar-width))/2 + var(--wp--lightbox-initial-left-position)),calc(-50vh + var(--wp--lightbox-initial-top-position))) scale(var(--wp--lightbox-scale));visibility:hidden}}
+/*# sourceURL=https://jri-poland.org/wp-includes/blocks/image/style.min.css */
+</style>
+<style id='wp-block-list-inline-css' type='text/css'>
+ol,ul{box-sizing:border-box}:root :where(.wp-block-list.has-background){padding:1.25em 2.375em}
+/*# sourceURL=https://jri-poland.org/wp-includes/blocks/list/style.min.css */
+</style>
+<style id='wp-block-paragraph-inline-css' type='text/css'>
+.is-small-text{font-size:.875em}.is-regular-text{font-size:1em}.is-large-text{font-size:2.25em}.is-larger-text{font-size:3em}.has-drop-cap:not(:focus):first-letter{float:left;font-size:8.4em;font-style:normal;font-weight:100;line-height:.68;margin:.05em .1em 0 0;text-transform:uppercase}body.rtl .has-drop-cap:not(:focus):first-letter{float:none;margin-left:.1em}p.has-drop-cap.has-background{overflow:hidden}:root :where(p.has-background){padding:1.25em 2.375em}:where(p.has-text-color:not(.has-link-color)) a{color:inherit}p.has-text-align-left[style*="writing-mode:vertical-lr"],p.has-text-align-right[style*="writing-mode:vertical-rl"]{rotate:180deg}
+/*# sourceURL=https://jri-poland.org/wp-includes/blocks/paragraph/style.min.css */
+</style>
+
+<style id='classic-theme-styles-inline-css' type='text/css'>
+/*! This file is auto-generated */
+.wp-block-button__link{color:#fff;background-color:#32373c;border-radius:9999px;box-shadow:none;text-decoration:none;padding:calc(.667em + 2px) calc(1.333em + 2px);font-size:1.125em}.wp-block-file__button{background:#32373c;color:#fff;text-decoration:none}
+/*# sourceURL=/wp-includes/css/classic-themes.min.css */
+</style>
+<link rel='stylesheet' id='wp-components-css' href='https://jri-poland.org/wp-includes/css/dist/components/style.min.css?ver=b4ba65b27e428b8edfc51b538352d840' type='text/css' media='all' />
+<link rel='stylesheet' id='wp-preferences-css' href='https://jri-poland.org/wp-includes/css/dist/preferences/style.min.css?ver=b4ba65b27e428b8edfc51b538352d840' type='text/css' media='all' />
+<link rel='stylesheet' id='wp-block-editor-css' href='https://jri-poland.org/wp-includes/css/dist/block-editor/style.min.css?ver=b4ba65b27e428b8edfc51b538352d840' type='text/css' media='all' />
+<link rel='stylesheet' id='popup-maker-block-library-style-css' href='https://jri-poland.org/wp-content/plugins/popup-maker/dist/packages/block-library-style.css?ver=dbea705cfafe089d65f1' type='text/css' media='all' />
+<style id='global-styles-inline-css' type='text/css'>
+:root{--wp--preset--aspect-ratio--square: 1;--wp--preset--aspect-ratio--4-3: 4/3;--wp--preset--aspect-ratio--3-4: 3/4;--wp--preset--aspect-ratio--3-2: 3/2;--wp--preset--aspect-ratio--2-3: 2/3;--wp--preset--aspect-ratio--16-9: 16/9;--wp--preset--aspect-ratio--9-16: 9/16;--wp--preset--color--black: #000000;--wp--preset--color--cyan-bluish-gray: #abb8c3;--wp--preset--color--white: #ffffff;--wp--preset--color--pale-pink: #f78da7;--wp--preset--color--vivid-red: #cf2e2e;--wp--preset--color--luminous-vivid-orange: #ff6900;--wp--preset--color--luminous-vivid-amber: #fcb900;--wp--preset--color--light-green-cyan: #7bdcb5;--wp--preset--color--vivid-green-cyan: #00d084;--wp--preset--color--pale-cyan-blue: #8ed1fc;--wp--preset--color--vivid-cyan-blue: #0693e3;--wp--preset--color--vivid-purple: #9b51e0;--wp--preset--gradient--vivid-cyan-blue-to-vivid-purple: linear-gradient(135deg,rgb(6,147,227) 0%,rgb(155,81,224) 100%);--wp--preset--gradient--light-green-cyan-to-vivid-green-cyan: linear-gradient(135deg,rgb(122,220,180) 0%,rgb(0,208,130) 100%);--wp--preset--gradient--luminous-vivid-amber-to-luminous-vivid-orange: linear-gradient(135deg,rgb(252,185,0) 0%,rgb(255,105,0) 100%);--wp--preset--gradient--luminous-vivid-orange-to-vivid-red: linear-gradient(135deg,rgb(255,105,0) 0%,rgb(207,46,46) 100%);--wp--preset--gradient--very-light-gray-to-cyan-bluish-gray: linear-gradient(135deg,rgb(238,238,238) 0%,rgb(169,184,195) 100%);--wp--preset--gradient--cool-to-warm-spectrum: linear-gradient(135deg,rgb(74,234,220) 0%,rgb(151,120,209) 20%,rgb(207,42,186) 40%,rgb(238,44,130) 60%,rgb(251,105,98) 80%,rgb(254,248,76) 100%);--wp--preset--gradient--blush-light-purple: linear-gradient(135deg,rgb(255,206,236) 0%,rgb(152,150,240) 100%);--wp--preset--gradient--blush-bordeaux: linear-gradient(135deg,rgb(254,205,165) 0%,rgb(254,45,45) 50%,rgb(107,0,62) 100%);--wp--preset--gradient--luminous-dusk: linear-gradient(135deg,rgb(255,203,112) 0%,rgb(199,81,192) 50%,rgb(65,88,208) 100%);--wp--preset--gradient--pale-ocean: linear-gradient(135deg,rgb(255,245,203) 0%,rgb(182,227,212) 50%,rgb(51,167,181) 100%);--wp--preset--gradient--electric-grass: linear-gradient(135deg,rgb(202,248,128) 0%,rgb(113,206,126) 100%);--wp--preset--gradient--midnight: linear-gradient(135deg,rgb(2,3,129) 0%,rgb(40,116,252) 100%);--wp--preset--font-size--small: 13px;--wp--preset--font-size--medium: 20px;--wp--preset--font-size--large: 36px;--wp--preset--font-size--x-large: 42px;--wp--preset--spacing--20: 0.44rem;--wp--preset--spacing--30: 0.67rem;--wp--preset--spacing--40: 1rem;--wp--preset--spacing--50: 1.5rem;--wp--preset--spacing--60: 2.25rem;--wp--preset--spacing--70: 3.38rem;--wp--preset--spacing--80: 5.06rem;--wp--preset--shadow--natural: 6px 6px 9px rgba(0, 0, 0, 0.2);--wp--preset--shadow--deep: 12px 12px 50px rgba(0, 0, 0, 0.4);--wp--preset--shadow--sharp: 6px 6px 0px rgba(0, 0, 0, 0.2);--wp--preset--shadow--outlined: 6px 6px 0px -3px rgb(255, 255, 255), 6px 6px rgb(0, 0, 0);--wp--preset--shadow--crisp: 6px 6px 0px rgb(0, 0, 0);}:where(.is-layout-flex){gap: 0.5em;}:where(.is-layout-grid){gap: 0.5em;}body .is-layout-flex{display: flex;}.is-layout-flex{flex-wrap: wrap;align-items: center;}.is-layout-flex > :is(*, div){margin: 0;}body .is-layout-grid{display: grid;}.is-layout-grid > :is(*, div){margin: 0;}:where(.wp-block-columns.is-layout-flex){gap: 2em;}:where(.wp-block-columns.is-layout-grid){gap: 2em;}:where(.wp-block-post-template.is-layout-flex){gap: 1.25em;}:where(.wp-block-post-template.is-layout-grid){gap: 1.25em;}.has-black-color{color: var(--wp--preset--color--black) !important;}.has-cyan-bluish-gray-color{color: var(--wp--preset--color--cyan-bluish-gray) !important;}.has-white-color{color: var(--wp--preset--color--white) !important;}.has-pale-pink-color{color: var(--wp--preset--color--pale-pink) !important;}.has-vivid-red-color{color: var(--wp--preset--color--vivid-red) !important;}.has-luminous-vivid-orange-color{color: var(--wp--preset--color--luminous-vivid-orange) !important;}.has-luminous-vivid-amber-color{color: var(--wp--preset--color--luminous-vivid-amber) !important;}.has-light-green-cyan-color{color: var(--wp--preset--color--light-green-cyan) !important;}.has-vivid-green-cyan-color{color: var(--wp--preset--color--vivid-green-cyan) !important;}.has-pale-cyan-blue-color{color: var(--wp--preset--color--pale-cyan-blue) !important;}.has-vivid-cyan-blue-color{color: var(--wp--preset--color--vivid-cyan-blue) !important;}.has-vivid-purple-color{color: var(--wp--preset--color--vivid-purple) !important;}.has-black-background-color{background-color: var(--wp--preset--color--black) !important;}.has-cyan-bluish-gray-background-color{background-color: var(--wp--preset--color--cyan-bluish-gray) !important;}.has-white-background-color{background-color: var(--wp--preset--color--white) !important;}.has-pale-pink-background-color{background-color: var(--wp--preset--color--pale-pink) !important;}.has-vivid-red-background-color{background-color: var(--wp--preset--color--vivid-red) !important;}.has-luminous-vivid-orange-background-color{background-color: var(--wp--preset--color--luminous-vivid-orange) !important;}.has-luminous-vivid-amber-background-color{background-color: var(--wp--preset--color--luminous-vivid-amber) !important;}.has-light-green-cyan-background-color{background-color: var(--wp--preset--color--light-green-cyan) !important;}.has-vivid-green-cyan-background-color{background-color: var(--wp--preset--color--vivid-green-cyan) !important;}.has-pale-cyan-blue-background-color{background-color: var(--wp--preset--color--pale-cyan-blue) !important;}.has-vivid-cyan-blue-background-color{background-color: var(--wp--preset--color--vivid-cyan-blue) !important;}.has-vivid-purple-background-color{background-color: var(--wp--preset--color--vivid-purple) !important;}.has-black-border-color{border-color: var(--wp--preset--color--black) !important;}.has-cyan-bluish-gray-border-color{border-color: var(--wp--preset--color--cyan-bluish-gray) !important;}.has-white-border-color{border-color: var(--wp--preset--color--white) !important;}.has-pale-pink-border-color{border-color: var(--wp--preset--color--pale-pink) !important;}.has-vivid-red-border-color{border-color: var(--wp--preset--color--vivid-red) !important;}.has-luminous-vivid-orange-border-color{border-color: var(--wp--preset--color--luminous-vivid-orange) !important;}.has-luminous-vivid-amber-border-color{border-color: var(--wp--preset--color--luminous-vivid-amber) !important;}.has-light-green-cyan-border-color{border-color: var(--wp--preset--color--light-green-cyan) !important;}.has-vivid-green-cyan-border-color{border-color: var(--wp--preset--color--vivid-green-cyan) !important;}.has-pale-cyan-blue-border-color{border-color: var(--wp--preset--color--pale-cyan-blue) !important;}.has-vivid-cyan-blue-border-color{border-color: var(--wp--preset--color--vivid-cyan-blue) !important;}.has-vivid-purple-border-color{border-color: var(--wp--preset--color--vivid-purple) !important;}.has-vivid-cyan-blue-to-vivid-purple-gradient-background{background: var(--wp--preset--gradient--vivid-cyan-blue-to-vivid-purple) !important;}.has-light-green-cyan-to-vivid-green-cyan-gradient-background{background: var(--wp--preset--gradient--light-green-cyan-to-vivid-green-cyan) !important;}.has-luminous-vivid-amber-to-luminous-vivid-orange-gradient-background{background: var(--wp--preset--gradient--luminous-vivid-amber-to-luminous-vivid-orange) !important;}.has-luminous-vivid-orange-to-vivid-red-gradient-background{background: var(--wp--preset--gradient--luminous-vivid-orange-to-vivid-red) !important;}.has-very-light-gray-to-cyan-bluish-gray-gradient-background{background: var(--wp--preset--gradient--very-light-gray-to-cyan-bluish-gray) !important;}.has-cool-to-warm-spectrum-gradient-background{background: var(--wp--preset--gradient--cool-to-warm-spectrum) !important;}.has-blush-light-purple-gradient-background{background: var(--wp--preset--gradient--blush-light-purple) !important;}.has-blush-bordeaux-gradient-background{background: var(--wp--preset--gradient--blush-bordeaux) !important;}.has-luminous-dusk-gradient-background{background: var(--wp--preset--gradient--luminous-dusk) !important;}.has-pale-ocean-gradient-background{background: var(--wp--preset--gradient--pale-ocean) !important;}.has-electric-grass-gradient-background{background: var(--wp--preset--gradient--electric-grass) !important;}.has-midnight-gradient-background{background: var(--wp--preset--gradient--midnight) !important;}.has-small-font-size{font-size: var(--wp--preset--font-size--small) !important;}.has-medium-font-size{font-size: var(--wp--preset--font-size--medium) !important;}.has-large-font-size{font-size: var(--wp--preset--font-size--large) !important;}.has-x-large-font-size{font-size: var(--wp--preset--font-size--x-large) !important;}
+/*# sourceURL=global-styles-inline-css */
+</style>
+
+<link rel='stylesheet' id='amazonpolly-css' href='https://jri-poland.org/wp-content/plugins/amazon-polly/public/css/amazonpolly-public.css?ver=1.0.0' type='text/css' media='all' />
+<link rel='stylesheet' id='cookie-law-info-css' href='https://jri-poland.org/wp-content/plugins/webtoffee-gdpr-cookie-consent/public/css/cookie-law-info-public.css?ver=2.3.5' type='text/css' media='all' />
+<link rel='stylesheet' id='cookie-law-info-gdpr-css' href='https://jri-poland.org/wp-content/plugins/webtoffee-gdpr-cookie-consent/public/css/cookie-law-info-gdpr.css?ver=2.3.5' type='text/css' media='all' />
+<style id='cookie-law-info-gdpr-inline-css' type='text/css'>
+.cli-modal-content, .cli-tab-content { background-color: #ffffff; }.cli-privacy-content-text, .cli-modal .cli-modal-dialog, .cli-tab-container p, a.cli-privacy-readmore { color: #000000; }.cli-tab-header { background-color: #f2f2f2; }.cli-tab-header, .cli-tab-header a.cli-nav-link,span.cli-necessary-caption,.cli-switch .cli-slider:after { color: #000000; }.cli-switch .cli-slider:before { background-color: #ffffff; }.cli-switch input:checked + .cli-slider:before { background-color: #ffffff; }.cli-switch .cli-slider { background-color: #e3e1e8; }.cli-switch input:checked + .cli-slider { background-color: #28a745; }.cli-modal-close svg { fill: #000000; }.cli-tab-footer .wt-cli-privacy-accept-all-btn { background-color: #00acad; color: #ffffff}.cli-tab-footer .wt-cli-privacy-accept-btn { background-color: #00acad; color: #ffffff}.cli-tab-header a:before{ border-right: 1px solid #000000; border-bottom: 1px solid #000000; }
+/*# sourceURL=cookie-law-info-gdpr-inline-css */
+</style>
+<link rel='stylesheet' id='fonts-css' href='https://fonts.googleapis.com/css2?family=Lora&#038;family=Montserrat:wght@400;500;600;700&#038;display=swap' type='text/css' media='all' />
+<link rel='stylesheet' id='critical-css' href='https://jri-poland.org/wp-content/themes/jri-publicsite/assets/css/critical.min.css?v=1nk0gch4rtl' type='text/css' media='all' />
+<link rel='stylesheet' id='main-style-css' href='https://jri-poland.org/wp-content/themes/jri-publicsite/assets/css/style.min.css?v=1nk0gch4rtl' type='text/css' media='all' />
+<link rel='stylesheet' id='taxopress-frontend-css-css' href='https://jri-poland.org/wp-content/plugins/simple-tags/assets/frontend/css/frontend.css?ver=3.43.0' type='text/css' media='all' />
+<style id='isimb-6310-head-css-inline-css' type='text/css'>
+.isimb-6310-main-svg, .isimb-6310-hover-content, .isimb-6310-modal-content{display: none}
+/*# sourceURL=isimb-6310-head-css-inline-css */
+</style>
+<script type="text/javascript" src="https://jri-poland.org/wp-content/plugins/wp-sentry-integration/public/wp-sentry-browser.min.js?ver=8.11.1" id="wp-sentry-browser-bundle-js"></script>
+<script type="text/javascript" id="wp-sentry-browser-js-extra">
+/* <![CDATA[ */
+var wp_sentry = {"environment":"production","release":"unknown","context":{"tags":{"wordpress":"6.9.5","language":"en-US"}},"dsn":"https://1969610068b44ff8a1fb7dd9b16b267e@o4503933288448000.ingest.sentry.io/4503966346969088"};
+//# sourceURL=wp-sentry-browser-js-extra
+/* ]]> */
+</script>
+<script type="text/javascript" src="https://jri-poland.org/wp-content/plugins/wp-sentry-integration/public/wp-sentry-init.js?ver=8.11.1" id="wp-sentry-browser-js"></script>
+<script type="text/javascript" src="https://ajax.googleapis.com/ajax/libs/jquery/2.2.4/jquery.min.js" id="jquery-js"></script>
+<script type="text/javascript" src="https://jri-poland.org/wp-content/plugins/amazon-polly/public/js/amazonpolly-public.js?ver=1.0.0" id="amazonpolly-js"></script>
+<script type="text/javascript" id="cookie-law-info-js-extra">
+/* <![CDATA[ */
+var Cli_Data = {"nn_cookie_ids":["PHPSESSID","test_cookie"],"non_necessary_cookies":{"necessary":["PHPSESSID"],"non-necessary":["test_cookie"]},"cookielist":{"necessary":{"id":6,"status":true,"priority":0,"title":"Necessary","strict":true,"default_state":false,"ccpa_optout":false,"loadonstart":false},"non-necessary":{"id":7,"status":true,"priority":0,"title":"Non Necessary","strict":false,"default_state":false,"ccpa_optout":false,"loadonstart":false}},"ajax_url":"https://jri-poland.org/wp-admin/admin-ajax.php","current_lang":"en","security":"82ff6df362","eu_countries":["GB"],"geoIP":"disabled","use_custom_geolocation_api":"","custom_geolocation_api":"https://geoip.cookieyes.com/geoip/checker/result.php","consentVersion":"1","strictlyEnabled":["necessary","obligatoire"],"cookieDomain":"","privacy_length":"250","ccpaEnabled":"","ccpaRegionBased":"","ccpaBarEnabled":"","ccpaType":"gdpr","triggerDomRefresh":"","secure_cookies":""};
+var log_object = {"ajax_url":"https://jri-poland.org/wp-admin/admin-ajax.php"};
+//# sourceURL=cookie-law-info-js-extra
+/* ]]> */
+</script>
+<script type="text/javascript" src="https://jri-poland.org/wp-content/plugins/webtoffee-gdpr-cookie-consent/public/js/cookie-law-info-public.js?ver=2.3.5" id="cookie-law-info-js"></script>
+<script type="text/javascript" src="https://jri-poland.org/wp-content/themes/jri-publicsite/assets/js/device.min.js" id="device-script-js"></script>
+<script type="text/javascript" src="https://jri-poland.org/wp-content/plugins/simple-tags/assets/frontend/js/frontend.js?ver=3.43.0" id="taxopress-frontend-js-js"></script>
+<link rel="https://api.w.org/" href="https://jri-poland.org/wp-json/" /><link rel="alternate" title="JSON" type="application/json" href="https://jri-poland.org/wp-json/wp/v2/posts/1398" /><link rel="EditURI" type="application/rsd+xml" title="RSD" href="https://jri-poland.org/xmlrpc.php?rsd" />
+
+<link rel="canonical" href="https://jri-poland.org/blog/the-1929-polish-business-directory-project/" />
+<link rel='shortlink' href='https://jri-poland.org/?p=1398' />
+<meta name="et-api-version" content="v1"><meta name="et-api-origin" content="https://jri-poland.org"><link rel="https://theeventscalendar.com/" href="https://jri-poland.org/wp-json/tribe/tickets/v1/" /><meta name="tec-api-version" content="v1"><meta name="tec-api-origin" content="https://jri-poland.org"><link rel="alternate" href="https://jri-poland.org/wp-json/tribe/events/v1/" /><script id="mcjs">!function(c,h,i,m,p){m=c.createElement(h),p=c.getElementsByTagName(h)[0],m.async=1,m.src=i,p.parentNode.insertBefore(m,p)}(document,"script","https://chimpstatic.com/mcjs-connected/js/users/cf271b2be3a81e9f5f76c68e7/6ae598fa9fa01cccfbbcd96bc.js");</script>
+
+<script type="text/javascript">
+    (function(c,l,a,r,i,t,y){
+        c[a]=c[a]||function(){(c[a].q=c[a].q||[]).push(arguments)};
+        t=l.createElement(r);t.async=1;t.src="https://www.clarity.ms/tag/"+i;
+        y=l.getElementsByTagName(r)[0];y.parentNode.insertBefore(t,y);
+    })(window, document, "clarity", "script", "jiobr4p0eu");
+</script><link rel="icon" href="https://jri-poland.org/wp-content/uploads/2021/09/cropped-JRI-logo-square-32x32.png" sizes="32x32" />
+<link rel="icon" href="https://jri-poland.org/wp-content/uploads/2021/09/cropped-JRI-logo-square-192x192.png" sizes="192x192" />
+<link rel="apple-touch-icon" href="https://jri-poland.org/wp-content/uploads/2021/09/cropped-JRI-logo-square-180x180.png" />
+<meta name="msapplication-TileImage" content="https://jri-poland.org/wp-content/uploads/2021/09/cropped-JRI-logo-square-270x270.png" />
+</head>
+<body class="wp-singular post-template-default single single-post postid-1398 single-format-standard wp-theme-jri-publicsite bg-2 tribe-no-js tribe-theme-jri-publicsite">
+<!-- Google Tag Manager (noscript) -->
+<noscript><iframe src="https://www.googletagmanager.com/ns.html?id=GTM-PBLXMC2"
+                  height="0" width="0" style="display:none;visibility:hidden"></iframe></noscript>
+<!-- End Google Tag Manager (noscript) -->
+
+<!-- Page Preloader -->
+<div id="page-preloader" class="page-preloader">
+	<div class="page-preloader__inner">
+		<div class="page-preloader__spinner">
+			<span></span>
+			<span></span>
+		</div>
+	</div>
+</div>
+
+<div id="app">
+<script>
+	var email = '';
+
+	if (window.rg4js && email !== '')
+	{
+		rg4js('setUser', {
+			identifier: '',
+			isAnonymous: false,
+			email: '',
+			fullName: ''
+		});
+	}
+</script>
+<!-- start header -->
+<!-- class "compensate-for-scrollbar" from fancybox.js -->
+<header id="top-bar" class="top-bar top-bar--dark  compensate-for-scrollbar" data-nav-fixed="false" data-nav-anchor="true">
+	<div class="top-bar__wrapper">
+		<div class="row align-items-center no-gutters">
+			<a class="top-bar__logo site-logo" href="https://jri-poland.org">
+				<svg xmlns="http://www.w3.org/2000/svg" width="72" height="52" viewBox="0 0 135 98"><g fill="currentColor" fill-rule="nonzero"><path d="M38.474 3.48V.2h1.592c1.701.027 3.403.069 5.104.087 3.089.036 6.18.098 9.268.079C60.733.33 67.028.198 73.324.213c3.04 0 6.099.128 9.074.879 2.284.576 4.434 1.447 6.119 3.196 1.615 1.676 2.528 3.7 2.985 5.95.493 2.479.625 5.016.393 7.533-.26 2.93-.96 5.727-2.725 8.16-1.596 2.2-3.766 3.651-6.22 4.718a26.481 26.481 0 01-7.044 1.898c-.414.054-.802.13-1.278.207.414.638.761 1.225 1.144 1.798 4.732 7.091 9.45 14.193 14.217 21.261 1.596 2.363 3.308 4.643 5.375 6.65 1.576 1.537 3.45 2.287 5.609 2.43.099.003.198.013.296.029.078.023.155.05.231.08v3.25c-.6-.03-1.17-.07-1.743-.084-1.52-.037-3.039-.102-4.558-.085-2.493.027-4.985.101-7.478.182a.651.651 0 01-.653-.37c-4.675-7.263-9.303-14.559-14.058-21.768-2.004-3.032-4.276-5.89-6.459-8.8a20.378 20.378 0 00-1.749-1.89c-.732-.755-1.718-.992-2.688-1.085-1.77-.172-3.551-.207-5.412-.313v.62c0 8.469.005 16.937.015 25.405a8.724 8.724 0 00.206 1.91 2.894 2.894 0 002.016 2.19c.968.3 1.963.502 2.97.605 1.374.145 2.76.16 4.169.232v3.175h-27.6V64.91c.949 0 1.892.062 2.82-.015 1.29-.107 2.599-.207 3.85-.515 1.92-.471 2.571-1.558 2.609-3.396.084-4.034.107-8.063.111-12.1.013-13.15.013-26.297 0-39.444a22.044 22.044 0 00-.207-2.76c-.171-1.338-1.24-2.322-2.857-2.688-1.81-.413-3.659-.413-5.501-.494-.263-.029-.523-.019-.829-.019zm18.218.413V30.21c0 .099-.035.219 0 .293.074.133.186.323.302.337a10.23 10.23 0 001.527.112c3.283-.054 6.567-.123 9.851-.207a20.194 20.194 0 005.376-.9c2.842-.863 5.168-2.408 6.681-5.046 1.088-1.9 1.512-3.986 1.623-6.127.133-2.504.025-5.003-.564-7.466-.792-3.32-2.735-5.542-6.06-6.547a24.14 24.14 0 00-7.012-.964c-3.02 0-6.043.13-9.064.207-.86.019-1.711-.006-2.66-.006v-.004zM4.947 3.48V.3h27.606v3.144c-.943.044-1.88.054-2.81.139a54.129 54.129 0 00-3.419.413c-1.842.306-2.688 1.571-2.932 3.308a24.035 24.035 0 00-.223 3.248c-.012 18.803-.018 37.606-.018 56.406 0 4.706-.47 9.364-1.96 13.862-1.24 3.767-3.13 7.162-5.981 9.971a22.687 22.687 0 01-10.075 5.75c-1.587.436-3.214.73-4.922 1.11 0-.736-.025-1.342.023-1.942.01-.124.279-.277.455-.33 2.007-.62 3.907-1.448 5.596-2.717 3.072-2.286 5.104-5.321 6.272-8.94.74-2.302 1.278-4.653 1.394-7.076.159-3.33.376-6.665.382-9.998.037-18.903.037-37.804 0-56.704a14.869 14.869 0 00-.498-3.558c-.393-1.526-1.548-2.384-3.051-2.588-1.547-.207-3.122-.226-4.683-.317-.362-.02-.728-.002-1.156-.002zM134.924 65v3.176h-27.59v-3.18c.879-.03 1.766-.039 2.647-.1 1.05-.05 2.099-.15 3.14-.305 2.04-.35 3.066-1.42 3.364-3.492.145-1.01.218-2.03.22-3.051.013-15.891.013-31.783 0-47.674 0-1.27-.055-2.526-.4-3.767-.536-1.935-1.993-2.776-3.777-2.919-1.644-.132-3.298-.147-4.948-.207-.078 0-.157-.016-.264-.026V.3h27.601v3.146c-.944.044-1.898.042-2.842.139-1.24.128-2.481.279-3.701.517-1.546.297-2.262 1.447-2.532 2.871a15.627 15.627 0 00-.309 2.895c-.016 16.24-.016 32.478 0 48.715.023 1.068.157 2.131.4 3.172.35 1.641 1.447 2.63 3.1 2.83 1.812.223 3.643.27 5.467.397l.424.019zM132.955 84.434V71.579h1.946v26.049h-1.935V94.99c-.476.449-.84.812-1.222 1.152-1.538 1.358-3.341 1.933-5.386 1.943-4.149.018-7.357-3.461-7.907-6.837-.726-4.457 1.798-8.635 6.098-9.694 3.186-.786 5.915.06 8.032 2.644.083.102.151.207.228.317l.146-.081zm.11 5.332c.143-3.595-2.812-6.41-5.975-6.519a6.409 6.409 0 00-6.715 6.422c0 3.438 2.595 6.566 6.364 6.56 3.492-.009 6.423-2.678 6.326-6.463zM40.942 85.344v12.27H38.78V72.06a2.82 2.82 0 01.285-.027h7.141c2.845 0 5.536 2.193 6.223 5.015a6.63 6.63 0 01-5.278 8.156c-.827.153-1.71.114-2.566.128-1.201.025-2.404.01-3.643.01zm-.012-2.448c.13.03.263.05.397.062 1.57 0 3.138.047 4.705-.013a4.342 4.342 0 004.156-3.874c.206-2.406-1.679-4.618-4.094-4.641-1.47-.017-2.94 0-4.407 0h-.757v8.476-.01zM96.84 97.634h-1.943V95.03c-.51.467-.935.89-1.391 1.272-1.487 1.24-3.215 1.77-5.146 1.784-3.982.03-7.267-3.08-7.937-6.684-.924-4.962 2.165-8.89 6.072-9.86 3.02-.758 6.064.108 8.106 2.73.058.074.124.142.271.31v-2.87h1.968v15.923zM88.75 83.26c-3.554-.087-6.434 2.828-6.42 6.462.017 3.515 2.688 6.533 6.368 6.5 3.43-.029 6.326-2.433 6.35-6.454.026-3.926-3.049-6.587-6.298-6.508zM61.96 98.08c-4.952.092-8.338-4.018-8.303-8.385.04-4.829 3.75-8.476 8.524-8.416 4.81.058 8.186 4.135 8.153 8.534-.029 4.054-3.28 8.42-8.375 8.268zm0-1.92c3.576.05 6.31-2.756 6.324-6.409.014-3.653-2.94-6.485-6.277-6.491-3.444 0-6.301 2.95-6.297 6.514.004 3.564 2.747 6.386 6.247 6.386h.002zM114.713 97.632h-1.997v-.604c0-2.662 0-5.323-.035-7.984-.021-1.145-.021-2.303-.437-3.409-.62-1.64-1.842-2.357-3.463-2.48-3.125-.224-5.581 2.47-5.776 5.017-.072.97-.171 1.939-.184 2.91-.029 2.163 0 4.328 0 6.53h-1.962v-15.92h1.958v2.748c.587-.568 1.073-1.075 1.596-1.54 2.152-1.917 5.487-2.17 7.767-.602 1.42.978 2.117 2.39 2.34 4.057.4 2.993.129 6.005.207 9.01-.002.762-.014 1.494-.014 2.267zM74.678 71.569h1.943v26.049h-1.943z"/></g></svg>
+			</a>
+
+			<a id="top-bar__navigation-toggler" class="top-bar__navigation-toggler" href="javascript:void(0);">
+				<span></span>
+			</a>
+
+			<div class="top-bar__cart-wrapper top-bar__cart-wrapper--mobile d-lg-none">
+				<a class="top-bar__cart" href="https://jri-poland.org/donate-cart" aria-label="View donate cart" aria-haspopup="true">
+					<svg width="29" height="28" viewBox="0 0 29 28" fill="none" xmlns="http://www.w3.org/2000/svg">
+						<path fill-rule="evenodd" clip-rule="evenodd" d="M8.33865 24.1273C8.33112 22.4094 9.7001 21.0096 11.3988 20.9981C12.2194 20.9926 13.0083 21.3184 13.5905 21.9032C14.1727 22.4881 14.5001 23.2836 14.5001 24.1135C14.5001 25.8314 13.1249 27.225 11.4262 27.2288C9.7274 27.2326 8.34619 25.8451 8.33865 24.1273ZM10.3719 24.1135C10.3719 24.687 10.8317 25.1519 11.3988 25.1519C11.966 25.1519 12.4257 24.687 12.4257 24.1135C12.4257 23.54 11.966 23.075 11.3988 23.075C10.8317 23.075 10.3719 23.54 10.3719 24.1135Z" fill="currentColor"/>
+						<path fill-rule="evenodd" clip-rule="evenodd" d="M16.5537 24.1273C16.5462 22.4094 17.9152 21.0096 19.6139 20.9981C20.4345 20.9926 21.2234 21.3184 21.8056 21.9032C22.3878 22.4881 22.7152 23.2836 22.7152 24.1135C22.7151 25.8314 21.34 27.225 19.6412 27.2288C17.9425 27.2326 16.5613 25.8451 16.5537 24.1273ZM18.587 24.1135C18.587 24.687 19.0468 25.1519 19.6139 25.1519C20.1811 25.1519 20.6408 24.687 20.6408 24.1135C20.6408 23.54 20.1811 23.075 19.6139 23.075C19.0468 23.075 18.587 23.54 18.587 24.1135Z" fill="currentColor"/>
+						<path fill-rule="evenodd" clip-rule="evenodd" d="M4.99079 0.229004L5.56586 3.3444H29L27.1926 14.0821C27.0209 15.0896 26.1497 15.8208 25.1388 15.806H7.86615L8.2153 17.7583H22.9412C23.5084 17.7583 23.9681 18.2232 23.9681 18.7967C23.9681 19.3703 23.5084 19.8352 22.9412 19.8352H6.51062L3.28612 2.30593H1.02691C0.459764 2.30593 0 1.841 0 1.26747C0 0.69394 0.459764 0.229004 1.02691 0.229004H4.99079ZM7.47592 13.729H25.1388L26.5765 5.42132H6.03824L7.47592 13.729Z" fill="currentColor"/>
+					</svg>
+					<span class="cart-count" hidden></span>
+				</a>
+				<div class="mini-cart" aria-hidden="true">
+	<div class="mini-cart__inner">
+		<div class="mini-cart__summary">
+			<div class="mini-cart__items-count">Items in cart: <span class="mini-cart__count">0</span></div>
+			<div class="mini-cart__subtotal">Subtotal: <span class="mini-cart__subtotal-amount">$0</span></div>
+		</div>
+		<div class="mini-cart__scroll-area">
+			<div class="mini-cart__section mini-cart__section--onetime" hidden>
+				<div class="mini-cart__section-title">One Time Donations</div>
+				<ul class="mini-cart__items"></ul>
+			</div>
+			<div class="mini-cart__section mini-cart__section--recurring" hidden>
+				<div class="mini-cart__section-title">Recurring Donations</div>
+				<ul class="mini-cart__items"></ul>
+			</div>
+		</div>
+		<div class="mini-cart__empty" hidden>Cart is empty</div>
+		<a class="mini-cart__view-cart" href="https://jri-poland.org/donate-cart">VIEW CART</a>
+	</div>
+</div>
+			</div>
+
+			<div class="top-bar__collapse">
+				<nav id="top-bar__navigation" class="top-bar__navigation" role="navigation">
+					<ul id="menu-header-menu" class="menu"><li id="menu-item-6132" class="menu-item menu-item-type-custom menu-item-object-custom menu-item-has-children menu-item-6132"><a>ABOUT</a>
+<ul class="sub-menu">
+	<li id="menu-item-1650" class="menu-item menu-item-type-post_type menu-item-object-page menu-item-1650"><a href="https://jri-poland.org/about-us/">About Us</a></li>
+	<li id="menu-item-6133" class="menu-item menu-item-type-post_type menu-item-object-page menu-item-6133"><a href="https://jri-poland.org/membership/">Membership</a></li>
+</ul>
+</li>
+<li id="menu-item-5849" class="has-sep menu-item menu-item-type-post_type menu-item-object-page menu-item-5849"><a href="https://jri-poland.org/blog/">blog</a></li>
+<li id="menu-item-912" class="menu-item menu-item-type-custom menu-item-object-custom menu-item-has-children menu-item-912"><a>search</a>
+<ul class="sub-menu">
+	<li id="menu-item-935" class="menu-item menu-item-type-custom menu-item-object-custom menu-item-935"><a target="_blank" href="https://legacy.jri-poland.org/jriplweb-legacy.htm"><span class="legacy-search">Legacy</span><br><span class="menu-sub-title">our fully functional search</span></a></li>
+	<li id="menu-item-3706" class="menu-item menu-item-type-custom menu-item-object-custom menu-item-3706"><a href="https://www.jri-poland.org/search/"><span>NextGen</span><br><span class="menu-sub-title">limited data set for testing only</span></a></li>
+</ul>
+</li>
+<li id="menu-item-133" class="menu-item menu-item-type-post_type menu-item-object-page menu-item-133"><a href="https://jri-poland.org/town/">town explorer</a></li>
+<li id="menu-item-846" class="menu-item menu-item-type-post_type menu-item-object-page menu-item-846"><a href="https://jri-poland.org/project-explorer/">project explorer</a></li>
+<li id="menu-item-12" class="menu-item menu-item-type-custom menu-item-object-custom menu-item-12"><a target="_blank" href="https://forum.jri-poland.org/">Community Forum</a></li>
+</ul>				</nav>
+
+				<div class="top-bar__btns">
+					<div class="row flex-column align-items-lg-center flex-lg-row no-gutters">
+						<div class="top-bar__cart-wrapper d-none d-lg-flex">
+							<a id="donate-cart" class="top-bar__cart" href="https://jri-poland.org/donate-cart">						
+								<svg width="29" height="28" viewBox="0 0 29 28" fill="none" xmlns="http://www.w3.org/2000/svg">
+									<path fill-rule="evenodd" clip-rule="evenodd" d="M8.33865 24.1273C8.33112 22.4094 9.7001 21.0096 11.3988 20.9981C12.2194 20.9926 13.0083 21.3184 13.5905 21.9032C14.1727 22.4881 14.5001 23.2836 14.5001 24.1135C14.5001 25.8314 13.1249 27.225 11.4262 27.2288C9.7274 27.2326 8.34619 25.8451 8.33865 24.1273ZM10.3719 24.1135C10.3719 24.687 10.8317 25.1519 11.3988 25.1519C11.966 25.1519 12.4257 24.687 12.4257 24.1135C12.4257 23.54 11.966 23.075 11.3988 23.075C10.8317 23.075 10.3719 23.54 10.3719 24.1135Z" fill="currentColor"/>
+									<path fill-rule="evenodd" clip-rule="evenodd" d="M16.5537 24.1273C16.5462 22.4094 17.9152 21.0096 19.6139 20.9981C20.4345 20.9926 21.2234 21.3184 21.8056 21.9032C22.3878 22.4881 22.7152 23.2836 22.7152 24.1135C22.7151 25.8314 21.34 27.225 19.6412 27.2288C17.9425 27.2326 16.5613 25.8451 16.5537 24.1273ZM18.587 24.1135C18.587 24.687 19.0468 25.1519 19.6139 25.1519C20.1811 25.1519 20.6408 24.687 20.6408 24.1135C20.6408 23.54 20.1811 23.075 19.6139 23.075C19.0468 23.075 18.587 23.54 18.587 24.1135Z" fill="currentColor"/>
+									<path fill-rule="evenodd" clip-rule="evenodd" d="M4.99079 0.229004L5.56586 3.3444H29L27.1926 14.0821C27.0209 15.0896 26.1497 15.8208 25.1388 15.806H7.86615L8.2153 17.7583H22.9412C23.5084 17.7583 23.9681 18.2232 23.9681 18.7967C23.9681 19.3703 23.5084 19.8352 22.9412 19.8352H6.51062L3.28612 2.30593H1.02691C0.459764 2.30593 0 1.841 0 1.26747C0 0.69394 0.459764 0.229004 1.02691 0.229004H4.99079ZM7.47592 13.729H25.1388L26.5765 5.42132H6.03824L7.47592 13.729Z" fill="currentColor"/>
+								</svg>
+								<span class="cart-count" hidden></span>
+							</a>
+							<div class="mini-cart" aria-hidden="true">
+	<div class="mini-cart__inner">
+		<div class="mini-cart__summary">
+			<div class="mini-cart__items-count">Items in cart: <span class="mini-cart__count">0</span></div>
+			<div class="mini-cart__subtotal">Subtotal: <span class="mini-cart__subtotal-amount">$0</span></div>
+		</div>
+		<div class="mini-cart__scroll-area">
+			<div class="mini-cart__section mini-cart__section--onetime" hidden>
+				<div class="mini-cart__section-title">One Time Donations</div>
+				<ul class="mini-cart__items"></ul>
+			</div>
+			<div class="mini-cart__section mini-cart__section--recurring" hidden>
+				<div class="mini-cart__section-title">Recurring Donations</div>
+				<ul class="mini-cart__items"></ul>
+			</div>
+		</div>
+		<div class="mini-cart__empty" hidden>Cart is empty</div>
+		<a class="mini-cart__view-cart" href="https://jri-poland.org/donate-cart">VIEW CART</a>
+	</div>
+</div>
+						</div>						
+						<div class="col-12 col-lg-auto top-bar__profile-wrapper">
+															<a class="custom-btn custom-btn--s2 d-none d-lg-block" href="javascript:void(0);" data-fancybox data-src="#modal-auth">LOG IN</a>
+								<a class="custom-btn custom-btn--s2 d-lg-none" href="javascript:void(0);" data-fancybox data-src="#modal-auth">Register / log in</a>
+													</div>
+
+						<div class="col-12 col-lg-auto">
+						    <a class="custom-btn custom-btn--s4" href="https://www.jri-poland.org/donate/">DONATE</a>
+						</div>
+					</div>
+				</div>
+			</div>
+		</div>
+	</div>
+</header>
+<!-- end header -->	<!-- start main -->
+	<main role="main">
+		<!-- start section -->
+		<section id="post-1398" class="section section--no-pt single-post-page">
+			<div class="container" >
+				<div class="row">
+					<div class="col-12">
+						<div class="single-post-header">
+							<!-- Breadcrumbs -->
+							<ul class="breadcrumbs">
+								<li><a href="https://jri-poland.org/blog">Blog</a><div class="chevron-arrow-right"></div></li>
+																	<li><a href="https://jri-poland.org/blog/category/blog/articles/">Articles</a><div class="chevron-arrow-right"></div></li>
+																<li><span>The 1929 Polish Business Directory Project</span></li>
+							</ul>
+							
+							<div class="section-heading about-text-page--title">
+								<h1 class="__title h1">The 1929 Polish Business Directory Project</h1>							</div>
+							<div class="post-meta">
+								<span class="post-meta__author">
+									<svg width="20" height="20" viewBox="0 0 20 20" fill="none" xmlns="http://www.w3.org/2000/svg">
+										<circle cx="10" cy="10" r="9" stroke="currentColor" stroke-width="1.5" fill="none"/>
+										<circle cx="10" cy="7" r="3" stroke="currentColor" stroke-width="1.5" fill="none"/>
+										<path d="M5 15.5C5 13 7.2 11 10 11C12.8 11 15 13 15 15.5" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" fill="none"/>
+									</svg>
+									<a href="https://jri-poland.org/blog/author/amonago/" class="post-meta__author-link">amonago</a>
+								</span>
+								<span class="post-meta__date">
+									December 31, 2001								</span>
+							</div>
+							<div class="post-taxonomy">
+																									<div class="post-taxonomy__wrapper">
+																															<div class="post-taxonomy__categories">
+																									<span class="post-taxonomy__category">Articles</span>
+																									<span class="post-taxonomy__category">Projects</span>
+																							</div>
+																			</div>
+															</div>
+						</div>
+					</div>
+					<div class="col-12">
+													<div class="featured-image">
+								<img width="540" height="540" src="https://jri-poland.org/wp-content/uploads/2001/12/1929-Polish-Business-Directory-Project.png" class="attachment-large size-large wp-post-image" alt="" decoding="async" srcset="https://jri-poland.org/wp-content/uploads/2001/12/1929-Polish-Business-Directory-Project.png 540w, https://jri-poland.org/wp-content/uploads/2001/12/1929-Polish-Business-Directory-Project-300x300.png 300w, https://jri-poland.org/wp-content/uploads/2001/12/1929-Polish-Business-Directory-Project-150x150.png 150w" sizes="(max-width: 540px) 100vw, 540px" />							</div>
+												<!-- start post content -->
+						<div class="about-text-page">
+								
+<h3 class="wp-block-heading" id="intro">Jewish Records Indexing &#8211; Poland in cooperation with JewishGen</h3>
+
+
+
+<p><a href="https://www.jri-poland.org/blog/the-1929-polish-business-directory-project/#intro">Intro</a> | <a href="https://www.jri-poland.org/blog/the-1929-polish-business-directory-project/#about">About </a>| <a href="https://www.jri-poland.org/blog/the-1929-polish-business-directory-project/#occupations">Occupations</a> | <a href="https://www.jri-poland.org/blog/the-1929-polish-business-directory-project/#evolution">Evolution</a> | <a href="https://www.jri-poland.org/blog/the-1929-polish-business-directory-project/#toc" title="">Search the Directory</a></p>
+
+
+<div class="wp-block-image">
+<figure class="alignleft size-large is-resized"><img decoding="async" src="https://www.jri-poland.org/wp-content/uploads/2022/05/cover1929c.gif" alt="" class="wp-image-1399" width="156" height="231"/></figure>
+</div>
+
+
+<p>A valuable source of 20th century genealogical data on the Internet is: Ksiega Adresowa Polski (Wraz z w.m. Gdanskiem dla Handlu, Przemyslu Rzemiosl I Rolnictwa) Directory of Poland, including Gdansk, for trade, industry, handicraft and agriculture (1929). Access the Table of Contents.</p>
+
+
+
+<p>The Jewish Records Indexing &#8211; Poland / JewishGen 1929 Polish Business Directory Project provides access to the data for each town in the Directory. Thousands of directory pages have been scanned and converted into Adobe PDF files providing the ability to search by town name and click on the resulting link(s) to see high resolution images of the actual directory pages.</p>
+
+
+
+<p><a href="https://www.jri-poland.org/blog/the-1929-polish-business-directory-project/#intro">Intro</a> | <a href="https://www.jri-poland.org/blog/the-1929-polish-business-directory-project/#about">About </a>| <a href="https://www.jri-poland.org/blog/the-1929-polish-business-directory-project/#occupations">Occupations</a> | <a href="https://www.jri-poland.org/blog/the-1929-polish-business-directory-project/#evolution">Evolution</a> | <a href="https://www.jri-poland.org/blog/the-1929-polish-business-directory-project/#toc" title="">Search the Directory</a></p>
+
+
+
+<h2 class="wp-block-heading" id="about">About the Polish Business Directories</h2>
+
+
+
+<p>The Polish Business Directories of the 1920s and 1930s have thousands of pages of information about people in current and former areas of Poland, including regions now part of the Vilna area of Lithuania, the Grodno area of Belarus, and Volhynia and East Galicia, now parts of the western Ukraine.</p>
+
+
+<div class="wp-block-image">
+<figure class="aligncenter size-large"><img fetchpriority="high" decoding="async" width="410" height="439" src="https://www.jri-poland.org/wp-content/uploads/2022/05/map-1921provinces.gif" alt="" class="wp-image-1404"/><figcaption>Map of Polish Provinces Circa 1921</figcaption></figure>
+</div>
+
+
+<p>These listings not only tell us how our families earned their living but often they are the only accessible source of 20th century information about our relatives.</p>
+
+
+
+<p>Entries typically include the name of the business or proprietor, and the address or street name. The directory has an section with a list of Industries/Businesses with translations from English to Polish, French to Polish, German to Polish and Russian to Polish. Within the directory pages, Industries/Businesses are listed in Polish with a French translation, and range from doctor and banker to midwife and stall-operator at the weekly marketplace. Each town listing starts with information about the town, the larger the town, the more comprehensive the description.</p>
+
+
+
+<p>Researchers having access to this business directory from other years are encouraged to check them against the data for their towns in the 1929 directory and to provide a list of entries that are not included in the 1929 edition. Data from other years will be identified by the year of publishing of the directory.</p>
+
+
+
+<figure class="wp-block-image size-large"><img decoding="async" src="http://www.jri-poland.org/wp-content/uploads/2001/12/page90a.gif" alt="<iframe title=&quot;Table of Contents&quot; aria-label=&quot;Table&quot; id=&quot;datawrapper-chart-4pWO4&quot; src=&quot;https://datawrapper.dwcdn.net/4pWO4/1/&quot; scrolling=&quot;no&quot; frameborder=&quot;0&quot; style=&quot;width: 0; min-width: 100% !important; border: none;&quot; height=&quot;1070&quot;&gt;</iframe&gt;<script type=&quot;text/javascript&quot;&gt;!function(){&quot;use strict&quot;;window.addEventListener(&quot;message&quot;,(function(e){if(void 0!==e.data[&quot;datawrapper-height&quot;]){var t=document.querySelectorAll(&quot;iframe&quot;);for(var a in e.data[&quot;datawrapper-height&quot;])for(var r=0;r<t.length;r++){if(t[r].contentWindow===e.source)t[r].style.height=e.data[&quot;datawrapper-height&quot;][a]+&quot;px&quot;}}}))}(); </script&gt;" class="wp-image-1402"/><figcaption>Sample of Polish Business Directory page</figcaption></figure>
+
+
+
+<h3 class="wp-block-heading">Information available in business directory Searches</h3>
+
+
+
+<p>Business directory entries contain the following fields or combinations of fields:</p>
+
+
+
+<ul class="wp-block-list"><li>Surname with Given Name (or first initial)</li><li>Industry/Business</li><li>Street/Town</li><li>Wojewodztwo (province)</li><li>Powiat (district)</li></ul>
+
+
+
+<p>A wojewodztwo (voivodie) was the geographic designation of Poland between World War I and World War II, roughly equivalent to a state in the United States or province in Canada. Powiats were districts, similar to U.S. counties. Powiats were divided into Uchastoks, more or less equivalent to U.S. townships. </p>
+
+
+
+<p><a href="https://www.jri-poland.org/blog/the-1929-polish-business-directory-project/#intro">Intro</a> | <a href="https://www.jri-poland.org/blog/the-1929-polish-business-directory-project/#about">About </a>| <a href="https://www.jri-poland.org/blog/the-1929-polish-business-directory-project/#occupations">Occupations</a> | <a href="https://www.jri-poland.org/blog/the-1929-polish-business-directory-project/#evolution">Evolution</a> | <a href="https://www.jri-poland.org/blog/the-1929-polish-business-directory-project/#toc" title="">Search the Directory</a></p>
+
+
+
+<h3 class="wp-block-heading" id="occupations">Table of Industry/Business</h3>
+
+
+
+<p>Using the official translations provided in the directory, JRI-Poland has created a Polish/French/English&nbsp;Table of Industry/Business types. The table may be downloaded for personal research. </p>
+
+
+
+<iframe title="Industry/Business Occupation Translation Table" aria-label="Table" id="datawrapper-chart-rf4uA" src="https://datawrapper.dwcdn.net/rf4uA/1/" scrolling="no" frameborder="0" style="width: 0; min-width: 100% !important; border: none;" height="1181"></iframe><script type="text/javascript">!function(){"use strict";window.addEventListener("message",(function(e){if(void 0!==e.data["datawrapper-height"]){var t=document.querySelectorAll("iframe");for(var a in e.data["datawrapper-height"])for(var r=0;r<t.length;r++){if(t[r].contentWindow===e.source)t[r].style.height=e.data["datawrapper-height"][a]+"px"}}}))}();
+</script>
+
+
+
+<p>Researchers should note that the exact meaning of an Industry or Business and/or the way it is translated can change over time; it the industry or business is unclear, secondary sources should be consulted. English speaking researchers should be aware that the translations from the Polish are British English not North American English. Thus Elektromonterzy which is translated as Electrical Fitters in the directory, would be known as Electricians in the U.S. and Canada.</p>
+
+
+
+<p><a href="https://www.jri-poland.org/blog/the-1929-polish-business-directory-project/#intro">Intro</a> | <a href="https://www.jri-poland.org/blog/the-1929-polish-business-directory-project/#about">About </a>| <a href="https://www.jri-poland.org/blog/the-1929-polish-business-directory-project/#occupations">Occupations</a> | <a href="https://www.jri-poland.org/blog/the-1929-polish-business-directory-project/#evolution">Evolution</a> | <a href="https://www.jri-poland.org/blog/the-1929-polish-business-directory-project/#toc" title="">Search the Directory</a></p>
+
+
+
+<h2 class="wp-block-heading" id="evolution">The evolution of the project</h2>
+
+
+
+<p>The JRI-Poland Business Directory Project was announced at the Annual Conference on Jewish Genealogy in July, 1998. However, due to unanticipated administrative difficulties and associated costs with the original plan, the decision was made -- following the Jewish Genealogy Conference in August, 1999 -- to scan the microfilms of the directory and convert them to Adobe PDF.</p>
+
+
+
+<p>In a further step to simplify the project, JRI-Poland and JewishGen reached an agreement to work in cooperation on the project and to post the entire directory on the web. This agreement was announced at the International Conference on Jewish Genealogy in Salt Lake City (July 2000). This approach made the directory pages immediately available to researchers around the world.</p>
+
+
+
+<h3 class="wp-block-heading">The initial contributions</h3>
+
+
+
+<p>While the project was in transition, copies of some pages were made available to several volunteers so that various approaches could be tested. The following areas/towns were part of the initial database.</p>
+
+
+
+<p><strong>NOWOGRODEK WOJEWODZTWO:</strong> The indexing of the 40 pages for this area of former Poland (now in western Belarus and southeastern Lithuania) was done by Ellen Sadove Renck. There are more than 15,000 entries from towns and villages. </p>
+
+
+
+<p><strong>KRAKOW</strong>: Data entry by Julian Schamroth (Jerusalem). There are 9600 entries for more than 600 Industries/Businesses.</p>
+
+
+
+<p><strong>OSTROW MAZOWIECKA</strong>: Data entry by Judy Baston.</p>
+
+
+
+<p><a href="https://www.jri-poland.org/blog/the-1929-polish-business-directory-project/#intro">Intro</a> | <a href="https://www.jri-poland.org/blog/the-1929-polish-business-directory-project/#about">About </a>| <a href="https://www.jri-poland.org/blog/the-1929-polish-business-directory-project/#occupations">Occupations</a> | <a href="https://www.jri-poland.org/blog/the-1929-polish-business-directory-project/#evolution">Evolution</a> | <a href="https://www.jri-poland.org/blog/the-1929-polish-business-directory-project/#toc" title="">Search the Directory</a></p>
+
+
+
+<h2 class="wp-block-heading" id="toc">Search the Directory</h2>
+
+
+
+<h3 class="wp-block-heading">Directory of Poland (including Gdansk) for trade, industry, handicraft and agriculture</h3>
+
+
+
+<p></p>
+
+
+
+<iframe title="SearchDirectory" src="https://legacy.jri-poland.org/bd1929.htm" scrolling="yes" frameborder="0" style="width: 0; min-width: 100% !important; border: none;" height="1070"></iframe>
+
+
+
+<p><a href="https://www.jri-poland.org/blog/the-1929-polish-business-directory-project/#intro">Intro</a> | <a href="https://www.jri-poland.org/blog/the-1929-polish-business-directory-project/#about">About </a>| <a href="https://www.jri-poland.org/blog/the-1929-polish-business-directory-project/#occupations">Occupations</a> | <a href="https://www.jri-poland.org/blog/the-1929-polish-business-directory-project/#evolution">Evolution</a> | <a href="https://www.jri-poland.org/blog/the-1929-polish-business-directory-project/#toc">Directory Index</a></p>
+
+
+
+<p></p>
+						</div>
+						<!-- end post content -->
+											</div>
+											<div class="col-12">
+							<div class="related-posts-wrapper">
+								<div class="section-heading">
+									<h3 class="__title">You might also like</h3>
+								</div>
+								<div class="related-posts-slick">
+																			<div class="slick-slide">
+											<div class="related-post-item">
+												<a href="https://jri-poland.org/blog/how-brass-artifact-jri-poland-reconnected-two-brothers/" class="related-post-link">
+													<figure class="related-post-image">
+																													<img src="https://jri-poland.org/wp-content/themes/jri-publicsite/img/post_img/post-placeholder.jpg" alt="the weight of history: how a brass artifact &#038; jri-poland reconnected two brothers" />
+																											</figure>
+																											<div class="related-post-type"><span class="post__item__category-link" data-category-url="https://jri-poland.org/blog/category/blog/articles/">Articles</span></div>
+																										<div class="related-post-title">the weight of history: how a brass artifact &#038; jri-poland reconnected two brothers</div>
+													<div class="related-post-excerpt">By Mateusz Ostrowski The quest for our roots often begins with a name on a&hellip;</div>
+													<div class="related-post-read-more">READ MORE <i class="icon-arrow-right"></i></div>
+												</a>
+											</div>
+										</div>
+																			<div class="slick-slide">
+											<div class="related-post-item">
+												<a href="https://jri-poland.org/blog/building-nextgen-whats-happening-behind-the-scenes/" class="related-post-link">
+													<figure class="related-post-image">
+																													<img width="300" height="169" src="https://jri-poland.org/wp-content/uploads/2026/01/Building-NextGen-Whats-Happening-Behind-the-Scenes-300x169.jpg" class="attachment-medium size-medium wp-post-image" alt="" decoding="async" loading="lazy" srcset="https://jri-poland.org/wp-content/uploads/2026/01/Building-NextGen-Whats-Happening-Behind-the-Scenes-300x169.jpg 300w, https://jri-poland.org/wp-content/uploads/2026/01/Building-NextGen-Whats-Happening-Behind-the-Scenes-1024x576.jpg 1024w, https://jri-poland.org/wp-content/uploads/2026/01/Building-NextGen-Whats-Happening-Behind-the-Scenes-768x432.jpg 768w, https://jri-poland.org/wp-content/uploads/2026/01/Building-NextGen-Whats-Happening-Behind-the-Scenes-1536x864.jpg 1536w, https://jri-poland.org/wp-content/uploads/2026/01/Building-NextGen-Whats-Happening-Behind-the-Scenes.jpg 1600w" sizes="auto, (max-width: 300px) 100vw, 300px" />																											</figure>
+																											<div class="related-post-type"><span class="post__item__category-link" data-category-url="https://jri-poland.org/blog/category/blog/articles/">Articles</span></div>
+																										<div class="related-post-title">Building NextGen: What’s Happening Behind the Scenes</div>
+													<div class="related-post-excerpt">While developing&nbsp;its new NextGen database, JRI-Poland has been hard at work behind the scenes. While&hellip;</div>
+													<div class="related-post-read-more">READ MORE <i class="icon-arrow-right"></i></div>
+												</a>
+											</div>
+										</div>
+																			<div class="slick-slide">
+											<div class="related-post-item">
+												<a href="https://jri-poland.org/blog/jri-poland-book-club-third-selection/" class="related-post-link">
+													<figure class="related-post-image">
+																													<img width="300" height="300" src="https://jri-poland.org/wp-content/uploads/2026/01/JRI-Poland-Book-Club-300x300.jpg" class="attachment-medium size-medium wp-post-image" alt="" decoding="async" loading="lazy" srcset="https://jri-poland.org/wp-content/uploads/2026/01/JRI-Poland-Book-Club-300x300.jpg 300w, https://jri-poland.org/wp-content/uploads/2026/01/JRI-Poland-Book-Club-1024x1024.jpg 1024w, https://jri-poland.org/wp-content/uploads/2026/01/JRI-Poland-Book-Club-150x150.jpg 150w, https://jri-poland.org/wp-content/uploads/2026/01/JRI-Poland-Book-Club-768x768.jpg 768w, https://jri-poland.org/wp-content/uploads/2026/01/JRI-Poland-Book-Club.jpg 1080w" sizes="auto, (max-width: 300px) 100vw, 300px" />																											</figure>
+																											<div class="related-post-type"><span class="post__item__category-link" data-category-url="https://jri-poland.org/blog/category/blog/articles/">Articles</span></div>
+																										<div class="related-post-title">JRI-Poland Book Club &#8211; Third Selection</div>
+													<div class="related-post-excerpt">Our community is growing! The JRI-Poland Book Club is excited to announce the four candidates&hellip;</div>
+													<div class="related-post-read-more">READ MORE <i class="icon-arrow-right"></i></div>
+												</a>
+											</div>
+										</div>
+																										</div>
+							</div>
+						</div>
+									</div>
+			</div>
+		</section><!-- #post-1398 -->
+		<!-- end section -->
+	</main>
+
+<!-- start footer -->
+<footer class="footer bg-3">
+	<div class="container">
+		<div class="footer__line footer__line--first">
+			<div class="row justify-content-sm-between">
+				<div class="col-12 col-sm-7 col-md-6">
+					<div class="footer__item">
+						<form class="footer__form-subscribe form--horizontal js-form-subscribe">
+							<div class="__heading">subscribe to our newsletter</div>
+
+							<div class="row no-gutters">
+								<div class="col">
+									<div class="input-wrp">
+										<input
+											class="textfield textfield--s1 text-uppercase"
+											placeholder="Enter Your Email"
+											name="email"
+											type="text"
+											inputmode="email"
+											x-inputmode="email"
+										/>
+									</div>
+								</div>
+
+								<div class="col-auto">
+									<button class="custom-btn custom-btn--s1" name="submit" type="submit" role="button">
+										<i class="icon-arrow-right"></i>
+									</button>
+								</div>
+							</div>
+
+							<div class="msg-success" hidden style="margin-top:10px">Thanks! Check your inbox to confirm the subscription.</div>
+							<div class="msg-error" hidden style="margin-top:10px">Oy Vey! Looks like you've already signed up with this email address!</div>
+						</form>
+					</div>
+
+					<div class="footer__item">
+						<div class="footer__text  d-flex align-items-center">
+							<a href="https://www.guidestar.org/profile/52-2101869" target="_blank">
+								<img width="75" src="https://widgets.guidestar.org/TransparencySeal/7781812"  alt="guidestar logo"/>
+							</a>
+							<script id="AffinitySeal" src="https://www.affinitycq.com/seal/AffinitySeal.js?key=d554f7bb7be44a7267068a7df88ddd20&width=75&height=75&color=blue" ></script>
+							<!-- <img class="seal-of-compliance-logo" src="https://jri-poland.org/wp-content/themes/jri-publicsite/img/seal-of-compliance-logo.png" alt="seal of compliance logo">				 -->
+						</div>
+					</div>
+					<div class="footer__item">
+						<p>
+							JRI-Poland is an independent non-profit tax-exempt organization under Section 501(c)(3) of the U.S. Internal Revenue Code. 
+							Taxpayer ID # 52-2101869.							
+						</p>
+					</div>
+				</div>
+
+				<div class="col-12 col-sm-4 col-md-3 col-lg-auto">
+					<div class="footer__item">
+						<nav class="footer__navigation">
+							<ul id="menu-footer-menu" class="menu"><li id="menu-item-187" class="menu-item menu-item-type-custom menu-item-object-custom menu-item-187"><a target="_blank" href="/about-us/">ABOUT US <i class="icon-arrow-right"></i></a></li>
+<li id="menu-item-67" class="menu-item menu-item-type-custom menu-item-object-custom menu-item-has-children menu-item-67"><a>QUESTIONS? <i class="icon-arrow-right"></i></a>
+<ul class="sub-menu">
+	<li id="menu-item-5525" class="footer-sub-menu menu-item menu-item-type-custom menu-item-object-custom menu-item-5525"><a target="_blank" href="https://tawk.to/chat/618d95d66885f60a50bb69e7/1fk8h2ji9">For General Support <i class="icon-arrow-right"></i></a></li>
+	<li id="menu-item-4171" class="footer-sub-menu menu-item menu-item-type-custom menu-item-object-custom menu-item-4171"><a href="/cdn-cgi/l/email-protection#5a2e283f3b292f283f281a302833772a35363b343e7435283d">For Membership &#038; Donations <i class="icon-arrow-right"></i></a></li>
+	<li id="menu-item-4172" class="footer-sub-menu menu-item menu-item-type-custom menu-item-object-custom menu-item-4172"><a href="/cdn-cgi/l/email-protection#40362f2c352e3425253233002a32296d302f2c212e246e2f3227">For Volunteering <i class="icon-arrow-right"></i></a></li>
+</ul>
+</li>
+<li id="menu-item-3674" class="menu-item menu-item-type-custom menu-item-object-custom menu-item-3674"><a href="https://www.jri-poland.org/privacy-policy/">PRIVACY POLICY <i class="icon-arrow-right"></i></a></li>
+<li id="menu-item-3675" class="menu-item menu-item-type-custom menu-item-object-custom menu-item-3675"><a href="https://www.jri-poland.org/terms-of-use/">TERMS OF USE <i class="icon-arrow-right"></i></a></li>
+</ul>						</nav>
+					</div>
+
+					<!--							<div class="footer__item">-->
+					<!-- start social buttons -->
+					<!--								<div class="s-btns">-->
+					<!--									<ul class="d-flex flex-row flex-wrap align-items-center">-->
+					<!--										<li><a class="f" href="#"><i class="icon-facebook"></i></a></li>-->
+					<!--										<li><a class="t" href="#"><i class="icon-twitter"></i></a></li>-->
+					<!--										<li><a class="i" href="#"><i class="icon-instagram"></i></a></li>-->
+					<!--									</ul>-->
+					<!--								</div>-->
+					<!-- end social buttons -->
+					<!--							</div>-->
+				</div>
+			</div>
+		</div>
+
+		<div class="footer__line footer__line--second">
+			<div class="row">
+				<div class="col-12">
+					<div class="footer__item">
+						<ul class="footer__subnav">
+							<li>Copyright&nbsp;&copy; 1995-2026 JRI-Poland</li>
+
+							<li id="menu-item-1644" class="menu-item menu-item-type-post_type menu-item-object-page menu-item-privacy-policy menu-item-1644"><a rel="privacy-policy" href="https://jri-poland.org/privacy-policy/">privacy policy</a></li>
+<li id="menu-item-1643" class="menu-item menu-item-type-post_type menu-item-object-page menu-item-1643"><a href="https://jri-poland.org/terms-of-use/">terms of use</a></li>
+
+							<li>Systems Development by <a href="https://www.nwlights.com" class="__dev" target="_blank">NW Lights, LLC</a></li>
+						</ul>
+					</div>
+				</div>
+			</div>
+		</div>
+	</div>
+	<script data-cfasync="false" src="/cdn-cgi/scripts/5c5dd728/cloudflare-static/email-decode.min.js"></script><script>
+		var g_twk_uuid = "618d95d66885f60a50bb69e7";
+	</script>
+</footer><!-- end footer -->
+
+<div class="d-none">
+	<div id="modal-teaser" class="modal modal--teaser">
+		<div class="modal__inner modal--teaser__inner">
+			<p class="__title">
+				We found <span class="records_count">3,456</span> matches for <span class="search_text">Langer</span> in <span class="towns_count">43</span> towns
+			</p>
+
+			<p>
+				Log in or create a FREE account to continue your research.
+			</p>
+
+			<p>
+				<button class="custom-btn custom-btn--s4 wide" type="button" role="button">CONTINUE</button>
+			</p>
+		</div>
+	</div>
+
+	<div id="modal-auth" class="modal modal--auth">
+		<div class="modal__inner modal--auth__inner">
+			<div class="row no-gutters">
+				<div class="col-12 col-sm-6">
+					<div class="__item __item--first">
+						<h2>LOG IN</h2>
+
+						<form id="sign_in" class="modal__auth-form" action="#">
+							<div class="input-wrp">
+								<input class="textfield textfield--s2" name="email" placeholder="Email" type="text" data-validate-field="email" inputmode="email" x-inputmode="email" />
+							</div>
+
+							<div class="input-wrp">
+								<input class="textfield textfield--s2" name="password" placeholder="Password" type="password" data-validate-field="password" />
+								<i class="icon-eye icon-eye-off" id="togglePassword"></i>
+							</div>
+
+							<div class="text-center">
+								<button class="custom-btn custom-btn--s1 wide" name="submit" type="submit" role="button">SIGN IN</button>
+							</div>
+
+							<div id="sign_in__result-msg" class="auth-form__note" hidden></div>
+
+							<a class="__restore-pass js-restore-pass" href="javascript:void(0);">forgot password?</a>
+						</form>
+					</div>
+				</div>
+
+				<div class="col-12 col-sm-6">
+					<div class="__item __item--second">
+						<h2>DON’T HAVE AN <br /> ACCOUNT YET?</h2>
+
+						<div class="__text">
+							<p>
+								Signing in to JRI-Poland gives <br /> you a customized experience and easier access to tools and information that are relevant to you.
+							</p>
+
+							<p>
+								<button id="sign_in__btn-signup" class="custom-btn custom-btn--s3 wide">create an account</button>
+							</p>
+						</div>
+					</div>
+				</div>
+			</div>
+		</div>
+	</div>
+
+	<div id="modal-forgot" class="modal modal--auth">
+		<div class="modal__inner modal--auth__inner">
+			<div class="__item">
+				<h2>FORGOT PASSWORD?</h2>
+
+				<p>
+					Please enter your email address and we will send you a link to reset your password.
+				</p>
+
+				<form id="forgot_password" class="modal__auth-form modal__auth-form--forgot" action="#">
+					<div class="input-wrp">
+						<input class="textfield textfield--s2" placeholder="Enter Your Email" name="email" type="text" data-validate-field="email" inputmode="email" x-inputmode="email" />
+					</div>
+
+          <div>
+            <button class="custom-btn custom-btn--s1 wide" name="submit" type="submit" role="button">Send</button>
+          </div>
+
+					<div id="forgot_password__result-msg" class="auth-form__note" hidden></div>
+
+					<div class="__register">
+						Don’t have an account yet?<br><a href="https://jri-poland.org/signup">Sign UP</a>
+					</div>
+				</form>
+			</div>
+		</div>
+	</div>
+
+	<div id="modal-forgot-success" class="modal modal--auth">
+		<div class="modal__inner modal--auth__inner  modal--auth__inner-forgot-success">
+			<div class="__item">
+				<h2>YOUR PASSWORD RESET EMAIL IS ON THE WAY!</h2>
+
+				<p>
+					If an account for %{email} exists, you'll receive an email with the link.<br />
+					It may take a few minutes for the email to be delivered.<br />
+				</p>
+
+				<p>
+					<b>Don’t see the password reset email?</b><br />
+					1. Verify spelling of email used.<br />
+					2. Check your Spam folder. <br />
+					Optional. Add <a href="/cdn-cgi/l/email-protection" class="__cf_email__" data-cfemail="aac4c5d8cfdac6d3eac0d8c387dac5c6cbc4ce84c5d8cd">[email&#160;protected]</a> to your Contacts list to prevent system emails getting caught in spam filters.
+				</p>
+
+				<span class="__note">If you are still having trouble logging in or resetting your password, please send a note to <a href="/cdn-cgi/l/email-protection" class="__cf_email__" data-cfemail="3d5c5e5e524853494e7d574f54104d52515c535913524f5a">[email&#160;protected]</a>, indicating the problem experienced and the email used.</span>
+
+				<button class="custom-btn custom-btn--s1 wide" type="button" role="button" data-fancybox-close>CLOSE</button>
+			</div>
+		</div>
+	</div>
+
+	<div id="modal-membership" class="modal-membership">
+		<div class="membership-title-wrapper">
+			<svg class="logo" xmlns="http://www.w3.org/2000/svg" width="70" height="55" viewBox="0 0 135 98"><g fill="#494949" fill-rule="nonzero"><path d="M38.474 3.48V.2h1.592c1.701.027 3.403.069 5.104.087 3.089.036 6.18.098 9.268.079C60.733.33 67.028.198 73.324.213c3.04 0 6.099.128 9.074.879 2.284.576 4.434 1.447 6.119 3.196 1.615 1.676 2.528 3.7 2.985 5.95.493 2.479.625 5.016.393 7.533-.26 2.93-.96 5.727-2.725 8.16-1.596 2.2-3.766 3.651-6.22 4.718a26.481 26.481 0 01-7.044 1.898c-.414.054-.802.13-1.278.207.414.638.761 1.225 1.144 1.798 4.732 7.091 9.45 14.193 14.217 21.261 1.596 2.363 3.308 4.643 5.375 6.65 1.576 1.537 3.45 2.287 5.609 2.43.099.003.198.013.296.029.078.023.155.05.231.08v3.25c-.6-.03-1.17-.07-1.743-.084-1.52-.037-3.039-.102-4.558-.085-2.493.027-4.985.101-7.478.182a.651.651 0 01-.653-.37c-4.675-7.263-9.303-14.559-14.058-21.768-2.004-3.032-4.276-5.89-6.459-8.8a20.378 20.378 0 00-1.749-1.89c-.732-.755-1.718-.992-2.688-1.085-1.77-.172-3.551-.207-5.412-.313v.62c0 8.469.005 16.937.015 25.405a8.724 8.724 0 00.206 1.91 2.894 2.894 0 002.016 2.19c.968.3 1.963.502 2.97.605 1.374.145 2.76.16 4.169.232v3.175h-27.6V64.91c.949 0 1.892.062 2.82-.015 1.29-.107 2.599-.207 3.85-.515 1.92-.471 2.571-1.558 2.609-3.396.084-4.034.107-8.063.111-12.1.013-13.15.013-26.297 0-39.444a22.044 22.044 0 00-.207-2.76c-.171-1.338-1.24-2.322-2.857-2.688-1.81-.413-3.659-.413-5.501-.494-.263-.029-.523-.019-.829-.019zm18.218.413V30.21c0 .099-.035.219 0 .293.074.133.186.323.302.337a10.23 10.23 0 001.527.112c3.283-.054 6.567-.123 9.851-.207a20.194 20.194 0 005.376-.9c2.842-.863 5.168-2.408 6.681-5.046 1.088-1.9 1.512-3.986 1.623-6.127.133-2.504.025-5.003-.564-7.466-.792-3.32-2.735-5.542-6.06-6.547a24.14 24.14 0 00-7.012-.964c-3.02 0-6.043.13-9.064.207-.86.019-1.711-.006-2.66-.006v-.004zM4.947 3.48V.3h27.606v3.144c-.943.044-1.88.054-2.81.139a54.129 54.129 0 00-3.419.413c-1.842.306-2.688 1.571-2.932 3.308a24.035 24.035 0 00-.223 3.248c-.012 18.803-.018 37.606-.018 56.406 0 4.706-.47 9.364-1.96 13.862-1.24 3.767-3.13 7.162-5.981 9.971a22.687 22.687 0 01-10.075 5.75c-1.587.436-3.214.73-4.922 1.11 0-.736-.025-1.342.023-1.942.01-.124.279-.277.455-.33 2.007-.62 3.907-1.448 5.596-2.717 3.072-2.286 5.104-5.321 6.272-8.94.74-2.302 1.278-4.653 1.394-7.076.159-3.33.376-6.665.382-9.998.037-18.903.037-37.804 0-56.704a14.869 14.869 0 00-.498-3.558c-.393-1.526-1.548-2.384-3.051-2.588-1.547-.207-3.122-.226-4.683-.317-.362-.02-.728-.002-1.156-.002zM134.924 65v3.176h-27.59v-3.18c.879-.03 1.766-.039 2.647-.1 1.05-.05 2.099-.15 3.14-.305 2.04-.35 3.066-1.42 3.364-3.492.145-1.01.218-2.03.22-3.051.013-15.891.013-31.783 0-47.674 0-1.27-.055-2.526-.4-3.767-.536-1.935-1.993-2.776-3.777-2.919-1.644-.132-3.298-.147-4.948-.207-.078 0-.157-.016-.264-.026V.3h27.601v3.146c-.944.044-1.898.042-2.842.139-1.24.128-2.481.279-3.701.517-1.546.297-2.262 1.447-2.532 2.871a15.627 15.627 0 00-.309 2.895c-.016 16.24-.016 32.478 0 48.715.023 1.068.157 2.131.4 3.172.35 1.641 1.447 2.63 3.1 2.83 1.812.223 3.643.27 5.467.397l.424.019zM132.955 84.434V71.579h1.946v26.049h-1.935V94.99c-.476.449-.84.812-1.222 1.152-1.538 1.358-3.341 1.933-5.386 1.943-4.149.018-7.357-3.461-7.907-6.837-.726-4.457 1.798-8.635 6.098-9.694 3.186-.786 5.915.06 8.032 2.644.083.102.151.207.228.317l.146-.081zm.11 5.332c.143-3.595-2.812-6.41-5.975-6.519a6.409 6.409 0 00-6.715 6.422c0 3.438 2.595 6.566 6.364 6.56 3.492-.009 6.423-2.678 6.326-6.463zM40.942 85.344v12.27H38.78V72.06a2.82 2.82 0 01.285-.027h7.141c2.845 0 5.536 2.193 6.223 5.015a6.63 6.63 0 01-5.278 8.156c-.827.153-1.71.114-2.566.128-1.201.025-2.404.01-3.643.01zm-.012-2.448c.13.03.263.05.397.062 1.57 0 3.138.047 4.705-.013a4.342 4.342 0 004.156-3.874c.206-2.406-1.679-4.618-4.094-4.641-1.47-.017-2.94 0-4.407 0h-.757v8.476-.01zM96.84 97.634h-1.943V95.03c-.51.467-.935.89-1.391 1.272-1.487 1.24-3.215 1.77-5.146 1.784-3.982.03-7.267-3.08-7.937-6.684-.924-4.962 2.165-8.89 6.072-9.86 3.02-.758 6.064.108 8.106 2.73.058.074.124.142.271.31v-2.87h1.968v15.923zM88.75 83.26c-3.554-.087-6.434 2.828-6.42 6.462.017 3.515 2.688 6.533 6.368 6.5 3.43-.029 6.326-2.433 6.35-6.454.026-3.926-3.049-6.587-6.298-6.508zM61.96 98.08c-4.952.092-8.338-4.018-8.303-8.385.04-4.829 3.75-8.476 8.524-8.416 4.81.058 8.186 4.135 8.153 8.534-.029 4.054-3.28 8.42-8.375 8.268zm0-1.92c3.576.05 6.31-2.756 6.324-6.409.014-3.653-2.94-6.485-6.277-6.491-3.444 0-6.301 2.95-6.297 6.514.004 3.564 2.747 6.386 6.247 6.386h.002zM114.713 97.632h-1.997v-.604c0-2.662 0-5.323-.035-7.984-.021-1.145-.021-2.303-.437-3.409-.62-1.64-1.842-2.357-3.463-2.48-3.125-.224-5.581 2.47-5.776 5.017-.072.97-.171 1.939-.184 2.91-.029 2.163 0 4.328 0 6.53h-1.962v-15.92h1.958v2.748c.587-.568 1.073-1.075 1.596-1.54 2.152-1.917 5.487-2.17 7.767-.602 1.42.978 2.117 2.39 2.34 4.057.4 2.993.129 6.005.207 9.01-.002.762-.014 1.494-.014 2.267zM74.678 71.569h1.943v26.049h-1.943z"/></g></svg>
+			<div class="membership-title">
+				Members-only Access
+			</div>
+		</div>
+		<div class="membership-content">
+			Your account does not appear to show an active JRI-Poland membership. Some features of this site are reserved for active members.
+			<br/>
+			<br/>
+			For assistance, please click <a href="https://tawk.to/chat/618d95d66885f60a50bb69e7/1fk8h2ji9" target="_blank">here</a>.
+		</div>
+		<div class="membership-actions-wrapper">
+			<button class="custom-btn cancel" data-fancybox-close>Cancel</button>
+			<a class="custom-btn custom-btn--s3" href="https://legacy.jri-poland.org/support-legacy.htm" target="_blank">Become a member</a>
+		</div>
+	</div>
+
+	<div id="modal-external-link" class="modal-membership modal-external-link">
+		<div class="membership-title-wrapper">
+			<svg class="logo" xmlns="http://www.w3.org/2000/svg" width="70" height="55" viewBox="0 0 135 98"><g fill="#494949" fill-rule="nonzero"><path d="M38.474 3.48V.2h1.592c1.701.027 3.403.069 5.104.087 3.089.036 6.18.098 9.268.079C60.733.33 67.028.198 73.324.213c3.04 0 6.099.128 9.074.879 2.284.576 4.434 1.447 6.119 3.196 1.615 1.676 2.528 3.7 2.985 5.95.493 2.479.625 5.016.393 7.533-.26 2.93-.96 5.727-2.725 8.16-1.596 2.2-3.766 3.651-6.22 4.718a26.481 26.481 0 01-7.044 1.898c-.414.054-.802.13-1.278.207.414.638.761 1.225 1.144 1.798 4.732 7.091 9.45 14.193 14.217 21.261 1.596 2.363 3.308 4.643 5.375 6.65 1.576 1.537 3.45 2.287 5.609 2.43.099.003.198.013.296.029.078.023.155.05.231.08v3.25c-.6-.03-1.17-.07-1.743-.084-1.52-.037-3.039-.102-4.558-.085-2.493.027-4.985.101-7.478.182a.651.651 0 01-.653-.37c-4.675-7.263-9.303-14.559-14.058-21.768-2.004-3.032-4.276-5.89-6.459-8.8a20.378 20.378 0 00-1.749-1.89c-.732-.755-1.718-.992-2.688-1.085-1.77-.172-3.551-.207-5.412-.313v.62c0 8.469.005 16.937.015 25.405a8.724 8.724 0 00.206 1.91 2.894 2.894 0 002.016 2.19c.968.3 1.963.502 2.97.605 1.374.145 2.76.16 4.169.232v3.175h-27.6V64.91c.949 0 1.892.062 2.82-.015 1.29-.107 2.599-.207 3.85-.515 1.92-.471 2.571-1.558 2.609-3.396.084-4.034.107-8.063.111-12.1.013-13.15.013-26.297 0-39.444a22.044 22.044 0 00-.207-2.76c-.171-1.338-1.24-2.322-2.857-2.688-1.81-.413-3.659-.413-5.501-.494-.263-.029-.523-.019-.829-.019zm18.218.413V30.21c0 .099-.035.219 0 .293.074.133.186.323.302.337a10.23 10.23 0 001.527.112c3.283-.054 6.567-.123 9.851-.207a20.194 20.194 0 005.376-.9c2.842-.863 5.168-2.408 6.681-5.046 1.088-1.9 1.512-3.986 1.623-6.127.133-2.504.025-5.003-.564-7.466-.792-3.32-2.735-5.542-6.06-6.547a24.14 24.14 0 00-7.012-.964c-3.02 0-6.043.13-9.064.207-.86.019-1.711-.006-2.66-.006v-.004zM4.947 3.48V.3h27.606v3.144c-.943.044-1.88.054-2.81.139a54.129 54.129 0 00-3.419.413c-1.842.306-2.688 1.571-2.932 3.308a24.035 24.035 0 00-.223 3.248c-.012 18.803-.018 37.606-.018 56.406 0 4.706-.47 9.364-1.96 13.862-1.24 3.767-3.13 7.162-5.981 9.971a22.687 22.687 0 01-10.075 5.75c-1.587.436-3.214.73-4.922 1.11 0-.736-.025-1.342.023-1.942.01-.124.279-.277.455-.33 2.007-.62 3.907-1.448 5.596-2.717 3.072-2.286 5.104-5.321 6.272-8.94.74-2.302 1.278-4.653 1.394-7.076.159-3.33.376-6.665.382-9.998.037-18.903.037-37.804 0-56.704a14.869 14.869 0 00-.498-3.558c-.393-1.526-1.548-2.384-3.051-2.588-1.547-.207-3.122-.226-4.683-.317-.362-.02-.728-.002-1.156-.002zM134.924 65v3.176h-27.59v-3.18c.879-.03 1.766-.039 2.647-.1 1.05-.05 2.099-.15 3.14-.305 2.04-.35 3.066-1.42 3.364-3.492.145-1.01.218-2.03.22-3.051.013-15.891.013-31.783 0-47.674 0-1.27-.055-2.526-.4-3.767-.536-1.935-1.993-2.776-3.777-2.919-1.644-.132-3.298-.147-4.948-.207-.078 0-.157-.016-.264-.026V.3h27.601v3.146c-.944.044-1.898.042-2.842.139-1.24.128-2.481.279-3.701.517-1.546.297-2.262 1.447-2.532 2.871a15.627 15.627 0 00-.309 2.895c-.016 16.24-.016 32.478 0 48.715.023 1.068.157 2.131.4 3.172.35 1.641 1.447 2.63 3.1 2.83 1.812.223 3.643.27 5.467.397l.424.019zM132.955 84.434V71.579h1.946v26.049h-1.935V94.99c-.476.449-.84.812-1.222 1.152-1.538 1.358-3.341 1.933-5.386 1.943-4.149.018-7.357-3.461-7.907-6.837-.726-4.457 1.798-8.635 6.098-9.694 3.186-.786 5.915.06 8.032 2.644.083.102.151.207.228.317l.146-.081zm.11 5.332c.143-3.595-2.812-6.41-5.975-6.519a6.409 6.409 0 00-6.715 6.422c0 3.438 2.595 6.566 6.364 6.56 3.492-.009 6.423-2.678 6.326-6.463zM40.942 85.344v12.27H38.78V72.06a2.82 2.82 0 01.285-.027h7.141c2.845 0 5.536 2.193 6.223 5.015a6.63 6.63 0 01-5.278 8.156c-.827.153-1.71.114-2.566.128-1.201.025-2.404.01-3.643.01zm-.012-2.448c.13.03.263.05.397.062 1.57 0 3.138.047 4.705-.013a4.342 4.342 0 004.156-3.874c.206-2.406-1.679-4.618-4.094-4.641-1.47-.017-2.94 0-4.407 0h-.757v8.476-.01zM96.84 97.634h-1.943V95.03c-.51.467-.935.89-1.391 1.272-1.487 1.24-3.215 1.77-5.146 1.784-3.982.03-7.267-3.08-7.937-6.684-.924-4.962 2.165-8.89 6.072-9.86 3.02-.758 6.064.108 8.106 2.73.058.074.124.142.271.31v-2.87h1.968v15.923zM88.75 83.26c-3.554-.087-6.434 2.828-6.42 6.462.017 3.515 2.688 6.533 6.368 6.5 3.43-.029 6.326-2.433 6.35-6.454.026-3.926-3.049-6.587-6.298-6.508zM61.96 98.08c-4.952.092-8.338-4.018-8.303-8.385.04-4.829 3.75-8.476 8.524-8.416 4.81.058 8.186 4.135 8.153 8.534-.029 4.054-3.28 8.42-8.375 8.268zm0-1.92c3.576.05 6.31-2.756 6.324-6.409.014-3.653-2.94-6.485-6.277-6.491-3.444 0-6.301 2.95-6.297 6.514.004 3.564 2.747 6.386 6.247 6.386h.002zM114.713 97.632h-1.997v-.604c0-2.662 0-5.323-.035-7.984-.021-1.145-.021-2.303-.437-3.409-.62-1.64-1.842-2.357-3.463-2.48-3.125-.224-5.581 2.47-5.776 5.017-.072.97-.171 1.939-.184 2.91-.029 2.163 0 4.328 0 6.53h-1.962v-15.92h1.958v2.748c.587-.568 1.073-1.075 1.596-1.54 2.152-1.917 5.487-2.17 7.767-.602 1.42.978 2.117 2.39 2.34 4.057.4 2.993.129 6.005.207 9.01-.002.762-.014 1.494-.014 2.267zM74.678 71.569h1.943v26.049h-1.943z"/></g></svg>
+			<div class="membership-title">
+				You are now leaving JRI-Poland
+			</div>
+		</div>
+		<div class="membership-content">
+			<div class="clicking-continue">Clicking continue will take you to</div>
+			<div class="destination-logo-wrapper">
+				<img class="destination-logo" src="" alt="logo" hidden>
+			</div>
+			<div class="destination-name">Polish State Archives</div>
+			<div class="note">
+				JRI-Poland has provided this link for your convenience, but assumes no 
+				responsibility for the content, links, accuracy, privacy policy, or security
+				policy of this website. The security and privacy policies on these sites may be 
+				different from those of JRI-Poland.
+			</div>			
+		</div>
+		<div class="membership-actions-wrapper">
+			<button class="custom-btn cancel" data-fancybox-close>Cancel</button>
+			<button class="custom-btn custom-btn--s3 btn-external-link">continue</button>
+		</div>
+	</div>
+
+	<div id="modal-town-donate-auth" class="modal-town-donate modal-town-donate-auth">
+		<div class="town-donate-title-wrapper">
+			<h2 id="modal-town-donate-auth-title" class="town-donate-title">
+				Donate to Project
+			</h2>
+			<div class="title-divider"></div>
+		</div>
+		<div class="donate-as-guest-button-wrapper">
+			<button class="custom-btn custom-btn--s4" id="doante-as-guest">DONATE AS GUEST</button>
+		</div>
+		<div class="divider-wrapper">
+			<div class="divider"></div>
+			<span>or</span>
+			<div class="divider"></div>
+		</div>
+		<div class="form-wrapper">
+			<form id="donate_sign_in" class="modal__auth-form" action="#">
+				<div class="input-wrp">
+					<input class="textfield textfield--s2" name="email" placeholder="Email" type="text" data-validate-field="email" inputmode="email" x-inputmode="email" />
+				</div>
+
+				<div class="input-wrp">
+					<input class="textfield textfield--s2" name="password" placeholder="Password" type="password" data-validate-field="password" />
+					<i class="icon-eye icon-eye-off" id="togglePassword"></i>
+				</div>
+
+				<div class="text-center">
+					<button class="custom-btn custom-btn--s1 sign-in" name="submit" type="submit" role="button">SIGN IN</button>
+				</div>
+				<div id="donate_auth__result-msg" class="auth-form__note" hidden></div>
+				<div class="__text">
+					If you have a JRI-Poland account, please log in.<br/>
+					Don’t have an account? Create one <a href="https://jri-poland.org/signup/">here</a>.
+				</div>
+			</form>
+		</div>
+	</div>
+</div>
+</div>
+
+<script data-cfasync="false" src="/cdn-cgi/scripts/5c5dd728/cloudflare-static/email-decode.min.js"></script><script type="speculationrules">
+{"prefetch":[{"source":"document","where":{"and":[{"href_matches":"/*"},{"not":{"href_matches":["/wp-*.php","/wp-admin/*","/wp-content/uploads/*","/wp-content/*","/wp-content/plugins/*","/wp-content/themes/jri-publicsite/*","/*\\?(.+)"]}},{"not":{"selector_matches":"a[rel~=\"nofollow\"]"}},{"not":{"selector_matches":".no-prefetch, .no-prefetch a"}}]},"eagerness":"conservative"}]}
+</script>
+
+<!--Start of Tawk.to Script (0.9.3)-->
+<script id="tawk-script" type="text/javascript">
+var Tawk_API = Tawk_API || {};
+var Tawk_LoadStart=new Date();
+(function(){
+	var s1 = document.createElement( 'script' ),s0=document.getElementsByTagName( 'script' )[0];
+	s1.async = true;
+	s1.src = 'https://embed.tawk.to/618d95d66885f60a50bb69e7/1fk8h2ji9';
+	s1.charset = 'UTF-8';
+	s1.setAttribute( 'crossorigin','*' );
+	s0.parentNode.insertBefore( s1, s0 );
+})();
+</script>
+<!--End of Tawk.to Script (0.9.3)-->
+
+		<script>
+		( function ( body ) {
+			'use strict';
+			body.className = body.className.replace( /\btribe-no-js\b/, 'tribe-js' );
+		} )( document.body );
+		</script>
+		<script> /* <![CDATA[ */var tribe_l10n_datatables = {"aria":{"sort_ascending":": activate to sort column ascending","sort_descending":": activate to sort column descending"},"length_menu":"Show _MENU_ entries","empty_table":"No data available in table","info":"Showing _START_ to _END_ of _TOTAL_ entries","info_empty":"Showing 0 to 0 of 0 entries","info_filtered":"(filtered from _MAX_ total entries)","zero_records":"No matching records found","search":"Search:","all_selected_text":"All items on this page were selected. ","select_all_link":"Select all pages","clear_selection":"Clear Selection.","pagination":{"all":"All","next":"Next","previous":"Previous"},"select":{"rows":{"0":"","_":": Selected %d rows","1":": Selected 1 row"}},"datepicker":{"dayNames":["Sunday","Monday","Tuesday","Wednesday","Thursday","Friday","Saturday"],"dayNamesShort":["Sun","Mon","Tue","Wed","Thu","Fri","Sat"],"dayNamesMin":["S","M","T","W","T","F","S"],"monthNames":["January","February","March","April","May","June","July","August","September","October","November","December"],"monthNamesShort":["January","February","March","April","May","June","July","August","September","October","November","December"],"monthNamesMin":["Jan","Feb","Mar","Apr","May","Jun","Jul","Aug","Sep","Oct","Nov","Dec"],"nextText":"Next","prevText":"Prev","currentText":"Today","closeText":"Done","today":"Today","clear":"Clear"},"registration_prompt":"There is unsaved attendee information. Are you sure you want to continue?"};/* ]]> */ </script><div class="wt-cli-cookie-bar-container" data-nosnippet="true"><!--googleoff: all--><div id="cookie-law-info-bar" role="dialog" aria-live="polite" aria-label="cookieconsent" aria-describedby="wt-cli-cookie-banner" data-cli-geo-loc="0" style="" class="wt-cli-cookie-bar"><div class="cli-wrapper"><h5 role="heading" aria-level="5" tabindex="0" id="wt-cli-cookie-banner-title" style="">Shalom, friend!</h5><span id="wt-cli-cookie-banner">This website uses cookies to improve your experience and monitor performance - only cookies to this end are included if you accept them. We'll assume you're ok with this, but you can opt-out if you wish. <a id="wt-cli-settings-btn" tabindex="0" role='button' style="margin:5px 20px 5px 20px;"class="wt-cli-element cli_settings_button"  >Cookie settings</a><a id="wt-cli-accept-btn" tabindex="0" role='button' style="margin:5px;" data-cli_action="accept"  class="wt-cli-element medium cli-plugin-button cli-plugin-main-button cookie_action_close_header cli_action_button" >ACCEPT</a></span></div></div><div tabindex="0" id="cookie-law-info-again" style="display:none;"><span id="cookie_hdr_showagain">Privacy & Cookies Policy</span></div><div class="cli-modal" id="cliSettingsPopup" role="dialog" aria-labelledby="wt-cli-privacy-title" tabindex="-1" aria-hidden="true">
+  <div class="cli-modal-dialog" role="document">
+    <div class="cli-modal-content cli-bar-popup">
+      <button aria-label="Close" type="button" class="cli-modal-close" id="cliModalClose">
+      <svg class="" viewBox="0 0 24 24"><path d="M19 6.41l-1.41-1.41-5.59 5.59-5.59-5.59-1.41 1.41 5.59 5.59-5.59 5.59 1.41 1.41 5.59-5.59 5.59 5.59 1.41-1.41-5.59-5.59z"></path><path d="M0 0h24v24h-24z" fill="none"></path></svg>
+      <span class="wt-cli-sr-only">Close</span>
+      </button>
+        <div class="cli-modal-body">
+
+    <div class="wt-cli-element cli-container-fluid cli-tab-container">
+        <div class="cli-row">
+                            <div class="cli-col-12 cli-align-items-stretch cli-px-0">
+                    <div class="cli-privacy-overview">
+                        <h4 id='wt-cli-privacy-title'>Privacy Overview</h4>                        <div class="cli-privacy-content">
+                            <div class="cli-privacy-content-text">This website uses cookies to improve your experience while you navigate through the website. Out of these cookies, the cookies that are categorized as necessary are stored on your browser as they are essential for the working of basic functionalities of the website. We also use third-party cookies that help us analyze and understand how you use this website. These cookies will be stored in your browser only with your consent. You also have the option to opt-out of these cookies. But opting out of some of these cookies may have an effect on your browsing experience.</div>
+                        </div>
+                        <a id="wt-cli-privacy-readmore"  tabindex="0" role="button" class="cli-privacy-readmore" data-readmore-text="Show more" data-readless-text="Show less"></a>                    </div>
+                </div>
+                        <div class="cli-col-12 cli-align-items-stretch cli-px-0 cli-tab-section-container">
+
+                
+                                    <div class="cli-tab-section">
+                        <div class="cli-tab-header">
+                            <a id="wt-cli-tab-link-necessary" tabindex="0" role="tab" aria-expanded="false" aria-describedby="wt-cli-tab-necessary" aria-controls="wt-cli-tab-necessary" class="cli-nav-link cli-settings-mobile" data-target="necessary" data-toggle="cli-toggle-tab">
+                                Necessary                            </a>
+                                                                                        <div class="wt-cli-necessary-checkbox">
+                                    <input type="checkbox" class="cli-user-preference-checkbox" id="wt-cli-checkbox-necessary" aria-label="Necessary" data-id="checkbox-necessary" checked="checked" />
+                                    <label class="form-check-label" for="wt-cli-checkbox-necessary"> Necessary </label>
+                                </div>
+                                <span class="cli-necessary-caption">
+                                    Always Enabled                                </span>
+                                                    </div>
+                        <div class="cli-tab-content">
+                            <div id="wt-cli-tab-necessary" tabindex="0" role="tabpanel" aria-labelledby="wt-cli-tab-link-necessary" class="cli-tab-pane cli-fade" data-id="necessary">
+                                <p>Necessary cookies are absolutely essential for the website to function properly. This category only includes cookies that ensures basic functionalities and security features of the website. These cookies do not store any personal information.</p>
+                            </div>
+                        </div>
+                    </div>
+                                    <div class="cli-tab-section">
+                        <div class="cli-tab-header">
+                            <a id="wt-cli-tab-link-non-necessary" tabindex="0" role="tab" aria-expanded="false" aria-describedby="wt-cli-tab-non-necessary" aria-controls="wt-cli-tab-non-necessary" class="cli-nav-link cli-settings-mobile" data-target="non-necessary" data-toggle="cli-toggle-tab">
+                                Non Necessary                            </a>
+                                                                                        <div class="cli-switch">
+                                    <input type="checkbox" class="cli-user-preference-checkbox"  id="wt-cli-checkbox-non-necessary" aria-label="non-necessary" data-id="checkbox-non-necessary" role="switch" aria-controls="wt-cli-tab-link-non-necessary" aria-labelledby="wt-cli-tab-link-non-necessary"  />
+                                    <label for="wt-cli-checkbox-non-necessary" class="cli-slider" data-cli-enable="Enabled" data-cli-disable="Disabled"><span class="wt-cli-sr-only">non-necessary</span></label>
+                                </div>
+                                                    </div>
+                        <div class="cli-tab-content">
+                            <div id="wt-cli-tab-non-necessary" tabindex="0" role="tabpanel" aria-labelledby="wt-cli-tab-link-non-necessary" class="cli-tab-pane cli-fade" data-id="non-necessary">
+                                <p>Any cookies that may not be particularly necessary for the website to function and is used specifically to collect user personal data via analytics, ads, other embedded contents are termed as non-necessary cookies. It is mandatory to procure user consent prior to running these cookies on your website.</p>
+                            </div>
+                        </div>
+                    </div>
+                
+            </div>
+        </div>
+    </div>
+</div>
+<div class="cli-modal-footer">
+    <div class="wt-cli-element cli-container-fluid cli-tab-container">
+        <div class="cli-row">
+            <div class="cli-col-12 cli-align-items-stretch cli-px-0">
+                <div class="cli-tab-footer wt-cli-privacy-overview-actions">
+                    
+                        
+                                                    <a id="wt-cli-privacy-save-btn" role="button" tabindex="0" data-cli-action="accept" class="wt-cli-privacy-btn cli_setting_save_button wt-cli-privacy-accept-btn cli-btn">Save & Accept</a>
+                                                                    
+                </div>
+                            </div>
+        </div>
+    </div>
+</div>
+    </div>
+  </div>
+</div>
+<div class="cli-modal-backdrop cli-fade cli-settings-overlay"></div>
+<div class="cli-modal-backdrop cli-fade cli-popupbar-overlay"></div>
+<!--googleon: all--></div>
+		<script type="text/javascript">
+		/* <![CDATA[ */
+			cli_cookiebar_settings='{"animate_speed_hide":"500","animate_speed_show":"500","background":"#FFF","border":"#b1a6a6c2","border_on":false,"button_1_button_colour":"#000","button_1_button_hover":"#000000","button_1_link_colour":"#fff","button_1_as_button":true,"button_1_new_win":false,"button_2_button_colour":"#333","button_2_button_hover":"#292929","button_2_link_colour":"#444","button_2_as_button":false,"button_2_hidebar":false,"button_2_nofollow":false,"button_3_button_colour":"#000","button_3_button_hover":"#000000","button_3_link_colour":"#fff","button_3_as_button":true,"button_3_new_win":false,"button_4_button_colour":"#000","button_4_button_hover":"#000000","button_4_link_colour":"#62a329","button_4_as_button":false,"button_7_button_colour":"#61a229","button_7_button_hover":"#4e8221","button_7_link_colour":"#fff","button_7_as_button":true,"button_7_new_win":false,"font_family":"inherit","header_fix":false,"notify_animate_hide":true,"notify_animate_show":false,"notify_div_id":"#cookie-law-info-bar","notify_position_horizontal":"right","notify_position_vertical":"bottom","scroll_close":false,"scroll_close_reload":false,"accept_close_reload":true,"reject_close_reload":true,"showagain_tab":false,"showagain_background":"#fff","showagain_border":"#000","showagain_div_id":"#cookie-law-info-again","showagain_x_position":"100px","text":"#4a4943","show_once_yn":false,"show_once":"10000","logging_on":true,"as_popup":false,"popup_overlay":true,"bar_heading_text":"Shalom, friend!","cookie_bar_as":"banner","cookie_setting_popup":true,"accept_all":true,"js_script_blocker":false,"popup_showagain_position":"bottom-right","widget_position":"left","button_1_style":[["margin","5px"]],"button_2_style":"","button_3_style":"","button_4_style":[["margin","5px 20px 5px 20px"]],"button_5_style":[["float","right"],["text-decoration","none"],["color","#333"]],"button_7_style":[["margin","5px 5px 5px 30px"],["border-radius","0"],["padding","8px 25px 8px 25px"]],"accept_close_page_navigation":false}';
+		/* ]]> */
+		</script>
+		<script type="text/javascript" src="https://jri-poland.org/wp-content/plugins/event-tickets/common/build/js/user-agent.js?ver=da75d0bdea6dde3898df" id="tec-user-agent-js"></script>
+<script type="text/javascript" src="https://unpkg.com/@googlemaps/markerclustererplus/dist/index.min.js" id="markerclustererplus-js"></script>
+<script type="text/javascript" src="https://cdn.jsdelivr.net/npm/@tsparticles/confetti@3.0.3/tsparticles.confetti.bundle.min.js?ver=3.0.3" id="tsparticles-confetti-js"></script>
+<script type="text/javascript" id="main-script-js-extra">
+/* <![CDATA[ */
+var admin_url = {"ajax_url":"https://jri-poland.org/wp-admin/admin-ajax.php","nonce":"7362492ddd"};
+//# sourceURL=main-script-js-extra
+/* ]]> */
+</script>
+<script type="text/javascript" src="https://jri-poland.org/wp-content/themes/jri-publicsite/assets/js/main.min.js?v=1nk0gch4rtl" id="main-script-js"></script>
+<script type="text/javascript" id="ajax-script-js-extra">
+/* <![CDATA[ */
+var admin_url = {"ajax_url":"https://jri-poland.org/wp-admin/admin-ajax.php","nonce":"7362492ddd"};
+//# sourceURL=ajax-script-js-extra
+/* ]]> */
+</script>
+<script type="text/javascript" src="https://jri-poland.org/wp-content/themes/jri-publicsite/assets/js/ajax.min.js?v=1nk0gch4rtl" id="ajax-script-js"></script>
+<script id="wp-emoji-settings" type="application/json">
+{"baseUrl":"https://s.w.org/images/core/emoji/17.0.2/72x72/","ext":".png","svgUrl":"https://s.w.org/images/core/emoji/17.0.2/svg/","svgExt":".svg","source":{"concatemoji":"https://jri-poland.org/wp-includes/js/wp-emoji-release.min.js?ver=b4ba65b27e428b8edfc51b538352d840"}}
+</script>
+<script type="module">
+/* <![CDATA[ */
+/*! This file is auto-generated */
+const a=JSON.parse(document.getElementById("wp-emoji-settings").textContent),o=(window._wpemojiSettings=a,"wpEmojiSettingsSupports"),s=["flag","emoji"];function i(e){try{var t={supportTests:e,timestamp:(new Date).valueOf()};sessionStorage.setItem(o,JSON.stringify(t))}catch(e){}}function c(e,t,n){e.clearRect(0,0,e.canvas.width,e.canvas.height),e.fillText(t,0,0);t=new Uint32Array(e.getImageData(0,0,e.canvas.width,e.canvas.height).data);e.clearRect(0,0,e.canvas.width,e.canvas.height),e.fillText(n,0,0);const a=new Uint32Array(e.getImageData(0,0,e.canvas.width,e.canvas.height).data);return t.every((e,t)=>e===a[t])}function p(e,t){e.clearRect(0,0,e.canvas.width,e.canvas.height),e.fillText(t,0,0);var n=e.getImageData(16,16,1,1);for(let e=0;e<n.data.length;e++)if(0!==n.data[e])return!1;return!0}function u(e,t,n,a){switch(t){case"flag":return n(e,"\ud83c\udff3\ufe0f\u200d\u26a7\ufe0f","\ud83c\udff3\ufe0f\u200b\u26a7\ufe0f")?!1:!n(e,"\ud83c\udde8\ud83c\uddf6","\ud83c\udde8\u200b\ud83c\uddf6")&&!n(e,"\ud83c\udff4\udb40\udc67\udb40\udc62\udb40\udc65\udb40\udc6e\udb40\udc67\udb40\udc7f","\ud83c\udff4\u200b\udb40\udc67\u200b\udb40\udc62\u200b\udb40\udc65\u200b\udb40\udc6e\u200b\udb40\udc67\u200b\udb40\udc7f");case"emoji":return!a(e,"\ud83e\u1fac8")}return!1}function f(e,t,n,a){let r;const o=(r="undefined"!=typeof WorkerGlobalScope&&self instanceof WorkerGlobalScope?new OffscreenCanvas(300,150):document.createElement("canvas")).getContext("2d",{willReadFrequently:!0}),s=(o.textBaseline="top",o.font="600 32px Arial",{});return e.forEach(e=>{s[e]=t(o,e,n,a)}),s}function r(e){var t=document.createElement("script");t.src=e,t.defer=!0,document.head.appendChild(t)}a.supports={everything:!0,everythingExceptFlag:!0},new Promise(t=>{let n=function(){try{var e=JSON.parse(sessionStorage.getItem(o));if("object"==typeof e&&"number"==typeof e.timestamp&&(new Date).valueOf()<e.timestamp+604800&&"object"==typeof e.supportTests)return e.supportTests}catch(e){}return null}();if(!n){if("undefined"!=typeof Worker&&"undefined"!=typeof OffscreenCanvas&&"undefined"!=typeof URL&&URL.createObjectURL&&"undefined"!=typeof Blob)try{var e="postMessage("+f.toString()+"("+[JSON.stringify(s),u.toString(),c.toString(),p.toString()].join(",")+"));",a=new Blob([e],{type:"text/javascript"});const r=new Worker(URL.createObjectURL(a),{name:"wpTestEmojiSupports"});return void(r.onmessage=e=>{i(n=e.data),r.terminate(),t(n)})}catch(e){}i(n=f(s,u,c,p))}t(n)}).then(e=>{for(const n in e)a.supports[n]=e[n],a.supports.everything=a.supports.everything&&a.supports[n],"flag"!==n&&(a.supports.everythingExceptFlag=a.supports.everythingExceptFlag&&a.supports[n]);var t;a.supports.everythingExceptFlag=a.supports.everythingExceptFlag&&!a.supports.flag,a.supports.everything||((t=a.source||{}).concatemoji?r(t.concatemoji):t.wpemoji&&t.twemoji&&(r(t.twemoji),r(t.wpemoji)))});
+//# sourceURL=https://jri-poland.org/wp-includes/js/wp-emoji-loader.min.js
+/* ]]> */
+</script>
+
+<!-- Global site tag (gtag.js) - Google Analytics -->
+<!-- <script type="text/plain" data-cli-class="cli-blocker-script" data-cli-label="Google Tag Manager"  data-cli-script-type="necessary" data-cli-block="true" data-cli-block-if-ccpa-optout="false" data-cli-element-position="body" async src="https://www.googletagmanager.com/gtag/js?id=UA-39570278-3"></script>
+<script>window.dataLayer = window.dataLayer || []; function gtag(){dataLayer.push(arguments);} gtag('js', new Date()); gtag('config', 'UA-39570278-3');</script> -->
+
+</body>
+</html>

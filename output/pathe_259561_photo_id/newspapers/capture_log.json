@@ -1,0 +1,26 @@
+[
+  {
+    "name": "1935-05-24_travel_notice",
+    "error": "HTTP Error 400: Bad Request"
+  },
+  {
+    "name": "1935-12-20_pictures_of_palestine",
+    "error": "HTTP Error 400: Bad Request"
+  },
+  {
+    "name": "1935-12-27_lav_tovians_moving_pictures",
+    "error": "HTTP Error 400: Bad Request"
+  },
+  {
+    "name": "1936-01-10_pathfinders_bernard_jr",
+    "error": "HTTP Error 400: Bad Request"
+  },
+  {
+    "name": "1936-02-14_hillel_palestinian_experiences",
+    "error": "HTTP Error 400: Bad Request"
+  },
+  {
+    "name": "1936-01-31_town_talk_palestine_screen",
+    "error": "HTTP Error 400: Bad Request"
+  }
+]

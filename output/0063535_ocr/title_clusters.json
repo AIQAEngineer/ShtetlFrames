@@ -1,0 +1,492 @@
+[
+  {
+    "cluster": 0,
+    "t": 8.2,
+    "t_start": 8.2,
+    "t_end": 8.2,
+    "n_samples": 1,
+    "path": "C:\\Users\\Avi Schwartz\\Documents\\hasidic-footage-scan\\output\\0063535_ocr\\title_candidates\\cluster_00_t0008.2s.jpg",
+    "dark_frac": 0.95,
+    "bright_frac": 0.012
+  },
+  {
+    "cluster": 1,
+    "t": 13.0,
+    "t_start": 13.0,
+    "t_end": 13.0,
+    "n_samples": 1,
+    "path": "C:\\Users\\Avi Schwartz\\Documents\\hasidic-footage-scan\\output\\0063535_ocr\\title_candidates\\cluster_01_t0013.0s.jpg",
+    "dark_frac": 0.844,
+    "bright_frac": 0.033
+  },
+  {
+    "cluster": 2,
+    "t": 34.1,
+    "t_start": 34.1,
+    "t_end": 34.1,
+    "n_samples": 1,
+    "path": "C:\\Users\\Avi Schwartz\\Documents\\hasidic-footage-scan\\output\\0063535_ocr\\title_candidates\\cluster_02_t0034.1s.jpg",
+    "dark_frac": 0.885,
+    "bright_frac": 0.012
+  },
+  {
+    "cluster": 3,
+    "t": 47.5,
+    "t_start": 47.5,
+    "t_end": 47.5,
+    "n_samples": 1,
+    "path": "C:\\Users\\Avi Schwartz\\Documents\\hasidic-footage-scan\\output\\0063535_ocr\\title_candidates\\cluster_03_t0047.5s.jpg",
+    "dark_frac": 0.801,
+    "bright_frac": 0.062
+  },
+  {
+    "cluster": 4,
+    "t": 48.0,
+    "t_start": 48.0,
+    "t_end": 48.0,
+    "n_samples": 1,
+    "path": "C:\\Users\\Avi Schwartz\\Documents\\hasidic-footage-scan\\output\\0063535_ocr\\title_candidates\\cluster_04_t0048.0s.jpg",
+    "dark_frac": 0.829,
+    "bright_frac": 0.055
+  },
+  {
+    "cluster": 5,
+    "t": 48.5,
+    "t_start": 48.5,
+    "t_end": 48.5,
+    "n_samples": 1,
+    "path": "C:\\Users\\Avi Schwartz\\Documents\\hasidic-footage-scan\\output\\0063535_ocr\\title_candidates\\cluster_05_t0048.5s.jpg",
+    "dark_frac": 0.835,
+    "bright_frac": 0.053
+  },
+  {
+    "cluster": 6,
+    "t": 49.0,
+    "t_start": 49.0,
+    "t_end": 49.0,
+    "n_samples": 1,
+    "path": "C:\\Users\\Avi Schwartz\\Documents\\hasidic-footage-scan\\output\\0063535_ocr\\title_candidates\\cluster_06_t0049.0s.jpg",
+    "dark_frac": 0.797,
+    "bright_frac": 0.059
+  },
+  {
+    "cluster": 7,
+    "t": 49.4,
+    "t_start": 49.4,
+    "t_end": 49.4,
+    "n_samples": 1,
+    "path": "C:\\Users\\Avi Schwartz\\Documents\\hasidic-footage-scan\\output\\0063535_ocr\\title_candidates\\cluster_07_t0049.4s.jpg",
+    "dark_frac": 0.781,
+    "bright_frac": 0.056
+  },
+  {
+    "cluster": 8,
+    "t": 104.6,
+    "t_start": 104.6,
+    "t_end": 104.6,
+    "n_samples": 1,
+    "path": "C:\\Users\\Avi Schwartz\\Documents\\hasidic-footage-scan\\output\\0063535_ocr\\title_candidates\\cluster_08_t0104.6s.jpg",
+    "dark_frac": 0.851,
+    "bright_frac": 0.027
+  },
+  {
+    "cluster": 9,
+    "t": 169.4,
+    "t_start": 169.4,
+    "t_end": 169.4,
+    "n_samples": 1,
+    "path": "C:\\Users\\Avi Schwartz\\Documents\\hasidic-footage-scan\\output\\0063535_ocr\\title_candidates\\cluster_09_t0169.4s.jpg",
+    "dark_frac": 0.788,
+    "bright_frac": 0.01
+  },
+  {
+    "cluster": 10,
+    "t": 169.9,
+    "t_start": 169.9,
+    "t_end": 169.9,
+    "n_samples": 1,
+    "path": "C:\\Users\\Avi Schwartz\\Documents\\hasidic-footage-scan\\output\\0063535_ocr\\title_candidates\\cluster_10_t0169.9s.jpg",
+    "dark_frac": 0.77,
+    "bright_frac": 0.009
+  },
+  {
+    "cluster": 11,
+    "t": 170.4,
+    "t_start": 170.4,
+    "t_end": 170.4,
+    "n_samples": 1,
+    "path": "C:\\Users\\Avi Schwartz\\Documents\\hasidic-footage-scan\\output\\0063535_ocr\\title_candidates\\cluster_11_t0170.4s.jpg",
+    "dark_frac": 0.787,
+    "bright_frac": 0.011
+  },
+  {
+    "cluster": 12,
+    "t": 183.4,
+    "t_start": 183.4,
+    "t_end": 183.4,
+    "n_samples": 1,
+    "path": "C:\\Users\\Avi Schwartz\\Documents\\hasidic-footage-scan\\output\\0063535_ocr\\title_candidates\\cluster_12_t0183.4s.jpg",
+    "dark_frac": 0.768,
+    "bright_frac": 0.013
+  },
+  {
+    "cluster": 13,
+    "t": 247.2,
+    "t_start": 246.7,
+    "t_end": 251.5,
+    "n_samples": 3,
+    "path": "C:\\Users\\Avi Schwartz\\Documents\\hasidic-footage-scan\\output\\0063535_ocr\\title_candidates\\cluster_13_t0247.2s.jpg",
+    "dark_frac": 0.765,
+    "bright_frac": 0.046
+  },
+  {
+    "cluster": 14,
+    "t": 252.5,
+    "t_start": 250.6,
+    "t_end": 252.5,
+    "n_samples": 3,
+    "path": "C:\\Users\\Avi Schwartz\\Documents\\hasidic-footage-scan\\output\\0063535_ocr\\title_candidates\\cluster_14_t0252.5s.jpg",
+    "dark_frac": 0.752,
+    "bright_frac": 0.058
+  },
+  {
+    "cluster": 15,
+    "t": 251.0,
+    "t_start": 251.0,
+    "t_end": 251.0,
+    "n_samples": 1,
+    "path": "C:\\Users\\Avi Schwartz\\Documents\\hasidic-footage-scan\\output\\0063535_ocr\\title_candidates\\cluster_15_t0251.0s.jpg",
+    "dark_frac": 0.785,
+    "bright_frac": 0.046
+  },
+  {
+    "cluster": 16,
+    "t": 253.0,
+    "t_start": 253.0,
+    "t_end": 253.4,
+    "n_samples": 2,
+    "path": "C:\\Users\\Avi Schwartz\\Documents\\hasidic-footage-scan\\output\\0063535_ocr\\title_candidates\\cluster_16_t0253.0s.jpg",
+    "dark_frac": 0.759,
+    "bright_frac": 0.06
+  },
+  {
+    "cluster": 17,
+    "t": 255.4,
+    "t_start": 255.4,
+    "t_end": 255.4,
+    "n_samples": 1,
+    "path": "C:\\Users\\Avi Schwartz\\Documents\\hasidic-footage-scan\\output\\0063535_ocr\\title_candidates\\cluster_17_t0255.4s.jpg",
+    "dark_frac": 0.76,
+    "bright_frac": 0.059
+  },
+  {
+    "cluster": 18,
+    "t": 255.8,
+    "t_start": 255.8,
+    "t_end": 255.8,
+    "n_samples": 1,
+    "path": "C:\\Users\\Avi Schwartz\\Documents\\hasidic-footage-scan\\output\\0063535_ocr\\title_candidates\\cluster_18_t0255.8s.jpg",
+    "dark_frac": 0.78,
+    "bright_frac": 0.044
+  },
+  {
+    "cluster": 19,
+    "t": 260.6,
+    "t_start": 260.6,
+    "t_end": 260.6,
+    "n_samples": 1,
+    "path": "C:\\Users\\Avi Schwartz\\Documents\\hasidic-footage-scan\\output\\0063535_ocr\\title_candidates\\cluster_19_t0260.6s.jpg",
+    "dark_frac": 0.769,
+    "bright_frac": 0.02
+  },
+  {
+    "cluster": 20,
+    "t": 265.0,
+    "t_start": 265.0,
+    "t_end": 265.0,
+    "n_samples": 1,
+    "path": "C:\\Users\\Avi Schwartz\\Documents\\hasidic-footage-scan\\output\\0063535_ocr\\title_candidates\\cluster_20_t0265.0s.jpg",
+    "dark_frac": 0.768,
+    "bright_frac": 0.036
+  },
+  {
+    "cluster": 21,
+    "t": 283.2,
+    "t_start": 282.7,
+    "t_end": 283.2,
+    "n_samples": 2,
+    "path": "C:\\Users\\Avi Schwartz\\Documents\\hasidic-footage-scan\\output\\0063535_ocr\\title_candidates\\cluster_21_t0283.2s.jpg",
+    "dark_frac": 0.82,
+    "bright_frac": 0.03
+  },
+  {
+    "cluster": 22,
+    "t": 284.6,
+    "t_start": 283.7,
+    "t_end": 289.4,
+    "n_samples": 8,
+    "path": "C:\\Users\\Avi Schwartz\\Documents\\hasidic-footage-scan\\output\\0063535_ocr\\title_candidates\\cluster_22_t0284.6s.jpg",
+    "dark_frac": 0.773,
+    "bright_frac": 0.057
+  },
+  {
+    "cluster": 23,
+    "t": 285.6,
+    "t_start": 285.6,
+    "t_end": 289.0,
+    "n_samples": 3,
+    "path": "C:\\Users\\Avi Schwartz\\Documents\\hasidic-footage-scan\\output\\0063535_ocr\\title_candidates\\cluster_23_t0285.6s.jpg",
+    "dark_frac": 0.812,
+    "bright_frac": 0.043
+  },
+  {
+    "cluster": 24,
+    "t": 287.5,
+    "t_start": 287.0,
+    "t_end": 287.5,
+    "n_samples": 2,
+    "path": "C:\\Users\\Avi Schwartz\\Documents\\hasidic-footage-scan\\output\\0063535_ocr\\title_candidates\\cluster_24_t0287.5s.jpg",
+    "dark_frac": 0.815,
+    "bright_frac": 0.039
+  },
+  {
+    "cluster": 25,
+    "t": 289.9,
+    "t_start": 289.9,
+    "t_end": 289.9,
+    "n_samples": 1,
+    "path": "C:\\Users\\Avi Schwartz\\Documents\\hasidic-footage-scan\\output\\0063535_ocr\\title_candidates\\cluster_25_t0289.9s.jpg",
+    "dark_frac": 0.807,
+    "bright_frac": 0.034
+  },
+  {
+    "cluster": 26,
+    "t": 290.4,
+    "t_start": 290.4,
+    "t_end": 290.4,
+    "n_samples": 1,
+    "path": "C:\\Users\\Avi Schwartz\\Documents\\hasidic-footage-scan\\output\\0063535_ocr\\title_candidates\\cluster_26_t0290.4s.jpg",
+    "dark_frac": 0.799,
+    "bright_frac": 0.033
+  },
+  {
+    "cluster": 27,
+    "t": 290.9,
+    "t_start": 290.9,
+    "t_end": 290.9,
+    "n_samples": 1,
+    "path": "C:\\Users\\Avi Schwartz\\Documents\\hasidic-footage-scan\\output\\0063535_ocr\\title_candidates\\cluster_27_t0290.9s.jpg",
+    "dark_frac": 0.791,
+    "bright_frac": 0.028
+  },
+  {
+    "cluster": 28,
+    "t": 291.4,
+    "t_start": 291.4,
+    "t_end": 291.4,
+    "n_samples": 1,
+    "path": "C:\\Users\\Avi Schwartz\\Documents\\hasidic-footage-scan\\output\\0063535_ocr\\title_candidates\\cluster_28_t0291.4s.jpg",
+    "dark_frac": 0.805,
+    "bright_frac": 0.032
+  },
+  {
+    "cluster": 29,
+    "t": 291.8,
+    "t_start": 291.8,
+    "t_end": 294.7,
+    "n_samples": 2,
+    "path": "C:\\Users\\Avi Schwartz\\Documents\\hasidic-footage-scan\\output\\0063535_ocr\\title_candidates\\cluster_29_t0291.8s.jpg",
+    "dark_frac": 0.805,
+    "bright_frac": 0.035
+  },
+  {
+    "cluster": 30,
+    "t": 293.3,
+    "t_start": 292.3,
+    "t_end": 293.8,
+    "n_samples": 4,
+    "path": "C:\\Users\\Avi Schwartz\\Documents\\hasidic-footage-scan\\output\\0063535_ocr\\title_candidates\\cluster_30_t0293.3s.jpg",
+    "dark_frac": 0.781,
+    "bright_frac": 0.046
+  },
+  {
+    "cluster": 31,
+    "t": 294.2,
+    "t_start": 294.2,
+    "t_end": 294.2,
+    "n_samples": 1,
+    "path": "C:\\Users\\Avi Schwartz\\Documents\\hasidic-footage-scan\\output\\0063535_ocr\\title_candidates\\cluster_31_t0294.2s.jpg",
+    "dark_frac": 0.81,
+    "bright_frac": 0.031
+  },
+  {
+    "cluster": 32,
+    "t": 295.2,
+    "t_start": 295.2,
+    "t_end": 295.2,
+    "n_samples": 1,
+    "path": "C:\\Users\\Avi Schwartz\\Documents\\hasidic-footage-scan\\output\\0063535_ocr\\title_candidates\\cluster_32_t0295.2s.jpg",
+    "dark_frac": 0.795,
+    "bright_frac": 0.027
+  },
+  {
+    "cluster": 33,
+    "t": 314.9,
+    "t_start": 314.9,
+    "t_end": 314.9,
+    "n_samples": 1,
+    "path": "C:\\Users\\Avi Schwartz\\Documents\\hasidic-footage-scan\\output\\0063535_ocr\\title_candidates\\cluster_33_t0314.9s.jpg",
+    "dark_frac": 0.763,
+    "bright_frac": 0.052
+  },
+  {
+    "cluster": 34,
+    "t": 329.8,
+    "t_start": 329.8,
+    "t_end": 330.2,
+    "n_samples": 2,
+    "path": "C:\\Users\\Avi Schwartz\\Documents\\hasidic-footage-scan\\output\\0063535_ocr\\title_candidates\\cluster_34_t0329.8s.jpg",
+    "dark_frac": 0.805,
+    "bright_frac": 0.033
+  },
+  {
+    "cluster": 35,
+    "t": 330.7,
+    "t_start": 330.7,
+    "t_end": 330.7,
+    "n_samples": 1,
+    "path": "C:\\Users\\Avi Schwartz\\Documents\\hasidic-footage-scan\\output\\0063535_ocr\\title_candidates\\cluster_35_t0330.7s.jpg",
+    "dark_frac": 0.843,
+    "bright_frac": 0.028
+  },
+  {
+    "cluster": 36,
+    "t": 331.2,
+    "t_start": 331.2,
+    "t_end": 332.2,
+    "n_samples": 2,
+    "path": "C:\\Users\\Avi Schwartz\\Documents\\hasidic-footage-scan\\output\\0063535_ocr\\title_candidates\\cluster_36_t0331.2s.jpg",
+    "dark_frac": 0.854,
+    "bright_frac": 0.027
+  },
+  {
+    "cluster": 37,
+    "t": 331.7,
+    "t_start": 331.7,
+    "t_end": 331.7,
+    "n_samples": 1,
+    "path": "C:\\Users\\Avi Schwartz\\Documents\\hasidic-footage-scan\\output\\0063535_ocr\\title_candidates\\cluster_37_t0331.7s.jpg",
+    "dark_frac": 0.856,
+    "bright_frac": 0.026
+  },
+  {
+    "cluster": 38,
+    "t": 332.6,
+    "t_start": 332.6,
+    "t_end": 332.6,
+    "n_samples": 1,
+    "path": "C:\\Users\\Avi Schwartz\\Documents\\hasidic-footage-scan\\output\\0063535_ocr\\title_candidates\\cluster_38_t0332.6s.jpg",
+    "dark_frac": 0.811,
+    "bright_frac": 0.035
+  },
+  {
+    "cluster": 39,
+    "t": 337.9,
+    "t_start": 337.9,
+    "t_end": 337.9,
+    "n_samples": 1,
+    "path": "C:\\Users\\Avi Schwartz\\Documents\\hasidic-footage-scan\\output\\0063535_ocr\\title_candidates\\cluster_39_t0337.9s.jpg",
+    "dark_frac": 0.83,
+    "bright_frac": 0.006
+  },
+  {
+    "cluster": 40,
+    "t": 347.5,
+    "t_start": 347.0,
+    "t_end": 347.5,
+    "n_samples": 2,
+    "path": "C:\\Users\\Avi Schwartz\\Documents\\hasidic-footage-scan\\output\\0063535_ocr\\title_candidates\\cluster_40_t0347.5s.jpg",
+    "dark_frac": 0.752,
+    "bright_frac": 0.043
+  },
+  {
+    "cluster": 41,
+    "t": 357.1,
+    "t_start": 357.1,
+    "t_end": 357.1,
+    "n_samples": 1,
+    "path": "C:\\Users\\Avi Schwartz\\Documents\\hasidic-footage-scan\\output\\0063535_ocr\\title_candidates\\cluster_41_t0357.1s.jpg",
+    "dark_frac": 0.761,
+    "bright_frac": 0.029
+  },
+  {
+    "cluster": 42,
+    "t": 358.1,
+    "t_start": 358.1,
+    "t_end": 358.1,
+    "n_samples": 1,
+    "path": "C:\\Users\\Avi Schwartz\\Documents\\hasidic-footage-scan\\output\\0063535_ocr\\title_candidates\\cluster_42_t0358.1s.jpg",
+    "dark_frac": 0.756,
+    "bright_frac": 0.032
+  },
+  {
+    "cluster": 43,
+    "t": 361.4,
+    "t_start": 361.4,
+    "t_end": 361.4,
+    "n_samples": 1,
+    "path": "C:\\Users\\Avi Schwartz\\Documents\\hasidic-footage-scan\\output\\0063535_ocr\\title_candidates\\cluster_43_t0361.4s.jpg",
+    "dark_frac": 0.758,
+    "bright_frac": 0.02
+  },
+  {
+    "cluster": 44,
+    "t": 361.9,
+    "t_start": 361.9,
+    "t_end": 361.9,
+    "n_samples": 1,
+    "path": "C:\\Users\\Avi Schwartz\\Documents\\hasidic-footage-scan\\output\\0063535_ocr\\title_candidates\\cluster_44_t0361.9s.jpg",
+    "dark_frac": 0.764,
+    "bright_frac": 0.031
+  },
+  {
+    "cluster": 45,
+    "t": 362.9,
+    "t_start": 362.9,
+    "t_end": 362.9,
+    "n_samples": 1,
+    "path": "C:\\Users\\Avi Schwartz\\Documents\\hasidic-footage-scan\\output\\0063535_ocr\\title_candidates\\cluster_45_t0362.9s.jpg",
+    "dark_frac": 0.764,
+    "bright_frac": 0.036
+  },
+  {
+    "cluster": 46,
+    "t": 363.8,
+    "t_start": 363.8,
+    "t_end": 363.8,
+    "n_samples": 1,
+    "path": "C:\\Users\\Avi Schwartz\\Documents\\hasidic-footage-scan\\output\\0063535_ocr\\title_candidates\\cluster_46_t0363.8s.jpg",
+    "dark_frac": 0.752,
+    "bright_frac": 0.034
+  },
+  {
+    "cluster": 47,
+    "t": 368.2,
+    "t_start": 366.7,
+    "t_end": 369.1,
+    "n_samples": 6,
+    "path": "C:\\Users\\Avi Schwartz\\Documents\\hasidic-footage-scan\\output\\0063535_ocr\\title_candidates\\cluster_47_t0368.2s.jpg",
+    "dark_frac": 0.757,
+    "bright_frac": 0.042
+  },
+  {
+    "cluster": 48,
+    "t": 371.0,
+    "t_start": 371.0,
+    "t_end": 371.0,
+    "n_samples": 1,
+    "path": "C:\\Users\\Avi Schwartz\\Documents\\hasidic-footage-scan\\output\\0063535_ocr\\title_candidates\\cluster_48_t0371.0s.jpg",
+    "dark_frac": 0.755,
+    "bright_frac": 0.039
+  }
+]

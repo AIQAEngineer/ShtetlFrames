@@ -1,0 +1,2222 @@
+<!DOCTYPE html>
+<html>
+<head>
+	<title>Kutno/ - fotopolska.eu - Polska na fotografii</title>
+    	<meta http-equiv="Content-Type" content="text/html; charset=utf-8">
+	<meta name="robots" content="noindex,nofollow" />
+    	<link rel="alternate" media="only screen and (max-width: 640px)" href="https://m.fotopolska.eu/Kutno/">
+	<link href="/cssn/s_v7.css?v=202605060" rel="stylesheet" type="text/css">
+	<link href="/gfxn/o2019/o2021.css?v=202501130" rel="stylesheet" type="text/css">
+    	<link href="/cssn/custom-theme/jquery-ui-1.8.20.custom.css" rel="stylesheet" type="text/css">
+	<!--<link href='http://fonts.googleapis.com/css?family=Open+Sans:400,700,800' rel='stylesheet' type='text/css'>-->
+	<!--<link href='http://fonts.googleapis.com/css?family=PT+Sans:400,700' rel='stylesheet' type='text/css'>-->
+	<link rel="stylesheet" type="text/css" href="/jsn/fancybox2/jquery.fancybox.css" media="screen" />
+	<link rel="stylesheet" type="text/css" href="/cssn/fontawesome.5.9.0.all.min.css" media="screen" />
+    <script src="https://code.jquery.com/jquery-3.4.1.min.js" integrity="sha256-CSXorXvZcTkaix6Yvo6HppcZGetbYMGWSFlBw8HfCJo=" crossorigin="anonymous"></script><script src="/jsn/jquery.lazy-master/jquery.lazy.min.js"></script><script type="text/javascript" src="/jsn/jquery-ui-1.11.1.custom3/jquery-ui.min.js"></script>
+	<script type="text/javascript" src="/jsn/wspolne_v1.js?v=202511100"></script>
+	<script type="text/javascript" src="https://b.fotopolska.eu/jsn/fv7.js?v=202604281"></script>
+	<script type="text/javascript" src="/jsn/jquery.mousewheel.3.1.2.js"></script>
+	<script type="text/javascript" src="/jsn/jquery.jscrollpane.2.2.min.js"></script>
+	<script type="text/javascript" src="/jsn/fancybox2/jquery.fancybox.js"></script>
+	<script type="text/javascript" src="/jsn/jquery.memu-0.1.js"></script>
+	<script type="text/javascript" src="/jsn/clipboard.min.js"></script>
+	<!--<script type="text/javascript" src="/jsn/jquery.lazy-master/jquery.lazy.min.js"></script>-->
+    <script type="text/javascript">
+        var modul = 'ModulKraj';
+                        $(document).ready(function(){
+            $(":radio").prettyCheckboxes();
+            $(".pretty:checkbox").prettyCheckboxes();
+            $("A.f").fancybox({helpers : {
+                    title : {
+                        type : 'inside'
+                    }
+                },
+                loop: false,
+                beforeLoad: function(){
+                    end = this.link.indexOf(",") - 1;
+                    id = this.link.substr(1, end);
+                    this.title += '<div class="s11b" style="text-align:center"><a href="/'+id+',foto.html">Skomentuj zdj&#281;cie</a></div>';
+                },
+                afterShow: function(){
+                    $.post("/klasyn/AjaxOdslona.php",{id:this.link.substr(1, end)});
+                }
+            });
+        });
+	</script>
+</head>
+<body class="Polska">
+<div id="fb-root"></div>
+<div id="tipDiv2"></div>
+<script>(function(d, s, id) {
+        var js, fjs = d.getElementsByTagName(s)[0];
+        if (d.getElementById(id)) return;
+        js = d.createElement(s); js.id = id;
+        js.src = "//connect.facebook.net/pl_PL/all.js#xfbml=1&appId=210129115781726";
+        fjs.parentNode.insertBefore(js, fjs);
+    }(document, 'script', 'facebook-jssdk'));</script>
+<!--<div class="r12b" style="text-align:center;width:1000px;margin-left:auto;margin-right:auto;color:#0a0">Poprawki (29.08.2012) - mo&#380;na ju&#380; wysy&#322;a&#263; komentarze ze strony z komentarzami (Mozilla), mo&#380;na edytowa&#263; sw&#243;j profil (sprawa kolegi NDM).</div>-->
+<div class="r13" style="font-size:13px;color:#fff;text-align:center;padding:10px;background-color:#3d6800;position:fixed;bottom:0;z-index:1000;left:0;right:0">
+		<div style="max-width: 1592px; margin: auto">
+			<span><strong style="color:#fc0"><i class="fa fa-info-circle"></i> 22.07.2026</strong> Wymieniony kontroler, do którego podłączone są 2 dyski SSD - to powinno rozwiązać problem z zawieszaniem się strony.</strong></span>
+		</div>
+	</div><table class="Top NoPadding" style="margin-top:10px">
+            <tr>
+                <td style="height:43px;vertical-align:bottom;padding-left:1px;line-height:16px;" class="r11 Logowanie"><form action="/Kutno/" style="margin:0px" method="post" name="form_login">
+                        	<input type="text" name="nazwaUzytkownika" class="login" id="login" rel="login" maxlength="50" placeholder="e-mail / login"><input type="password" name="hasloUzytkownika" class="login" id="haslo" rel="haslo" maxlength="50" placeholder="hasło"><input type="submit" name="zaloguj" id="zaloguj" value="zaloguj" class="zaloguj"><div style="display:inline-block;margin-left:3px;margin-right:5px"><input type="checkbox" name="zapamietajHaslo" value="zapamietajHaslo" id="zh" style="vertical-align:middle;margin-right:5px"><label for="zh">zaloguj automatycznie</label></div> | <input type="hidden" name="returnTo" value="http://fotopolska.eu/Kutno/"> <span style="margin:0px 5px"><a href="/konto/zapomnialem.html" class="sz6">zapomniałem hasło</a></span> | 
+                            <span style="margin:0px 5px"><a href="/admin/newuser2.php" class="sz6" onClick="window.open('/admin/newuser2.php', 'cddd' , 'width=650, height=560, toolbar=yes, resizable=yes, statusbar=yes, scrollbars=yes'); return false" target="_blank">nowe konto</a></span>
+                             | <span style="margin:0px 5px;padding: 3px;background-color: #643d74;"><a href="/admin/newuser2.php" class="sz6" onClick="window.open('/admin/newuser2.php', 'cddd' , 'width=650, height=560, toolbar=yes, resizable=yes, statusbar=yes, scrollbars=yes'); return false" target="_blank">dodaj zdjęcie</a></span>
+                        </form></td>
+                <td style="text-align:right;padding-left:1px;vertical-align:bottom" rowspan="2">
+                    <div style="display:flex; justify-content: end;">
+                    	<div class="spr" rel="logo_fotopolska"></div>
+                    </div>
+                </td>
+            </tr>
+            <tr>
+                <td style="height:12px;line-height:12px;"></td>
+            </tr>
+        </table><div style="height:41px" id="top_div"><div id="top_bar">
+		<table class="Main NoPadding" style="background-color:#212121;border-bottom:0px">
+			<tr>
+				<td class="First">
+					<!--<div style="position:absolute">
+                        <div style="width:397px;height:264px;background:url('/gfxn/ba.png');position:absolute;top:-105px;left:-68px;z-index:-1"></div>
+                    </div>-->
+					<div class="xButton Menu Hover"><div class="menu-container">
+            <ul class="memu js-enabled">
+                <li class="memu-root">
+                    <div href="#" class="MainMenu">Menu »</div>
+                    <ul>
+                        <li>
+                            <a href="/"><div class="memu-icon spr" rel="ms"></div>Strona główna</a>
+                        </li>
+                        <li class="has-children">
+                            <a href="/"><div class="memu-icon spr" rel="mf"></div>Województwa</a>
+                            <ul>
+                                <li><a href="http://fotopolska.eu/woj.dolnoslaskie.html"><div class="memu-icon spr" rel="ms"></div>dolnośląskie</a></li>
+                                <li><a href="http://fotopolska.eu/woj.kujawsko-pomorskie.html"><div class="memu-icon spr" rel="ms"></div>kujawsko-pomorskie</a></li>
+                                <li><a href="http://fotopolska.eu/woj.lodzkie.html"><div class="memu-icon spr" rel="ms"></div>łodzkie</a></li>
+                                <li><a href="http://fotopolska.eu/woj.lubelskie.html"><div class="memu-icon spr" rel="ms"></div>lubelskie</a></li>
+                                <li><a href="http://fotopolska.eu/woj.lubuskie.html"><div class="memu-icon spr" rel="ms"></div>lubuskie</a></li>
+                                <li><a href="http://fotopolska.eu/woj.malopolskie.html"><div class="memu-icon spr" rel="ms"></div>małopolskie</a></li>
+                                <li><a href="http://fotopolska.eu/woj.mazowieckie.html"><div class="memu-icon spr" rel="ms"></div>mazowieckie</a></li>
+                                <li><a href="http://fotopolska.eu/woj.opolskie.html"><div class="memu-icon spr" rel="ms"></div>opolskie</a></li>
+                                <li><a href="http://fotopolska.eu/woj.podkarpackie.html"><div class="memu-icon spr" rel="ms"></div>podkarpackie</a></li>
+                                <li><a href="http://fotopolska.eu/woj.podlaskie.html"><div class="memu-icon spr" rel="ms"></div>podlaskie</a></li>
+                                <li><a href="http://fotopolska.eu/woj.pomorskie.html"><div class="memu-icon spr" rel="ms"></div>pomorskie</a></li>
+                                <li><a href="http://fotopolska.eu/woj.slaskie.html"><div class="memu-icon spr" rel="ms"></div>śląskie</a></li>
+                                <li><a href="http://fotopolska.eu/woj.swietokrzyskie.html"><div class="memu-icon spr" rel="ms"></div>świętokrzyskie</a></li>
+                                <li><a href="http://fotopolska.eu/woj.warminsko-mazurskie.html"><div class="memu-icon spr" rel="ms"></div>warmińsko-mazurskie</a></li>
+                                <li><a href="http://fotopolska.eu/woj.wielkopolskie.html"><div class="memu-icon spr" rel="ms"></div>wielkopolskie</a></li>
+                                <li><a href="http://fotopolska.eu/woj.zachodniopomorskie.html"><div class="memu-icon spr" rel="ms"></div>zachodniopomorskie</a></li>
+                            </ul>
+                        </li>
+                        <li><a href="/test.php?for=1&show_cat=1"><div class="memu-icon spr" rel="ms"></div>Forum</a></li>
+                        <li class="has-children">
+                            <a href="/1k0,1.html"><div class="memu-icon spr" rel="mf"></div>Komentarze</a>
+                            <ul>
+                                <li><a href="/1k0,1.html"><div class="memu-icon spr" rel="ms"></div>Najnowsze komentarze</a></li>
+                                <li><a href="/1k0,1,2H.html"><div class="memu-icon spr" rel="ms"></div>Komentarze moich zdjęć</a></li>
+                                <li><a href="/1k0,1,3H.html"><div class="memu-icon spr" rel="ms"></div>Moje dyskusje</a></li>
+                            </ul>
+                        </li>
+                        <li><a href="/test.php?Submit=Szukaj&t=glos&fnd=myself"><div class="memu-icon spr" rel="ms"></div>Komentarze głosów</a></li>
+                        <li class="has-children">
+                            <a href="/"><div class="memu-icon spr" rel="mf"></div>Wyszukiwarka</a>
+                            <ul>
+                                <li><a href="/test.php?fnd=myself"><div class="memu-icon spr" rel="ms"></div>Zdjęć</a></li>
+                                <li><a href="/test.php?sart=1"><div class="memu-icon spr" rel="ms"></div>Artykułów</a></li>
+                            </ul>
+                        </li>
+                        <li class="has-children">
+                            <a href="/"><div class="memu-icon spr" rel="mf"></div>Obiekty</a>
+                            <ul>
+                                <li><a href="/fotopolska.eu/zamki.html"><div class="memu-icon spr" rel="mf"></div>Zamki</a></li>
+                                <li><a href="/fotopolska.eu/palace.html"><div class="memu-icon spr" rel="mf"></div>Pałace</a></li>
+                                <li><a href="/fotopolska.eu/kolej.html"><div class="memu-icon spr" rel="mf"></div>Kolej</a></li>
+                                <li><a href="/fotopolska.eu/przemysl.html" style="border-bottom:3px solid #555"><div class="memu-icon spr" rel="mf"></div>Przemysł</a></li>
+                                <li><a href="/fotopolska.eu/religia.html"><div class="memu-icon spr" rel="ms"></div>Religia</a></li>
+                                <li><a href="/fotopolska.eu/zielen.html"><div class="memu-icon spr" rel="ms"></div>Zieleń i rekreacja</a></li>
+                                <li><a href="/fotopolska.eu/zdrowie.html"><div class="memu-icon spr" rel="ms"></div>Zdrowie</a></li>
+                                <li><a href="/fotopolska.eu/wojsko.html"><div class="memu-icon spr" rel="ms"></div>Wojsko</a></li>
+                                <li><a href="/fotopolska.eu/edukacja.html"><div class="memu-icon spr" rel="ms"></div>Edukacja</a></li>
+                                <li><a href="/fotopolska.eu/woda.html"><div class="memu-icon spr" rel="ms"></div>Woda</a></li>
+                            </ul>
+                        </li>
+                        <li><a href="/test.php?f=mapy"><div class="memu-icon spr" rel="ms"></div>Mapy</a></li>
+                        <li><a href="/test.php?content=users"><div class="memu-icon spr" rel="ms"></div>Użytkownicy</a></li>
+                        <li><a href="/stat.html"><div class="memu-icon spr" rel="ms"></div>Statystyki</a></li>
+                        <li><a href="/test.php?top=dl"><div class="memu-icon spr" rel="ms"></div>Zdjęcie miesiąca</a></li>
+                        <li><a href="/test.php?Submit=Szukaj&fnd=myself&t=d"><div class="memu-icon spr" rel="ms"></div>Śmietnik</a></li>
+                        <li class="has-children">
+                            <a href="/"><div class="memu-icon spr" rel="mf"></div>O stronie</a>
+                            <ul>
+                                <li><a href="/test.php?f=pomoc"><div class="memu-icon spr" rel="ms"></div>Pomoc</a></li>
+                                <li><a href="/2,artykul.html"><div class="memu-icon spr" rel="ms"></div>Regulamin</a></li>
+                            </ul>
+                        </li>
+                    </ul>
+                </li>
+            </ul>
+        </div></div>
+				</td>
+				<td class="Second">
+					<table class="NoPadding Mnu">
+						<tr>
+							<td style="cursor:pointer" onClick="goTo('/klasyn/MapaOSM.php?lat=%2851.512231605422116%2C%2019.426232910156287%29&maptype=roadmap&mod=i&zoom=6&mode=photo&wdw=full')">
+								<div class="Button Normal ShowSrchBar">Mapa</div>
+							</td>
+							<td style="cursor:pointer" onclick="goTo('https://fotopolska.eu/klasyn/MapaOSM.php?lat=%2851.512231605422116%2C%2019.426232910156273%29&maptype=roadmap&zoom=6&mode=photo&mode_typ=dawne&wdw=full&mod=i')">
+								<div class="Button Normal ShowSrchBar">Nieistniej&#261;ce</div>
+							</td>
+							<td style="cursor:pointer" onclick="goTo('/1k0,1.html')">
+								<a class="Button Normal ShowSrchBar" href="/1k0,1.html">Komentarze</a>
+							</td>
+							<td style="cursor:pointer" class="onlyWide" onclick="goTo('https://fotokresy.pl')">
+								<a class="Button Normal ShowSrchBar" href="https://fotokresy.pl">Kresy</a>
+							</td>
+							<td style="cursor:pointer" class="onlyWide" onclick="goTo('https://kresy.fotopolska.eu')">
+								<a class="Button Normal ShowSrchBar" href="https://kresy.fotopolska.eu">Kresy + Polska</a>
+							</td>
+                            							<td style="cursor:pointer" onclick="goTo('/panoramy360.html')">
+								<a class="Button Normal ShowSrchBar" href="/panoramy360.html">Panoramy</a>
+							</td>
+							<td style="cursor:pointer" onclick="goTo('/test.php?f=pomoc')">
+								<a class="Button Normal ShowSrchBar" href="/test.php?f=pomoc">Pomoc</a>
+							</td>
+						</tr>
+					</table>
+				</td>
+				<td class="Third">
+					<div style="position:absolute">
+						<div id="searchLoading" style="display:none;background-image:url('/gfxn/loading_m.gif');width:16px;height:16px;position:absolute;top:13px;left:226px"></div>
+					</div>
+					<div class="Button Search ShowSrchBar">
+						<input type="text" name="szukaj" id="szukaj" value="Kutno/" placeholder="Znajdź...">
+						<div style="display:inline-block;width:30px;cursor:pointer" onClick="showSB()"><img src="/gfxn/arrd.png"></div>
+					</div>
+				</td>
+			</tr>
+		</table>
+	</div></div>
+<table class="Main NoPadding" style="background-color:#fff;border-top:0px;margin-top:5px">
+	<tr>
+		<td style="background-color:#212121;vertical-align:top;max-height:500px;overflow:hidden;" rowspan="5" class="First" id="FloatingRel">
+			<div id="Floating">
+				<!-- &#346;cie&#380;ka przypisa&#324; -->
+                                                <div id="ctn_0" class="ctn">
+                    <div class="ls spr" rel="ls1" style="display:block" id="AjaxLista">
+                        <table class="NoPadding">
+                            <tr>
+                                <td class="lsA">
+                                <img src="/gfxn/herby_mini/Polska.png">                                </td><td class="lsB Black20" style="cursor:pointer" onClick="AjaxLista('selective',{dzieckoTyp:'r',dzieckoId:'1',rodzicTyp:'',rodzicId:'',idx:'0'}, '')"><img src="/gfxn/arrd.png"></td><td class="lsC"><a href='https://fotopolska.eu'>Polska</a></td>
+                            </tr>
+                        </table>
+                    </div>
+                <div id="l_0" style="display:none" class="r12 " ></div></div>				<!-- G&#322;&#243;wne dzia&#322;y -->
+                <table class="NoPadding MenuLeft" style="width:100%"><tr>
+                    <td class="MenuLeftTop">
+                        <table class="NoPadding MenuItem"><tr><td><img src="/gfxn/arp.png"></td><td><h2><a href="/Polska/b131683,Archiwum_NARA_.html">Archiwum NARA </a></h2></td></tr></table>
+                    </td>
+                </tr><tr>
+                    <td class="MenuLeftMid">
+                        <table class="NoPadding MenuItem"><tr><td><img src="/gfxn/arp.png"></td><td><h2><a href="/Polska/b563126,Artykuly.html">Artykuły</a></h2></td></tr></table>
+                    </td>
+                </tr><tr>
+                    <td class="MenuLeftMid">
+                        <table class="NoPadding MenuItem"><tr><td><img src="/gfxn/arp.png"></td><td><h2><a href="/atrakcje_turystyczne/Polska.html">Atrakcje turystyczne</a></h2></td></tr></table>
+                    </td>
+                </tr><tr>
+                    <td class="MenuLeftMid">
+                        <table class="NoPadding MenuItem"><tr><td><img src="/gfxn/arp.png"></td><td><h2><a href="/Polska/b335310,Drogi_w_Polsce.html">Drogi w Polsce</a></h2></td></tr></table>
+                    </td>
+                </tr><tr>
+                    <td class="MenuLeftMid">
+                        <table class="NoPadding MenuItem"><tr><td><img src="/gfxn/arp.png"></td><td><h2><a href="/Polska/b34097,Fotopolska.html">Fotopolska</a></h2></td></tr></table>
+                    </td>
+                </tr><tr>
+                    <td class="MenuLeftMid">
+                        <table class="NoPadding MenuItem"><tr><td><img src="/gfxn/arp.png"></td><td><h2><a href="/Polska/b81554,Granice_panstwowe.html">Granice państwowe</a></h2></td></tr></table>
+                    </td>
+                </tr><tr>
+                    <td class="MenuLeftMid">
+                        <table class="NoPadding MenuItem"><tr><td><img src="/gfxn/arp.png"></td><td><h2><a href="/Polska/b30134,Komunikacja_miejska_w_Polsce.html">Komunikacja miejska w Polsce</a></h2></td></tr></table>
+                    </td>
+                </tr><tr>
+                    <td class="MenuLeftMid">
+                        <table class="NoPadding MenuItem"><tr><td><img src="/gfxn/arp.png"></td><td><h2><a href="/Polska/b275587,Koscioly_drewniane_w_Polsce.html">Kościoły drewniane w Polsce</a></h2></td></tr></table>
+                    </td>
+                </tr><tr>
+                    <td class="MenuLeftMid">
+                        <table class="NoPadding MenuItem"><tr><td><img src="/gfxn/arp.png"></td><td><h2><a href="/Polska/b96016,Leksykon_przemyslu.html">Leksykon przemysłu</a></h2></td></tr></table>
+                    </td>
+                </tr><tr>
+                    <td class="MenuLeftMid">
+                        <table class="NoPadding MenuItem"><tr><td><img src="/gfxn/arp.png"></td><td><h2><a href="/Polska/b60656,Linie_kolejowe_w_Polsce.html">Linie kolejowe w Polsce</a></h2></td></tr></table>
+                    </td>
+                </tr><tr>
+                    <td class="MenuLeftMid">
+                        <table class="NoPadding MenuItem"><tr><td><img src="/gfxn/arp.png"></td><td><h2><a href="/Polska/b78685,Miejsca_spoczynku_wladcow_Polski.html">Miejsca spoczynku władców Polski</a></h2></td></tr></table>
+                    </td>
+                </tr><tr>
+                    <td class="MenuLeftMid">
+                        <table class="NoPadding MenuItem"><tr><td><img src="/gfxn/arp.png"></td><td><h2><a href="/Polska/b27483,Morze_Baltyckie.html">Morze Bałtyckie</a></h2></td></tr></table>
+                    </td>
+                </tr><tr>
+                    <td class="MenuLeftMid">
+                        <table class="NoPadding MenuItem"><tr><td><img src="/gfxn/arp.png"></td><td><h2><a href="/nowe_zdjecia/Polska.html">Najnowsze zdjęcia</a></h2></td></tr></table>
+                    </td>
+                </tr><tr>
+                    <td class="MenuLeftMid">
+                        <table class="NoPadding MenuItem"><tr><td><img src="/gfxn/arp.png"></td><td><h2><a href="/nieistniejace/Polska.html">Nieistniejące obiekty</a></h2></td></tr></table>
+                    </td>
+                </tr><tr>
+                    <td class="MenuLeftMid">
+                        <table class="NoPadding MenuItem"><tr><td><img src="/gfxn/arp.png"></td><td><h2><a href="/Polska/b6556,POLSKA_-_zdjecia_niezidentyfikowane.html">POLSKA - zdjęcia niezidentyfikowane</a></h2></td></tr></table>
+                    </td>
+                </tr><tr>
+                    <td class="MenuLeftMid">
+                        <table class="NoPadding MenuItem"><tr><td><img src="/gfxn/arp.png"></td><td><h2><a href="/Polska/b72169,Pocztowki_kuriozalne.html">Pocztówki kuriozalne</a></h2></td></tr></table>
+                    </td>
+                </tr><tr>
+                    <td class="MenuLeftMid">
+                        <table class="NoPadding MenuItem"><tr><td><img src="/gfxn/arp.png"></td><td><h2><a href="/Polska/b71425,Polska_-_dokumenty.html">Polska - dokumenty</a></h2></td></tr></table>
+                    </td>
+                </tr><tr>
+                    <td class="MenuLeftMid">
+                        <table class="NoPadding MenuItem"><tr><td><img src="/gfxn/arp.png"></td><td><h2><a href="/Polska/b19979,Polska_-_mapy.html">Polska - mapy</a></h2></td></tr></table>
+                    </td>
+                </tr><tr>
+                    <td class="MenuLeftMid">
+                        <table class="NoPadding MenuItem"><tr><td><img src="/gfxn/arp.png"></td><td><h2><a href="/dawniej_i_dzis/Polska.html">Polska dawniej i dziś</a></h2></td></tr></table>
+                    </td>
+                </tr><tr>
+                    <td class="MenuLeftMid">
+                        <table class="NoPadding MenuItem"><tr><td><img src="/gfxn/arp.png"></td><td><h2><a href="/Polska/b33641,Polskie_Obiekty_Swiatowego_Dziedzictwa_UNESCO.html">Polskie Obiekty Światowego Dziedzictwa UNESCO</a></h2></td></tr></table>
+                    </td>
+                </tr><tr>
+                    <td class="MenuLeftMid">
+                        <table class="NoPadding MenuItem"><tr><td><img src="/gfxn/arp.png"></td><td><h2><a href="/Polska/b383502,Pomniki_Jana_Pawla_II.html">Pomniki Jana Pawła II</a></h2></td></tr></table>
+                    </td>
+                </tr><tr>
+                    <td class="MenuLeftMid">
+                        <table class="NoPadding MenuItem"><tr><td><img src="/gfxn/arp.png"></td><td><h2><a href="/Polska/b83749,Propaganda_PRL-u.html">Propaganda PRL-u</a></h2></td></tr></table>
+                    </td>
+                </tr><tr>
+                    <td class="MenuLeftMid">
+                        <table class="NoPadding MenuItem"><tr><td><img src="/gfxn/arp.png"></td><td><h2><a href="/Polska/b48112,Rzeka_Odra.html">Rzeka Odra</a></h2></td></tr></table>
+                    </td>
+                </tr><tr>
+                    <td class="MenuLeftMid">
+                        <table class="NoPadding MenuItem"><tr><td><img src="/gfxn/arp.png"></td><td><h2><a href="/Polska/b50035,Rzeka_Wisla.html">Rzeka Wisła</a></h2></td></tr></table>
+                    </td>
+                </tr><tr>
+                    <td class="MenuLeftMid">
+                        <table class="NoPadding MenuItem"><tr><td><img src="/gfxn/arp.png"></td><td><h2><a href="/Polska/b357717,Rzeki_Pobrzeza_Baltyckiego.html">Rzeki Pobrzeża Bałtyckiego</a></h2></td></tr></table>
+                    </td>
+                </tr><tr>
+                    <td class="MenuLeftMid">
+                        <table class="NoPadding MenuItem"><tr><td><img src="/gfxn/arp.png"></td><td><h2><a href="/Polska/b355352,Rzeki_w_Polsce.html">Rzeki w Polsce</a></h2></td></tr></table>
+                    </td>
+                </tr><tr>
+                    <td class="MenuLeftMid">
+                        <table class="NoPadding MenuItem"><tr><td><img src="/gfxn/arp.png"></td><td><h2><a href="/Polska/b29545,Wydarzenia_historyczne.html">Wydarzenia historyczne</a></h2></td></tr></table>
+                    </td>
+                </tr><tr>
+                    <td class="MenuLeftMid">
+                        <table class="NoPadding MenuItem"><tr><td><img src="/gfxn/arp.png"></td><td><h2><a href="/Polska/b90112,Zabytki_jurysdykcji_karnej.html">Zabytki jurysdykcji karnej</a></h2></td></tr></table>
+                    </td>
+                </tr><tr>
+                    <td class="MenuLeftBottom">
+                        <table class="NoPadding MenuItem"><tr><td><img src="/gfxn/arp.png"></td><td><h2><a href="/Polska/b27361,Zdjecia_do_instrukcji_ukryte.html">Zdjęcia do instrukcji (ukryte)</a></h2></td></tr></table>
+                    </td>
+                </tr></table>				<!-- Lista podobiekt&#243;w (dzieci) -->
+                                                				<!-- Najbli&#380;sze polecane -->
+                				<!-- Nowe zdj&#281;cia ma&#322;e miejscowo&#347;ci -->
+                				<!-- Ostatnie Komentarze -->
+                <script type="text/javascript">stat_0 = {"width":255,"height":80,"typ":"RankingBar","statID":"zdjecia_uzytkownik","columnName":"Zdj\u0119cia","dane":{"user_id":null,"rodzaj":"d","tytul":"Ranking zdj\u0119\u0107 opublikowanych dzisiaj","data":"2026-07-29"}};</script><div class="stat_frame" id="frame-0" data-id="0" data-params=""><div style="font-size:12px;padding-bottom:5px;color:white;margin-top:10px;font-weight:bold">Ranking zdjęć opublikowanych dzisiaj</div><table class="ranking ranking_255" style="border:0px"><tr><th style="width:5%">Poz.</th><th style="width:71px">Użytkownik</th><th colspan="2">Ilość </th></tr><tr><td>1.</td><td><a href="/15924,user.html?strona=statystyki" class="ellipsis" style="width:71px">4elza</a></td><td><div class="HorizontalStat" style="width:100%;background-color:rgb(255,0,0)"><div></div><div style="width:100%;"></div></div></td><td>40</td></tr><tr><td>2.</td><td><a href="/56339,user.html?strona=statystyki" class="ellipsis" style="width:71px">Przemo375</a></td><td><div class="HorizontalStat" style="width:80%;background-color:rgb(255,153,0)"><div></div><div style="width:100%;"></div></div></td><td>32</td></tr><tr><td>3.</td><td><a href="/1010,user.html?strona=statystyki" class="ellipsis" style="width:71px">ZPKSoft</a></td><td><div class="HorizontalStat" style="width:52.5%;background-color:rgb(147,255,0)"><div></div><div style="width:100%;"></div></div></td><td>21</td></tr><tr><td>4.</td><td><a href="/7498,user.html?strona=statystyki" class="ellipsis" style="width:71px">Jac64</a></td><td><div class="HorizontalStat" style="width:37.5%;background-color:rgb(32,255,0)"><div></div><div style="width:100%;"></div></div></td><td>15</td></tr><tr><td>5.</td><td><a href="/2357,user.html?strona=statystyki" class="ellipsis" style="width:71px">piotr brzezina </a></td><td><div class="HorizontalStat" style="width:32.5%;background-color:rgb(0,255,6)"><div></div><div style="width:100%;"></div></div></td><td>13</td></tr><tr><td>6.</td><td><a href="/14885,user.html?strona=statystyki" class="ellipsis" style="width:71px">da signa</a></td><td><div class="HorizontalStat" style="width:27.5%;background-color:rgb(0,255,45)"><div></div><div style="width:100%;"></div></div></td><td>11</td></tr><tr><td>7.</td><td><a href="/6159,user.html?strona=statystyki" class="ellipsis" style="width:71px">ireneusz1966</a></td><td><div class="HorizontalStat" style="width:27.5%;background-color:rgb(0,255,45)"><div></div><div style="width:100%;"></div></div></td><td>11</td></tr><tr><td>8.</td><td><a href="/44833,user.html?strona=statystyki" class="ellipsis" style="width:71px">Antoni Piotr Korzeniewski</a></td><td><div class="HorizontalStat" style="width:25%;background-color:rgb(0,255,64)"><div></div><div style="width:100%;"></div></div></td><td>10</td></tr><tr><td>9.</td><td><a href="/49568,user.html?strona=statystyki" class="ellipsis" style="width:71px">marjallo</a></td><td><div class="HorizontalStat" style="width:22.5%;background-color:rgb(0,255,83)"><div></div><div style="width:100%;"></div></div></td><td>9</td></tr><tr><td>10.</td><td><a href="/16195,user.html?strona=statystyki" class="ellipsis" style="width:71px">Bogdan JS</a></td><td><div class="HorizontalStat" style="width:12.5%;background-color:rgb(0,255,159)"><div></div><div style="width:100%;"></div></div></td><td>5</td></tr></table></div><script type="text/javascript">stat_0 = {"width":255,"height":80,"typ":"RankingBar","statID":"zdjecia_uzytkownik","columnName":"Zdj\u0119cia","dane":{"user_id":null,"rodzaj":"m","tytul":"Ranking zdj\u0119\u0107 - aktualny miesi\u0105c","data":"2026-07-1"}};</script><div class="stat_frame" id="frame-0" data-id="0" data-params=""><div style="font-size:12px;padding-bottom:5px;color:white;margin-top:10px;font-weight:bold">Ranking zdjęć - aktualny miesiąc</div><table class="ranking ranking_255" style="border:0px"><tr><th style="width:5%">Poz.</th><th style="width:71px">Użytkownik</th><th colspan="2">Ilość </th></tr><tr><td>1.</td><td><a href="/14885,user.html?strona=statystyki" class="ellipsis" style="width:71px">da signa</a></td><td><div class="HorizontalStat" style="width:100%;background-color:rgb(255,0,0)"><div></div><div style="width:100%;"></div></div></td><td>1422</td></tr><tr><td>2.</td><td><a href="/56339,user.html?strona=statystyki" class="ellipsis" style="width:71px">Przemo375</a></td><td><div class="HorizontalStat" style="width:77.637130801688%;background-color:rgb(255,171,0)"><div></div><div style="width:100%;"></div></div></td><td>1104</td></tr><tr><td>3.</td><td><a href="/49043,user.html?strona=statystyki" class="ellipsis" style="width:71px">Nemezis</a></td><td><div class="HorizontalStat" style="width:73.839662447257%;background-color:rgb(255,200,0)"><div></div><div style="width:100%;"></div></div></td><td>1050</td></tr><tr><td>4.</td><td><a href="/2357,user.html?strona=statystyki" class="ellipsis" style="width:71px">piotr brzezina </a></td><td><div class="HorizontalStat" style="width:58.790436005626%;background-color:rgb(195,255,0)"><div></div><div style="width:100%;"></div></div></td><td>836</td></tr><tr><td>5.</td><td><a href="/52145,user.html?strona=statystyki" class="ellipsis" style="width:71px">Michał. K</a></td><td><div class="HorizontalStat" style="width:55.696202531646%;background-color:rgb(171,255,0)"><div></div><div style="width:100%;"></div></div></td><td>792</td></tr><tr><td>6.</td><td><a href="/1010,user.html?strona=statystyki" class="ellipsis" style="width:71px">ZPKSoft</a></td><td><div class="HorizontalStat" style="width:49.29676511955%;background-color:rgb(122,255,0)"><div></div><div style="width:100%;"></div></div></td><td>701</td></tr><tr><td>7.</td><td><a href="/15924,user.html?strona=statystyki" class="ellipsis" style="width:71px">4elza</a></td><td><div class="HorizontalStat" style="width:45.92123769339%;background-color:rgb(96,255,0)"><div></div><div style="width:100%;"></div></div></td><td>653</td></tr><tr><td>8.</td><td><a href="/32994,user.html?strona=statystyki" class="ellipsis" style="width:71px">marek45</a></td><td><div class="HorizontalStat" style="width:39.451476793249%;background-color:rgb(47,255,0)"><div></div><div style="width:100%;"></div></div></td><td>561</td></tr><tr><td>9.</td><td><a href="/6159,user.html?strona=statystyki" class="ellipsis" style="width:71px">ireneusz1966</a></td><td><div class="HorizontalStat" style="width:33.052039381153%;background-color:rgb(0,255,2)"><div></div><div style="width:100%;"></div></div></td><td>470</td></tr><tr><td>10.</td><td><a href="/1666,user.html?strona=statystyki" class="ellipsis" style="width:71px">Marek W </a></td><td><div class="HorizontalStat" style="width:32.137834036568%;background-color:rgb(0,255,9)"><div></div><div style="width:100%;"></div></div></td><td>457</td></tr></table></div><div class="zrzutka">
+				<button>
+					<img src="/gfxn/close.svg" width="15" height="15">
+				</button>
+				<div style="position: relative; height: 450px; overflow: hidden;"><iframe style="position: absolute; top:0; left: 0; bottom: 0; right: 0; width: 100%; height: 100%;" src="https://zrzutka.pl/v7xfkj/widget/13" frameborder="0" scrolling="no"></iframe></div>
+			</div>		<div style="font-size:12px;margin:10px;background-color:#412f46;border-radius:10px;padding:5px 10px">
+			<p><strong>Za wpłaty ze zrzutka.pl oraz cegiełek kupione zostały:</strong></p>
+			<ul style="padding-left:1rem">
+				<li>Dyski twarde Seagate Exos X22 20TB x 2 = 2500 zł</li>
+				<li>Router TP Link Archer X55 AX3000 = 277 zł</li>
+				<li>Serwer plików NAS QNAP TS-673A-8G = 4677 zł</li>
+			</ul>
+			<p>Przeznaczenie: kopie zapasowe strony (obecnie wykonywane są ręcznie na domowym komputerze)</p>
+			<p>
+				<a href="https://cld.fotopolska.eu/s/f3sBgzLwLsf7ZfL" target="_blank">zdjęcie 1</a>
+				<a href="https://cld.fotopolska.eu/s/awMiC3X5PcEeKyf" target="_blank">zdjęcie 2</a>
+				<a href="https://cld.fotopolska.eu/s/PspRLzSJXz4SwMM" target="_blank">zdjęcie 3</a>
+			</p>
+		</div>
+					</div>
+		</td>
+		<!--<td colspan="2" style="display:none;height:1px" id="SearchBar">-->
+		<td colspan="2" class="" id="SearchBar">
+                        <div>
+                <form action="/Wyszukiwarka.html" method="get" id="wyszukiwarka">
+                <table class="SearchBar NoPadding">
+                    <tr>
+                    <td>
+                    <div style="position:absolute">
+                            <div class="topCien"></div>
+                        </div>                    <table class="Padding5 r11" id="searchWhere" style="border-bottom:1px solid #222;">
+                        <tr>
+                                                    </tr>
+                    </table>
+                    <table class="Padding5 r11 Wyszukiwarka" id="searchWhere" style="border-top:1px solid #555;">
+                        <tr>
+                            <td style="vertical-align:middle;padding:2px;width:4%">
+                                &nbsp;
+                            </td>
+                            <td style="vertical-align:middle;padding:2px;width:12%">
+                                <!--<input type="text" name="searchU" id="searchU" value="Znajdź ulicę" alt="Znajdź ulicę">-->
+                                <div class="radio">
+                                    <input type="radio" name="searchWhat" value="u" id="s1" >
+                                    <label for="s1" tabindex="1">ulicę</label>
+                                </div>
+                            </td>
+                            <td style="vertical-align:middle;padding:2px;width:14%">
+                                <!--<input type="text" name="searchB" id="searchB" value="Znajdź obiekt" alt="Znajdź obiekt">-->
+                                <div class="radio">
+                                    <input type="radio" name="searchWhat" value="b" id="s2" >
+                                    <label for="s2" tabindex="1">obiekt</label>
+                                </div>
+                            </td>
+                            <td style="vertical-align:middle;padding:2px;width:16%">
+                                <!--<input type="text" name="searchM" id="searchM" value="Znajdź miejscowość" alt="Znajdź miejscowość">-->
+                                <div class="radio">
+                                    <input type="radio" name="searchWhat" value="m" id="s3" >
+                                    <label for="s3" tabindex="1">miejscowość</label>
+                                </div>
+                            </td>
+                            <td style="vertical-align:middle;padding:2px;width:14%">
+                                <!--<input type="text" name="searchF" id="searchF" value="Znajdź zdjęcie" alt="Znajdź zdjęcie">-->
+                                <div class="radio">
+                                    <input type="radio" name="searchWhat" value="f" id="s5" >
+                                    <label for="s5" tabindex="1">zdjęcie</label>
+                                </div>
+                            </td>
+                            <td style="vertical-align:middle;padding:2px;width:14%">
+                                <!--<input type="text" name="searchA" id="searchA" value="Znajdź wszystko" alt="Znajdź wszystko">-->
+                                <div class="radio">
+                                    <input type="radio" name="searchWhat" value="all" id="s4" checked="checked">
+                                    <label for="s4" tabindex="1">wszystko</label>
+                                </div>
+                            </td>
+                            <td style="vertical-align:middle;padding:2px;width:14%">
+                                <div class="radio">
+                                    <input type="radio" name="searchWhat" value="zrodlo" id="s7" >
+                                    <label for="s7">źródło</label>
+                                </div>
+                            </td>
+                            <td style="vertical-align:middle;padding:2px;width:14%">
+                                <div class="radio">
+                                    <input type="radio" name="searchWhat" value="user" id="s6" >
+                                    <label for="s6">użytkownika</label>
+                                </div>
+                            </td>
+                            <td style="vertical-align:middle;padding:2px;width:14%">
+                                <img src="/gfxn/close.png" style="margin-top:3px;cursor:pointer" onClick="hideSB()">
+                            </td>
+                        </tr>
+                    </table>
+                    </td>
+                </tr>
+                                    <tr>
+                        <td><div id="searchResults"></div></td>
+                    </tr>
+                                </table>
+                </form>
+                            </div>
+            <div id="w_dane" style="display:none">b%3A0%3B</div>
+            		</td>
+	</tr>
+	<tr>
+		<td colspan="2" style="width:100">
+			<div id="edycja" class="r12" >
+				<div id="edycja_loader" style="text-align: center; padding: 10px;">
+					<img src="/gfxn/ajax-loader.gif">
+					<div style="margin-top: 5px;">wczytywanie danych...</div>
+				</div>
+				<div id="edycja_tresc"></div>
+			</div>
+			<div id="edycja_tresc"></div>
+			</div>
+		</td>
+	</tr>
+	<tr id="TitleBox">
+        			<td class="default_top" style="background-size:cover;background-position:top;vertical-align:top;box-shadow: inset 0px 0px 49px 0px rgba(0, 0, 0, 0.5);height:0px" colspan="2">
+				<table style="width:100%;vertical-align:top" class="NoPadding">
+					<tr>
+						<td style="vertical-align:top">
+                            <table class="NoPadding" style="margin-top:9px;margin-left:9px">
+                    <tr>
+                        <td>
+                            <div style="width:98px;height:112px;background-image:url('/gfxn/herby/Polska.png');margin-right:4px"></div>
+                        </td>
+                        <td class="ObjectHeader">
+                            <div style="position:absolute">
+                                <div style="position:absolute;top:-53px;left:5px;width:758px">
+                                    <h1 class="CityName Shadowed"><a href="/">Polska</a></h1>
+                                                                            <table class="WojMini">
+                                            <tr>
+                                                <td><a href="http://dolnoslaskie.fotopolska.eu"><div class="spr" rel="dolnoslaskie"></div></a></td>
+                                                <td><a href="http://kujawsko-pomorskie.fotopolska.eu"><div class="spr" rel="kujawsko-pomorskie"></div></a></td>
+                                                <td><a href="http://lodzkie.fotopolska.eu"><div class="spr" rel="lodzkie"></div></a></td>
+                                                <td><a href="http://lubelskie.fotopolska.eu"><div class="spr" rel="lubelskie"></div></a></td>
+                                                <td><a href="http://lubuskie.fotopolska.eu"><div class="spr" rel="lubuskie"></div></a></td>
+                                                <td><a href="http://malopolskie.fotopolska.eu"><div class="spr" rel="malopolskie"></div></a></td>
+                                                <td><a href="http://mazowieckie.fotopolska.eu"><div class="spr" rel="mazowieckie"></div></a></td>
+                                                <td><a href="http://opolskie.fotopolska.eu"><div class="spr" rel="opolskie"></div></a></td>
+                                                <td><a href="http://podkarpackie.fotopolska.eu"><div class="spr" rel="podkarpackie"></div></a></td>
+                                                <td><a href="http://podlaskie.fotopolska.eu"><div class="spr" rel="podlaskie"></div></a></td>
+                                                <td><a href="http://pomorskie.fotopolska.eu"><div class="spr" rel="pomorskie"></div></a></td>
+                                                <td><a href="http://slaskie.fotopolska.eu"><div class="spr" rel="slaskie"></div></a></td>
+                                                <td><a href="http://swietokrzyskie.fotopolska.eu"><div class="spr" rel="swietokrzyskie"></div></a></td>
+                                                <td><a href="http://warminsko-mazurskie.fotopolska.eu"><div class="spr" rel="warminsko-mazurskie"></div></a></td>
+                                                <td><a href="http://wielkopolskie.fotopolska.eu"><div class="spr" rel="wielkopolskie"></div></a></td>
+                                                <td><a href="http://zachodniopomorskie.fotopolska.eu"><div class="spr" rel="zachodniopomorskie"></div></a></td>
+                                            </tr>
+                                            <tr>
+                                                <td><div class="ellipsis" style="width:46px">dolnośląskie</div></td>
+                                                <td><div class="ellipsis" style="width:46px">kujawsko-pomorskie</div></td>
+                                                <td><div class="ellipsis" style="width:46px">łódzkie</div></td>
+                                                <td><div class="ellipsis" style="width:46px">lubelskie</div></td>
+                                                <td><div class="ellipsis" style="width:46px">lubuskie</div></td>
+                                                <td><div class="ellipsis" style="width:46px">małopolskie</div></td>
+                                                <td><div class="ellipsis" style="width:46px">mazowieckie</div></td>
+                                                <td><div class="ellipsis" style="width:46px">opolskie</div></td>
+                                                <td><div class="ellipsis" style="width:46px">podkarpackie</div></td>
+                                                <td><div class="ellipsis" style="width:46px">podlaskie</div></td>
+                                                <td><div class="ellipsis" style="width:46px">pomorskie</div></td>
+                                                <td><div class="ellipsis" style="width:46px">śląskie</div></td>
+                                                <td><div class="ellipsis" style="width:46px">świętokrzyskie</div></td>
+                                                <td><div class="ellipsis" style="width:46px">warmińsko-mazurskie</div></td>
+                                                <td><div class="ellipsis" style="width:46px">wielkopolskie</div></td>
+                                                <td><div class="ellipsis" style="width:46px">zachodniopomorskie</div></td>
+                                            </tr>
+                                        </table>
+                                                                    </div>
+                            </div>
+                        </td>
+                    </tr>
+                </table>						</td>
+					</tr>
+                    <tr>
+                <td style="vertical-align:bottom;">
+                    <div class="vs" style="height:13px"></div>
+                    <table class="ObjectList"><tr><td style="width:126px;height:41px;vertical-align:top;" class="Arrow Pointer">
+                        <a href="/zdrowie/Polska.html"><div class="spr2019_09a" style="margin-left:7px;margin-right:3px;margin-top:6px;vertical-align:top;zoom:0.8;display:inline-block"></div> <div style="display:inline-block;margin-top:13px">Zdrowie</div></a>
+                    </td><td style="width:126px;height:41px;vertical-align:top;" class="Arrow Pointer">
+                        <a href="/religia/Polska.html"><div class="spr2019_06a" style="margin-left:7px;margin-right:3px;margin-top:6px;vertical-align:top;zoom:0.8;display:inline-block"></div> <div style="display:inline-block;margin-top:13px">Religia</div></a>
+                    </td><td style="width:126px;height:41px;vertical-align:top;" class="Arrow Pointer">
+                        <a href="/zielen/Polska.html"><div class="spr2019_07b" style="margin-left:7px;margin-right:3px;margin-top:6px;vertical-align:top;zoom:0.8;display:inline-block"></div> <div style="display:inline-block;margin-top:13px">Zieleń</div></a>
+                    </td><td style="width:126px;height:41px;vertical-align:top;" class="Arrow Pointer">
+                        <a href="/sport/Polska.html"><div class="spr2019_16h" style="margin-left:7px;margin-right:3px;margin-top:6px;vertical-align:top;zoom:0.8;display:inline-block"></div> <div style="display:inline-block;margin-top:13px">Sport</div></a>
+                    </td><td style="width:126px;height:41px;vertical-align:top;" class="Arrow Pointer">
+                        <a href="/kolej/Polska.html"><div class="spr2019_04d" style="margin-left:7px;margin-right:3px;margin-top:6px;vertical-align:top;zoom:0.8;display:inline-block"></div> <div style="display:inline-block;margin-top:13px">Kolej</div></a>
+                    </td><td style="width:125px;height:41px;vertical-align:top;" class="Arrow Pointer">
+                        <a href="/rzeki_morze/Polska.html"><div class="spr2019_12j" style="margin-left:7px;margin-right:3px;margin-top:6px;vertical-align:top;zoom:0.8;display:inline-block"></div> <div style="display:inline-block;margin-top:13px">Woda</div></a>
+                    </td><td style="width:125px;height:41px;vertical-align:top;" class="Arrow Pointer">
+                        <a href="/kultura/Polska.html"><div class="spr2019_10b" style="margin-left:7px;margin-right:3px;margin-top:6px;vertical-align:top;zoom:0.8;display:inline-block"></div> <div style="display:inline-block;margin-top:13px">Kultura</div></a>
+                    </td></tr><tr><td style="height:41px;vertical-align:top;" class="Arrow Pointer">
+                        <a href="/krajobraz/Polska.html"><div class="spr2019_14a" style="margin-left:7px;margin-right:3px;margin-top:6px;vertical-align:top;zoom:0.8;display:inline-block"></div> <div style="display:inline-block;margin-top:13px">Krajobraz</div></a>
+                    </td><td style="height:41px;vertical-align:top;" class="Arrow Pointer">
+                        <a href="/wojsko/Polska.html"><div class="spr2019_17d" style="margin-left:7px;margin-right:3px;margin-top:6px;vertical-align:top;zoom:0.8;display:inline-block"></div> <div style="display:inline-block;margin-top:13px">Wojsko</div></a>
+                    </td><td style="height:41px;vertical-align:top;" class="Arrow Pointer">
+                        <a href="/edukacja/Polska.html"><div class="spr2019_03i" style="margin-left:7px;margin-right:3px;margin-top:6px;vertical-align:top;zoom:0.8;display:inline-block"></div> <div style="display:inline-block;margin-top:13px">Edukacja</div></a>
+                    </td><td style="height:41px;vertical-align:top;" class="Arrow Pointer">
+                        <a href="/drogi_i_sciezki/Polska.html"><div class="spr2019_02a" style="margin-left:7px;margin-right:3px;margin-top:6px;vertical-align:top;zoom:0.8;display:inline-block"></div> <div style="display:inline-block;margin-top:13px">Transport</div></a>
+                    </td><td style="height:41px;vertical-align:top;" class="Arrow Pointer">
+                        <a href="/budynki/Polska.html"><div class="spr2019_05h" style="margin-left:7px;margin-right:3px;margin-top:6px;vertical-align:top;zoom:0.8;display:inline-block"></div> <div style="display:inline-block;margin-top:13px">Budowle</div></a>
+                    </td><td style="height:41px;vertical-align:top;" class="Arrow Pointer">
+                        <a href="/przemysl/Polska.html"><div class="spr2019_19a" style="margin-left:7px;margin-right:3px;margin-top:6px;vertical-align:top;zoom:0.8;display:inline-block"></div> <div style="display:inline-block;margin-top:13px">Przemysł</div></a>
+                    </td><td style="height:41px;vertical-align:top;" class="Arrow Pointer">
+                        <a href="/specjalne/Polska.html"><div class="spr2019_22b" style="margin-left:7px;margin-right:3px;margin-top:6px;vertical-align:top;zoom:0.8;display:inline-block"></div> <div style="display:inline-block;margin-top:13px">Inne</div></a>
+                    </td></tr></table>
+                    </td>
+                </tr>				</table>
+			</td>
+        	</tr>
+	<tr>
+		<td colspan="2">
+			<div id="TwoFrame" style="display:none;"></div>
+		</td>
+	</tr>
+	<tr id="DownFrame">
+		<td style="vertical-align:top;" colspan="2">
+                    <div class="fullscreen">
+            <div class="full_1">
+                <div class="s10 full_2">
+                    <img src="/gfxn/loading_m.gif" style="vertical-align: middle; margin: auto;">
+                    <div>proszę czekać...</div>
+                </div>
+            </div>
+        </div>
+        <div id="dodaj_zdjecie" style="background-color:#222" class="dodaj_zdjecie"></div>
+        <script type="text/javascript">
+            var dod_rodzaj = '';
+            function dodajZdjecie(id,typ,form){
+                $(".fullscreen").show();
+                $('#dodaj_zdjecie').load('/admin/form'+form+'.php?obj='+id+'&mode='+typ+'&ajax=1&rodzaj='+dod_rodzaj+'&return=%2FKutno%2F', function(){
+                    $(window).scrollTop($('#dodaj_zdjecie').offset().top-39);
+                    $(".fullscreen").hide();
+                    //$('#autoselect').click();
+                });
+            }
+            $('#dodz,#dodf,#dodu').click(function(e){
+                e.stopPropagation();
+                if(typeof($(this).attr('data-rodzaj')) != 'undefined'){
+                    dod_rodzaj = $(this).attr('data-rodzaj');
+                } else {
+                    dod_rodzaj = '';
+                }
+                dodajZdjecie($(this).attr('data-id'),$(this).attr('data-typ'),$(this).attr('data-form'));
+            });
+        </script><div id="PhotoInserted"></div><style>
+    .tabtn {
+        display: inline-block;
+        color: #333;
+        padding: 10px;
+        font-size: 16px;
+        font-weight: bold;
+        position: relative;
+        top: 1px;
+        cursor: pointer;
+        border: 1px solid rgba(255,255,255,0);
+        transition : border 500ms ease-out;
+    }
+
+    .tabtn.tab_active, .tabtn:hover {
+        border: 1px solid #333;
+        border-bottom: 1px solid white;
+        //background-color: #333;
+        //color: white;
+    }
+
+    .tabhide {
+        display: none;
+    }
+</style>
+<div style="border-top:3px solid white;border-bottom:1px solid #333;padding-left:3px;background-color:white">
+            <div class="tabtn tab_active" rel="arch">
+            Architektura            (1000)
+        </div>
+        <div class="tabtn " rel="osob">Osoby i źródła (1000)</div>
+</div>
+    <div class="tabshow" id="arch">
+        <table class="Space3" style="background-color:white;border:0px;border-right:3px solid white;border-bottom:3px solid white">
+    <tr>
+        <td class="BgGray21 RightShadow" style="vertical-align:middle;padding:5px">
+            <table class="NoPadding" style="width:100%;height:30px">
+                <tr>
+                    <td class="wyniki" style="width:280px;cursor:pointer">
+                         w serwisie Fotopolska.Eu
+                    </td>
+                    <td style="text-align:right">
+                                                    <table class="Pages NoPadding">
+    <tr>
+                            <td class="Lne">
+                                    <div onclick="szukaj({showBar:true},0)" style="font-size:15px;color:white !important"
+                         class="Scolor"                         title="Strona 1"
+                    ">1</div>
+                            </td>
+                    <td class="Lne">
+                                    <div onclick="szukaj({showBar:true},24)" style="font-size:15px;color:white !important"
+                                                 title="Strona 2"
+                    ">2</div>
+                            </td>
+                    <td class="Lne">
+                                    <div onclick="szukaj({showBar:true},48)" style="font-size:15px;color:white !important"
+                                                 title="Strona 3"
+                    ">3</div>
+                            </td>
+                    <td class="Lne">
+                                    <div onclick="szukaj({showBar:true},72)" style="font-size:15px;color:white !important"
+                                                 title="Strona 4"
+                    ">4</div>
+                            </td>
+                    <td class="Lne">
+                                    <div onclick="szukaj({showBar:true},96)" style="font-size:15px;color:white !important"
+                                                 title="Strona 5"
+                    ">5</div>
+                            </td>
+                    <td class="Lne">
+                                    <div onclick="szukaj({showBar:true},120)" style="font-size:15px;color:white !important"
+                                                 title="Strona 6"
+                    ">6</div>
+                            </td>
+                    <td class="Lne">
+                                    <div onclick="szukaj({showBar:true},144)" style="font-size:15px;color:white !important"
+                                                 title="Strona 7"
+                    ">7</div>
+                            </td>
+                    <td class="Lne">
+                                    <div onclick="szukaj({showBar:true},168)" style="font-size:15px;color:white !important"
+                                                 title="Strona 8"
+                    ">8</div>
+                            </td>
+                    <td class="Lne">
+                                    <div onclick="szukaj({showBar:true},192)" style="font-size:15px;color:white !important"
+                                                 title="Strona 9"
+                    ">9</div>
+                            </td>
+                    <td class="Lne">
+                                    <div onclick="szukaj({showBar:true},216)" style="font-size:15px;color:white !important"
+                                                 title="Strona 10"
+                    ">10</div>
+                            </td>
+                    <td class="Lne">
+                                    <div onclick="szukaj({showBar:true},240)" style="font-size:15px;color:white !important"
+                                                 title="Strona 11"
+                    ">11</div>
+                            </td>
+                    <td class="Lne">
+                                    <div onclick="szukaj({showBar:true},264)" style="font-size:15px;color:white !important"
+                                                 title="Strona 12"
+                    ">12</div>
+                            </td>
+                    <td class="Lne">
+                                    <div onclick="szukaj({showBar:true},288)" style="font-size:15px;color:white !important"
+                                                 title="Strona 13"
+                    ">13</div>
+                            </td>
+                    <td class="Lne">
+                                    ...
+                            </td>
+                    <td class="Lne">
+                                    <div onclick="szukaj({showBar:true},960)" style="font-size:15px;color:white !important"
+                                                 title="Strona 41"
+                    ">41</div>
+                            </td>
+                    <td class="Lne">
+                                    <div onclick="szukaj({showBar:true},984)" style="font-size:15px;color:white !important"
+                                                 title="Strona 42"
+                    ">42</div>
+                            </td>
+                            <td class="Lne" style="white-space:nowrap">
+                <div title="Strona 1"
+                     onclick="szukaj({showBar:true},24)">następna&nbsp;<img src="/gfxn/right.png"
+                                                                                                                 style="display:inline;margin-bottom:-2px"></div>
+            </td>
+            </tr>
+</table>
+                                            </td>
+                </tr>
+            </table>
+        </td>
+    </tr>
+    <tr>
+        <td>
+            <table class="s12" style="width:100%">
+                                    <tr>
+                        <td style="vertical-align:top;width:200px;background-color:#eee" rowspan="2">
+                                                                                                <table class="ObjectBar NoPadding">
+            <tbody>
+                <tr>
+                    <td data-src="/foto/m/1790/1790327.jpg" style="text-align: left; vertical-align: top; background-size: cover; opacity: 1; height:" colspan="2" class="Miniatura lazy" animating="no">
+                        <a href="/m44538,Wroclaw.html">
+                            <div style="width:px;height:px;position:absolute;"></div>
+                            <div style="margin-top:7px;margin-left:5px;background-color:rgba(0,0,0,0.5);display:inline-block;padding:2px 5px" class="r11b">miejscowość</div>                        </a>
+                    </td>
+                </tr>
+            </tbody>
+        </table>
+                                                                                    </td>
+                        <td style="vertical-align:top;padding:5px">
+                                                            <a href="/m44538,Wroclaw.html" style="font-weight: normal;font-size: 22px;">
+                                    Wrocław
+                                </a>
+                                                                    <span style="color:#999">Breslau</span>
+                                                                <div><strong>woj. dolnośląskie</strong></div>
+                                                                                    </td>
+                    </tr>
+                    <tr>
+                        <td style="vertical-align: bottom;padding:5px;color:#999">dolnośląskie</td>
+                    </tr>
+                                            <tr><td colspan="2"><div style="border-bottom:1px solid #aaa"></div></td></tr>
+                                                        <tr>
+                        <td style="vertical-align:top;width:200px;background-color:#eee" rowspan="2">
+                                                                                                <table class="ObjectBar NoPadding">
+            <tbody>
+                <tr>
+                    <td data-src="/foto/m/2143/2143905.jpg" style="text-align: left; vertical-align: top; background-size: cover; opacity: 1; height:" colspan="2" class="Miniatura lazy" animating="no">
+                        <a href="/m23325,Warszawa.html">
+                            <div style="width:px;height:px;position:absolute;"></div>
+                            <div style="margin-top:7px;margin-left:5px;background-color:rgba(0,0,0,0.5);display:inline-block;padding:2px 5px" class="r11b">miejscowość</div>                        </a>
+                    </td>
+                </tr>
+            </tbody>
+        </table>
+                                                                                    </td>
+                        <td style="vertical-align:top;padding:5px">
+                                                            <a href="/m23325,Warszawa.html" style="font-weight: normal;font-size: 22px;">
+                                    Warszawa
+                                </a>
+                                                                <div><strong>woj. mazowieckie</strong></div>
+                                                                                    </td>
+                    </tr>
+                    <tr>
+                        <td style="vertical-align: bottom;padding:5px;color:#999">mazowieckie</td>
+                    </tr>
+                                            <tr><td colspan="2"><div style="border-bottom:1px solid #aaa"></div></td></tr>
+                                                        <tr>
+                        <td style="vertical-align:top;width:200px;background-color:#eee" rowspan="2">
+                                                                                                <table class="ObjectBar NoPadding">
+            <tbody>
+                <tr>
+                    <td data-src="/foto/m/2892/2892437.jpg" style="text-align: left; vertical-align: top; background-size: cover; opacity: 1; height:" colspan="2" class="Miniatura lazy" animating="no">
+                        <a href="/m1329,Katowice.html">
+                            <div style="width:px;height:px;position:absolute;"></div>
+                            <div style="margin-top:7px;margin-left:5px;background-color:rgba(0,0,0,0.5);display:inline-block;padding:2px 5px" class="r11b">miejscowość</div>                        </a>
+                    </td>
+                </tr>
+            </tbody>
+        </table>
+                                                                                    </td>
+                        <td style="vertical-align:top;padding:5px">
+                                                            <a href="/m1329,Katowice.html" style="font-weight: normal;font-size: 22px;">
+                                    Katowice
+                                </a>
+                                                                    <span style="color:#999">Kattowitz, Stalinogród (1953-1956)</span>
+                                                                <div><strong>woj. śląskie</strong></div>
+                                                                                    </td>
+                    </tr>
+                    <tr>
+                        <td style="vertical-align: bottom;padding:5px;color:#999">śląskie</td>
+                    </tr>
+                                            <tr><td colspan="2"><div style="border-bottom:1px solid #aaa"></div></td></tr>
+                                                        <tr>
+                        <td style="vertical-align:top;width:200px;background-color:#eee" rowspan="2">
+                                                                                                <table class="ObjectBar NoPadding">
+            <tbody>
+                <tr>
+                    <td data-src="/foto/m/702/702261.jpg" style="text-align: left; vertical-align: top; background-size: cover; opacity: 1; height:" colspan="2" class="Miniatura lazy" animating="no">
+                        <a href="/m53066,Jelenia_Gora.html">
+                            <div style="width:px;height:px;position:absolute;"></div>
+                            <div style="margin-top:7px;margin-left:5px;background-color:rgba(0,0,0,0.5);display:inline-block;padding:2px 5px" class="r11b">miejscowość</div>                        </a>
+                    </td>
+                </tr>
+            </tbody>
+        </table>
+                                                                                    </td>
+                        <td style="vertical-align:top;padding:5px">
+                                                            <a href="/m53066,Jelenia_Gora.html" style="font-weight: normal;font-size: 22px;">
+                                    Jelenia Góra
+                                </a>
+                                                                    <span style="color:#999">Hirschberg</span>
+                                                                <div><strong>woj. dolnośląskie</strong></div>
+                                                                                    </td>
+                    </tr>
+                    <tr>
+                        <td style="vertical-align: bottom;padding:5px;color:#999">dolnośląskie</td>
+                    </tr>
+                                            <tr><td colspan="2"><div style="border-bottom:1px solid #aaa"></div></td></tr>
+                                                        <tr>
+                        <td style="vertical-align:top;width:200px;background-color:#eee" rowspan="2">
+                                                                                                <table class="ObjectBar NoPadding">
+            <tbody>
+                <tr>
+                    <td data-src="/foto/m/660/660453.jpg" style="text-align: left; vertical-align: top; background-size: cover; opacity: 1; height:" colspan="2" class="Miniatura lazy" animating="no">
+                        <a href="/m37076,Szczecin.html">
+                            <div style="width:px;height:px;position:absolute;"></div>
+                            <div style="margin-top:7px;margin-left:5px;background-color:rgba(0,0,0,0.5);display:inline-block;padding:2px 5px" class="r11b">miejscowość</div>                        </a>
+                    </td>
+                </tr>
+            </tbody>
+        </table>
+                                                                                    </td>
+                        <td style="vertical-align:top;padding:5px">
+                                                            <a href="/m37076,Szczecin.html" style="font-weight: normal;font-size: 22px;">
+                                    Szczecin
+                                </a>
+                                                                    <span style="color:#999">Stettin</span>
+                                                                <div><strong>woj. zachodniopomorskie</strong></div>
+                                                                                    </td>
+                    </tr>
+                    <tr>
+                        <td style="vertical-align: bottom;padding:5px;color:#999">zachodniopomorskie</td>
+                    </tr>
+                                            <tr><td colspan="2"><div style="border-bottom:1px solid #aaa"></div></td></tr>
+                                                        <tr>
+                        <td style="vertical-align:top;width:200px;background-color:#eee" rowspan="2">
+                                                                                                <table class="ObjectBar NoPadding">
+            <tbody>
+                <tr>
+                    <td data-src="/foto/m/2398/2398106.jpg" style="text-align: left; vertical-align: top; background-size: cover; opacity: 1; height:" colspan="2" class="Miniatura lazy" animating="no">
+                        <a href="/m44708,Lublin.html">
+                            <div style="width:px;height:px;position:absolute;"></div>
+                            <div style="margin-top:7px;margin-left:5px;background-color:rgba(0,0,0,0.5);display:inline-block;padding:2px 5px" class="r11b">miejscowość</div>                        </a>
+                    </td>
+                </tr>
+            </tbody>
+        </table>
+                                                                                    </td>
+                        <td style="vertical-align:top;padding:5px">
+                                                            <a href="/m44708,Lublin.html" style="font-weight: normal;font-size: 22px;">
+                                    Lublin
+                                </a>
+                                                                <div><strong>woj. lubelskie</strong></div>
+                                                                                    </td>
+                    </tr>
+                    <tr>
+                        <td style="vertical-align: bottom;padding:5px;color:#999">lubelskie</td>
+                    </tr>
+                                            <tr><td colspan="2"><div style="border-bottom:1px solid #aaa"></div></td></tr>
+                                                        <tr>
+                        <td style="vertical-align:top;width:200px;background-color:#eee" rowspan="2">
+                                                                                                <table class="ObjectBar NoPadding">
+            <tbody>
+                <tr>
+                    <td data-src="/foto/m/379/379151.jpg" style="text-align: left; vertical-align: top; background-size: cover; opacity: 1; height:" colspan="2" class="Miniatura lazy" animating="no">
+                        <a href="/m2254,Krakow.html">
+                            <div style="width:px;height:px;position:absolute;"></div>
+                            <div style="margin-top:7px;margin-left:5px;background-color:rgba(0,0,0,0.5);display:inline-block;padding:2px 5px" class="r11b">miejscowość</div>                        </a>
+                    </td>
+                </tr>
+            </tbody>
+        </table>
+                                                                                    </td>
+                        <td style="vertical-align:top;padding:5px">
+                                                            <a href="/m2254,Krakow.html" style="font-weight: normal;font-size: 22px;">
+                                    Kraków
+                                </a>
+                                                                    <span style="color:#999">Cracovia, Cracovie, Krakau</span>
+                                                                <div><strong>woj. małopolskie</strong></div>
+                                                                                    </td>
+                    </tr>
+                    <tr>
+                        <td style="vertical-align: bottom;padding:5px;color:#999">małopolskie</td>
+                    </tr>
+                                            <tr><td colspan="2"><div style="border-bottom:1px solid #aaa"></div></td></tr>
+                                                        <tr>
+                        <td style="vertical-align:top;width:200px;background-color:#eee" rowspan="2">
+                                                                                                <table class="ObjectBar NoPadding">
+            <tbody>
+                <tr>
+                    <td data-src="/foto/m/5/5632.jpg" style="text-align: left; vertical-align: top; background-size: cover; opacity: 1; height:" colspan="2" class="Miniatura lazy" animating="no">
+                        <a href="/Katowice/b5,Dzielnica_Srodmiescie.html">
+                            <div style="width:px;height:px;position:absolute;"></div>
+                            <div style="margin-top:7px;margin-left:5px;background-color:rgba(0,0,0,0.5);display:inline-block;padding:2px 5px" class="r11b">obiekt</div>                        </a>
+                    </td>
+                </tr>
+            </tbody>
+        </table>
+                                                                                    </td>
+                        <td style="vertical-align:top;padding:5px">
+                                                            <a href="/Katowice/b5,Dzielnica_Srodmiescie.html" style="font-weight: normal;font-size: 22px;">
+                                    Dzielnica Śródmieście
+                                </a>
+                                                                <div><strong>Katowice</strong>, 38944 zdjęć</div>
+                                                                    <div class="s10" style="text-align: justify;margin-top:10px;color:#999">
+                                        Śródmieście to dzielnica Katowic położona w zespole dzielnic o tej samej nazwie (Śródmieście), stanowiąca ścisłe centrum Katowic. Jej obszar zajmuje powierzchnię 3,8 km2, a liczba jej mieszkańców wynosi 39 800 (stan na rok 2003).
+Zobacz zbiór multimediów na Wikimedia Commons:
+Śródmieście (dzielnica Katowic)
+
+Jest to najbardziej zurbanizowana dzielnica Katowic. W Śródmieściu zlokalizowana jest siedziba Sejmu Śląskiego, Muzeum Śląskiego i Biblioteki Śląskiej oraz szeregu międzynarodowych...
+                                    </div>
+                                                                                    </td>
+                    </tr>
+                    <tr>
+                        <td style="vertical-align: bottom;padding:5px;color:#999">śląskie / Katowice</td>
+                    </tr>
+                                            <tr><td colspan="2"><div style="border-bottom:1px solid #aaa"></div></td></tr>
+                                                        <tr>
+                        <td style="vertical-align:top;width:200px;background-color:#eee" rowspan="2">
+                                                                                                <table class="ObjectBar NoPadding">
+            <tbody>
+                <tr>
+                    <td data-src="/foto/m/1132/1132620.jpg" style="text-align: left; vertical-align: top; background-size: cover; opacity: 1; height:" colspan="2" class="Miniatura lazy" animating="no">
+                        <a href="/m33188,Gdansk.html">
+                            <div style="width:px;height:px;position:absolute;"></div>
+                            <div style="margin-top:7px;margin-left:5px;background-color:rgba(0,0,0,0.5);display:inline-block;padding:2px 5px" class="r11b">miejscowość</div>                        </a>
+                    </td>
+                </tr>
+            </tbody>
+        </table>
+                                                                                    </td>
+                        <td style="vertical-align:top;padding:5px">
+                                                            <a href="/m33188,Gdansk.html" style="font-weight: normal;font-size: 22px;">
+                                    Gdańsk
+                                </a>
+                                                                    <span style="color:#999">Danzig</span>
+                                                                <div><strong>woj. pomorskie</strong></div>
+                                                                                    </td>
+                    </tr>
+                    <tr>
+                        <td style="vertical-align: bottom;padding:5px;color:#999">pomorskie</td>
+                    </tr>
+                                            <tr><td colspan="2"><div style="border-bottom:1px solid #aaa"></div></td></tr>
+                                                        <tr>
+                        <td style="vertical-align:top;width:200px;background-color:#eee" rowspan="2">
+                                                                                                <table class="ObjectBar NoPadding">
+            <tbody>
+                <tr>
+                    <td data-src="/foto/m/384/384112.jpg" style="text-align: left; vertical-align: top; background-size: cover; opacity: 1; height:" colspan="2" class="Miniatura lazy" animating="no">
+                        <a href="/m5137,Lodz.html">
+                            <div style="width:px;height:px;position:absolute;"></div>
+                            <div style="margin-top:7px;margin-left:5px;background-color:rgba(0,0,0,0.5);display:inline-block;padding:2px 5px" class="r11b">miejscowość</div>                        </a>
+                    </td>
+                </tr>
+            </tbody>
+        </table>
+                                                                                    </td>
+                        <td style="vertical-align:top;padding:5px">
+                                                            <a href="/m5137,Lodz.html" style="font-weight: normal;font-size: 22px;">
+                                    Łódź
+                                </a>
+                                                                    <span style="color:#999">Lodz, Litzmannstadt</span>
+                                                                <div><strong>woj. łódzkie</strong></div>
+                                                                                    </td>
+                    </tr>
+                    <tr>
+                        <td style="vertical-align: bottom;padding:5px;color:#999">łódzkie</td>
+                    </tr>
+                                            <tr><td colspan="2"><div style="border-bottom:1px solid #aaa"></div></td></tr>
+                                                        <tr>
+                        <td style="vertical-align:top;width:200px;background-color:#eee" rowspan="2">
+                                                                                                <table class="ObjectBar NoPadding">
+            <tbody>
+                <tr>
+                    <td data-src="/foto/m/1517/1517949.jpg" style="text-align: left; vertical-align: top; background-size: cover; opacity: 1; height:" colspan="2" class="Miniatura lazy" animating="no">
+                        <a href="/m1338,Zabrze.html">
+                            <div style="width:px;height:px;position:absolute;"></div>
+                            <div style="margin-top:7px;margin-left:5px;background-color:rgba(0,0,0,0.5);display:inline-block;padding:2px 5px" class="r11b">miejscowość</div>                        </a>
+                    </td>
+                </tr>
+            </tbody>
+        </table>
+                                                                                    </td>
+                        <td style="vertical-align:top;padding:5px">
+                                                            <a href="/m1338,Zabrze.html" style="font-weight: normal;font-size: 22px;">
+                                    Zabrze
+                                </a>
+                                                                    <span style="color:#999">Hindenburg (1915-1945)</span>
+                                                                <div><strong>woj. śląskie</strong></div>
+                                                                                    </td>
+                    </tr>
+                    <tr>
+                        <td style="vertical-align: bottom;padding:5px;color:#999">śląskie</td>
+                    </tr>
+                                            <tr><td colspan="2"><div style="border-bottom:1px solid #aaa"></div></td></tr>
+                                                        <tr>
+                        <td style="vertical-align:top;width:200px;background-color:#eee" rowspan="2">
+                                                                                                <table class="ObjectBar NoPadding">
+            <tbody>
+                <tr>
+                    <td data-src="/foto/m/147/147972.jpg" style="text-align: left; vertical-align: top; background-size: cover; opacity: 1; height:" colspan="2" class="Miniatura lazy" animating="no">
+                        <a href="/Jelenia_Gora/b8215,Dzielnica_Centrum.html">
+                            <div style="width:px;height:px;position:absolute;"></div>
+                            <div style="margin-top:7px;margin-left:5px;background-color:rgba(0,0,0,0.5);display:inline-block;padding:2px 5px" class="r11b">obiekt</div>                        </a>
+                    </td>
+                </tr>
+            </tbody>
+        </table>
+                                                                                    </td>
+                        <td style="vertical-align:top;padding:5px">
+                                                            <a href="/Jelenia_Gora/b8215,Dzielnica_Centrum.html" style="font-weight: normal;font-size: 22px;">
+                                    Dzielnica Centrum
+                                </a>
+                                                                <div><strong>Jelenia Góra</strong>, 33624 zdjęć</div>
+                                                                    <div class="s10" style="text-align: justify;margin-top:10px;color:#999">
+                                        Miasto w obrębie murów obronnych jest wpisane do rejestru zabytków. Jest to kwartał ograniczony ulicami: Jelenia, Górna, Bankowa, Kardynała Stefana Wyszyńskiego, Podwale. W 2010 roku uściślono ten zapis bo w poprzednich latach nie było to precyzyjne i rodziło wiele konfliktów na linii Konserwator Zabytków a projektanci i inwestorzy!
+                                    </div>
+                                                                                    </td>
+                    </tr>
+                    <tr>
+                        <td style="vertical-align: bottom;padding:5px;color:#999">dolnośląskie / Jelenia Góra</td>
+                    </tr>
+                                            <tr><td colspan="2"><div style="border-bottom:1px solid #aaa"></div></td></tr>
+                                                        <tr>
+                        <td style="vertical-align:top;width:200px;background-color:#eee" rowspan="2">
+                                                                                                <table class="ObjectBar NoPadding">
+            <tbody>
+                <tr>
+                    <td data-src="/foto/m/1712/1712743.jpg" style="text-align: left; vertical-align: top; background-size: cover; opacity: 1; height:" colspan="2" class="Miniatura lazy" animating="no">
+                        <a href="/m52072,Opole.html">
+                            <div style="width:px;height:px;position:absolute;"></div>
+                            <div style="margin-top:7px;margin-left:5px;background-color:rgba(0,0,0,0.5);display:inline-block;padding:2px 5px" class="r11b">miejscowość</div>                        </a>
+                    </td>
+                </tr>
+            </tbody>
+        </table>
+                                                                                    </td>
+                        <td style="vertical-align:top;padding:5px">
+                                                            <a href="/m52072,Opole.html" style="font-weight: normal;font-size: 22px;">
+                                    Opole
+                                </a>
+                                                                    <span style="color:#999"> Oppeln</span>
+                                                                <div><strong>woj. opolskie</strong></div>
+                                                                                    </td>
+                    </tr>
+                    <tr>
+                        <td style="vertical-align: bottom;padding:5px;color:#999">opolskie</td>
+                    </tr>
+                                            <tr><td colspan="2"><div style="border-bottom:1px solid #aaa"></div></td></tr>
+                                                        <tr>
+                        <td style="vertical-align:top;width:200px;background-color:#eee" rowspan="2">
+                                                                                                <table class="ObjectBar NoPadding">
+            <tbody>
+                <tr>
+                    <td data-src="/foto/m/22/22197.jpg" style="text-align: left; vertical-align: top; background-size: cover; opacity: 1; height:" colspan="2" class="Miniatura lazy" animating="no">
+                        <a href="/Warszawa/b273991,Srodmiescie_Polnocne.html">
+                            <div style="width:px;height:px;position:absolute;"></div>
+                            <div style="margin-top:7px;margin-left:5px;background-color:rgba(0,0,0,0.5);display:inline-block;padding:2px 5px" class="r11b">obiekt</div>                        </a>
+                    </td>
+                </tr>
+            </tbody>
+        </table>
+                                                                                    </td>
+                        <td style="vertical-align:top;padding:5px">
+                                                            <a href="/Warszawa/b273991,Srodmiescie_Polnocne.html" style="font-weight: normal;font-size: 22px;">
+                                    Śródmieście Północne
+                                </a>
+                                                                <div><strong>Warszawa</strong>, 28759 zdjęć</div>
+                                                                                    </td>
+                    </tr>
+                    <tr>
+                        <td style="vertical-align: bottom;padding:5px;color:#999">mazowieckie / Warszawa / Dzielnica Śródmieście</td>
+                    </tr>
+                                            <tr><td colspan="2"><div style="border-bottom:1px solid #aaa"></div></td></tr>
+                                                        <tr>
+                        <td style="vertical-align:top;width:200px;background-color:#eee" rowspan="2">
+                                                                                                <table class="ObjectBar NoPadding">
+            <tbody>
+                <tr>
+                    <td data-src="/foto/m/29/29745.jpg" style="text-align: left; vertical-align: top; background-size: cover; opacity: 1; height:" colspan="2" class="Miniatura lazy" animating="no">
+                        <a href="/Wroclaw/b8171,Dzielnica_Stare_Miasto.html">
+                            <div style="width:px;height:px;position:absolute;"></div>
+                            <div style="margin-top:7px;margin-left:5px;background-color:rgba(0,0,0,0.5);display:inline-block;padding:2px 5px" class="r11b">obiekt</div>                        </a>
+                    </td>
+                </tr>
+            </tbody>
+        </table>
+                                                                                    </td>
+                        <td style="vertical-align:top;padding:5px">
+                                                            <a href="/Wroclaw/b8171,Dzielnica_Stare_Miasto.html" style="font-weight: normal;font-size: 22px;">
+                                    Dzielnica Stare Miasto
+                                </a>
+                                                                    <span style="color:#999">Altstadt</span>
+                                                                <div><strong>Wrocław</strong>, 28486 zdjęć</div>
+                                                                                    </td>
+                    </tr>
+                    <tr>
+                        <td style="vertical-align: bottom;padding:5px;color:#999">dolnośląskie / Wrocław</td>
+                    </tr>
+                                            <tr><td colspan="2"><div style="border-bottom:1px solid #aaa"></div></td></tr>
+                                                        <tr>
+                        <td style="vertical-align:top;width:200px;background-color:#eee" rowspan="2">
+                                                                                                <table class="ObjectBar NoPadding">
+            <tbody>
+                <tr>
+                    <td data-src="/foto/m/507/507574.jpg" style="text-align: left; vertical-align: top; background-size: cover; opacity: 1; height:" colspan="2" class="Miniatura lazy" animating="no">
+                        <a href="/m14307,Poznan.html">
+                            <div style="width:px;height:px;position:absolute;"></div>
+                            <div style="margin-top:7px;margin-left:5px;background-color:rgba(0,0,0,0.5);display:inline-block;padding:2px 5px" class="r11b">miejscowość</div>                        </a>
+                    </td>
+                </tr>
+            </tbody>
+        </table>
+                                                                                    </td>
+                        <td style="vertical-align:top;padding:5px">
+                                                            <a href="/m14307,Poznan.html" style="font-weight: normal;font-size: 22px;">
+                                    Poznań
+                                </a>
+                                                                    <span style="color:#999">Posen</span>
+                                                                <div><strong>woj. wielkopolskie</strong></div>
+                                                                                    </td>
+                    </tr>
+                    <tr>
+                        <td style="vertical-align: bottom;padding:5px;color:#999">wielkopolskie</td>
+                    </tr>
+                                            <tr><td colspan="2"><div style="border-bottom:1px solid #aaa"></div></td></tr>
+                                                        <tr>
+                        <td style="vertical-align:top;width:200px;background-color:#eee" rowspan="2">
+                                                                                                <table class="ObjectBar NoPadding">
+            <tbody>
+                <tr>
+                    <td data-src="/foto/m/281/281464.jpg" style="text-align: left; vertical-align: top; background-size: cover; opacity: 1; height:" colspan="2" class="Miniatura lazy" animating="no">
+                        <a href="/m97,Cieszyn.html">
+                            <div style="width:px;height:px;position:absolute;"></div>
+                            <div style="margin-top:7px;margin-left:5px;background-color:rgba(0,0,0,0.5);display:inline-block;padding:2px 5px" class="r11b">miejscowość</div>                        </a>
+                    </td>
+                </tr>
+            </tbody>
+        </table>
+                                                                                    </td>
+                        <td style="vertical-align:top;padding:5px">
+                                                            <a href="/m97,Cieszyn.html" style="font-weight: normal;font-size: 22px;">
+                                    Cieszyn
+                                </a>
+                                                                    <span style="color:#999">Teschen</span>
+                                                                <div><strong>woj. śląskie</strong></div>
+                                                                                    </td>
+                    </tr>
+                    <tr>
+                        <td style="vertical-align: bottom;padding:5px;color:#999">śląskie / powiat cieszyński</td>
+                    </tr>
+                                            <tr><td colspan="2"><div style="border-bottom:1px solid #aaa"></div></td></tr>
+                                                        <tr>
+                        <td style="vertical-align:top;width:200px;background-color:#eee" rowspan="2">
+                                                                                                <table class="ObjectBar NoPadding">
+            <tbody>
+                <tr>
+                    <td data-src="/foto/m/31/31951.jpg" style="text-align: left; vertical-align: top; background-size: cover; opacity: 1; height:" colspan="2" class="Miniatura lazy" animating="no">
+                        <a href="/Wroclaw/b8180,Dzielnica_Przedmiescie_Olawskie.html">
+                            <div style="width:px;height:px;position:absolute;"></div>
+                            <div style="margin-top:7px;margin-left:5px;background-color:rgba(0,0,0,0.5);display:inline-block;padding:2px 5px" class="r11b">obiekt</div>                        </a>
+                    </td>
+                </tr>
+            </tbody>
+        </table>
+                                                                                    </td>
+                        <td style="vertical-align:top;padding:5px">
+                                                            <a href="/Wroclaw/b8180,Dzielnica_Przedmiescie_Olawskie.html" style="font-weight: normal;font-size: 22px;">
+                                    Dzielnica Przedmieście Oławskie
+                                </a>
+                                                                    <span style="color:#999">Ohlauer Vorstadt</span>
+                                                                <div><strong>Wrocław</strong>, 24486 zdjęć</div>
+                                                                                    </td>
+                    </tr>
+                    <tr>
+                        <td style="vertical-align: bottom;padding:5px;color:#999">dolnośląskie / Wrocław</td>
+                    </tr>
+                                            <tr><td colspan="2"><div style="border-bottom:1px solid #aaa"></div></td></tr>
+                                                        <tr>
+                        <td style="vertical-align:top;width:200px;background-color:#eee" rowspan="2">
+                                                                                                <table class="ObjectBar NoPadding">
+            <tbody>
+                <tr>
+                    <td data-src="/foto/m/277/277389.jpg" style="text-align: left; vertical-align: top; background-size: cover; opacity: 1; height:" colspan="2" class="Miniatura lazy" animating="no">
+                        <a href="/m25213,Radom.html">
+                            <div style="width:px;height:px;position:absolute;"></div>
+                            <div style="margin-top:7px;margin-left:5px;background-color:rgba(0,0,0,0.5);display:inline-block;padding:2px 5px" class="r11b">miejscowość</div>                        </a>
+                    </td>
+                </tr>
+            </tbody>
+        </table>
+                                                                                    </td>
+                        <td style="vertical-align:top;padding:5px">
+                                                            <a href="/m25213,Radom.html" style="font-weight: normal;font-size: 22px;">
+                                    Radom
+                                </a>
+                                                                <div><strong>woj. mazowieckie</strong></div>
+                                                                                    </td>
+                    </tr>
+                    <tr>
+                        <td style="vertical-align: bottom;padding:5px;color:#999">mazowieckie</td>
+                    </tr>
+                                            <tr><td colspan="2"><div style="border-bottom:1px solid #aaa"></div></td></tr>
+                                                        <tr>
+                        <td style="vertical-align:top;width:200px;background-color:#eee" rowspan="2">
+                                                                                                <table class="ObjectBar NoPadding">
+            <tbody>
+                <tr>
+                    <td data-src="/foto/m/809/809199.jpg" style="text-align: left; vertical-align: top; background-size: cover; opacity: 1; height:" colspan="2" class="Miniatura lazy" animating="no">
+                        <a href="/m53128,Szklarska_Poreba.html">
+                            <div style="width:px;height:px;position:absolute;"></div>
+                            <div style="margin-top:7px;margin-left:5px;background-color:rgba(0,0,0,0.5);display:inline-block;padding:2px 5px" class="r11b">miejscowość</div>                        </a>
+                    </td>
+                </tr>
+            </tbody>
+        </table>
+                                                                                    </td>
+                        <td style="vertical-align:top;padding:5px">
+                                                            <a href="/m53128,Szklarska_Poreba.html" style="font-weight: normal;font-size: 22px;">
+                                    Szklarska Poręba
+                                </a>
+                                                                    <span style="color:#999">Schreiberhau</span>
+                                                                <div><strong>woj. dolnośląskie</strong></div>
+                                                                                    </td>
+                    </tr>
+                    <tr>
+                        <td style="vertical-align: bottom;padding:5px;color:#999">dolnośląskie / powiat karkonoski</td>
+                    </tr>
+                                            <tr><td colspan="2"><div style="border-bottom:1px solid #aaa"></div></td></tr>
+                                                        <tr>
+                        <td style="vertical-align:top;width:200px;background-color:#eee" rowspan="2">
+                                                                                                <table class="ObjectBar NoPadding">
+            <tbody>
+                <tr>
+                    <td data-src="/foto/m/10/10167.jpg" style="text-align: left; vertical-align: top; background-size: cover; opacity: 1; height:" colspan="2" class="Miniatura lazy" animating="no">
+                        <a href="/Krakow/b2114,Dzielnica_I_Stare_Miasto.html">
+                            <div style="width:px;height:px;position:absolute;"></div>
+                            <div style="margin-top:7px;margin-left:5px;background-color:rgba(0,0,0,0.5);display:inline-block;padding:2px 5px" class="r11b">obiekt</div>                        </a>
+                    </td>
+                </tr>
+            </tbody>
+        </table>
+                                                                                    </td>
+                        <td style="vertical-align:top;padding:5px">
+                                                            <a href="/Krakow/b2114,Dzielnica_I_Stare_Miasto.html" style="font-weight: normal;font-size: 22px;">
+                                    Dzielnica I Stare Miasto
+                                </a>
+                                                                <div><strong>Kraków</strong>, 23551 zdjęć</div>
+                                                                    <div class="s10" style="text-align: justify;margin-top:10px;color:#999">
+                                        <p><strong>Stare Miasto, Nowe Miasto, Nowy Świat, Kazimierz, Kleparz, Stradom, Wawel, Piasek, Ok&oacute;ł i część osiedla Warszawskiego</strong></p>
+
+                                    </div>
+                                                                                    </td>
+                    </tr>
+                    <tr>
+                        <td style="vertical-align: bottom;padding:5px;color:#999">małopolskie / Kraków / Stare Miasto w Krakowie, Kraków</td>
+                    </tr>
+                                            <tr><td colspan="2"><div style="border-bottom:1px solid #aaa"></div></td></tr>
+                                                        <tr>
+                        <td style="vertical-align:top;width:200px;background-color:#eee" rowspan="2">
+                                                                                                <table class="ObjectBar NoPadding">
+            <tbody>
+                <tr>
+                    <td data-src="/foto/m/2972/2972628.jpg" style="text-align: left; vertical-align: top; background-size: cover; opacity: 1; height:" colspan="2" class="Miniatura lazy" animating="no">
+                        <a href="/m44096,Kielce.html">
+                            <div style="width:px;height:px;position:absolute;"></div>
+                            <div style="margin-top:7px;margin-left:5px;background-color:rgba(0,0,0,0.5);display:inline-block;padding:2px 5px" class="r11b">miejscowość</div>                        </a>
+                    </td>
+                </tr>
+            </tbody>
+        </table>
+                                                                                    </td>
+                        <td style="vertical-align:top;padding:5px">
+                                                            <a href="/m44096,Kielce.html" style="font-weight: normal;font-size: 22px;">
+                                    Kielce
+                                </a>
+                                                                <div><strong>woj. świętokrzyskie</strong></div>
+                                                                                    </td>
+                    </tr>
+                    <tr>
+                        <td style="vertical-align: bottom;padding:5px;color:#999">świętokrzyskie</td>
+                    </tr>
+                                            <tr><td colspan="2"><div style="border-bottom:1px solid #aaa"></div></td></tr>
+                                                        <tr>
+                        <td style="vertical-align:top;width:200px;background-color:#eee" rowspan="2">
+                                                                                                <table class="ObjectBar NoPadding">
+            <tbody>
+                <tr>
+                    <td data-src="/foto/m/993/993974.jpg" style="text-align: left; vertical-align: top; background-size: cover; opacity: 1; height:" colspan="2" class="Miniatura lazy" animating="no">
+                        <a href="/m1326,Gliwice.html">
+                            <div style="width:px;height:px;position:absolute;"></div>
+                            <div style="margin-top:7px;margin-left:5px;background-color:rgba(0,0,0,0.5);display:inline-block;padding:2px 5px" class="r11b">miejscowość</div>                        </a>
+                    </td>
+                </tr>
+            </tbody>
+        </table>
+                                                                                    </td>
+                        <td style="vertical-align:top;padding:5px">
+                                                            <a href="/m1326,Gliwice.html" style="font-weight: normal;font-size: 22px;">
+                                    Gliwice
+                                </a>
+                                                                    <span style="color:#999">Gleiwitz</span>
+                                                                <div><strong>woj. śląskie</strong></div>
+                                                                                    </td>
+                    </tr>
+                    <tr>
+                        <td style="vertical-align: bottom;padding:5px;color:#999">śląskie</td>
+                    </tr>
+                                            <tr><td colspan="2"><div style="border-bottom:1px solid #aaa"></div></td></tr>
+                                                        <tr>
+                        <td style="vertical-align:top;width:200px;background-color:#eee" rowspan="2">
+                                                                                                <table class="ObjectBar NoPadding">
+            <tbody>
+                <tr>
+                    <td data-src="/foto/m/9/9538.jpg" style="text-align: left; vertical-align: top; background-size: cover; opacity: 1; height:" colspan="2" class="Miniatura lazy" animating="no">
+                        <a href="/Warszawa/b2474,Dzielnica_Srodmiescie.html">
+                            <div style="width:px;height:px;position:absolute;"></div>
+                            <div style="margin-top:7px;margin-left:5px;background-color:rgba(0,0,0,0.5);display:inline-block;padding:2px 5px" class="r11b">obiekt</div>                        </a>
+                    </td>
+                </tr>
+            </tbody>
+        </table>
+                                                                                    </td>
+                        <td style="vertical-align:top;padding:5px">
+                                                            <a href="/Warszawa/b2474,Dzielnica_Srodmiescie.html" style="font-weight: normal;font-size: 22px;">
+                                    Dzielnica Śródmieście
+                                </a>
+                                                                <div><strong>Warszawa</strong>, 20880 zdjęć</div>
+                                                                                    </td>
+                    </tr>
+                    <tr>
+                        <td style="vertical-align: bottom;padding:5px;color:#999">mazowieckie / Warszawa</td>
+                    </tr>
+                                                </table>
+        </td>
+    </tr>
+    <tr>
+        <td class="BgGray21 RightShadow" style="vertical-align:middle;padding:5px">
+            <table class="NoPadding" style="width:100%;height:30px">
+                <tr>
+                    <td class="wyniki" style="width:280px;cursor:pointer">
+                         w serwisie Fotopolska.Eu
+                    </td>
+                    <td style="text-align:right">
+                                                    <table class="Pages NoPadding">
+    <tr>
+                            <td class="Lne">
+                                    <div onclick="szukaj({showBar:true},0)" style="font-size:15px;color:white !important"
+                         class="Scolor"                         title="Strona 1"
+                    ">1</div>
+                            </td>
+                    <td class="Lne">
+                                    <div onclick="szukaj({showBar:true},24)" style="font-size:15px;color:white !important"
+                                                 title="Strona 2"
+                    ">2</div>
+                            </td>
+                    <td class="Lne">
+                                    <div onclick="szukaj({showBar:true},48)" style="font-size:15px;color:white !important"
+                                                 title="Strona 3"
+                    ">3</div>
+                            </td>
+                    <td class="Lne">
+                                    <div onclick="szukaj({showBar:true},72)" style="font-size:15px;color:white !important"
+                                                 title="Strona 4"
+                    ">4</div>
+                            </td>
+                    <td class="Lne">
+                                    <div onclick="szukaj({showBar:true},96)" style="font-size:15px;color:white !important"
+                                                 title="Strona 5"
+                    ">5</div>
+                            </td>
+                    <td class="Lne">
+                                    <div onclick="szukaj({showBar:true},120)" style="font-size:15px;color:white !important"
+                                                 title="Strona 6"
+                    ">6</div>
+                            </td>
+                    <td class="Lne">
+                                    <div onclick="szukaj({showBar:true},144)" style="font-size:15px;color:white !important"
+                                                 title="Strona 7"
+                    ">7</div>
+                            </td>
+                    <td class="Lne">
+                                    <div onclick="szukaj({showBar:true},168)" style="font-size:15px;color:white !important"
+                                                 title="Strona 8"
+                    ">8</div>
+                            </td>
+                    <td class="Lne">
+                                    <div onclick="szukaj({showBar:true},192)" style="font-size:15px;color:white !important"
+                                                 title="Strona 9"
+                    ">9</div>
+                            </td>
+                    <td class="Lne">
+                                    <div onclick="szukaj({showBar:true},216)" style="font-size:15px;color:white !important"
+                                                 title="Strona 10"
+                    ">10</div>
+                            </td>
+                    <td class="Lne">
+                                    <div onclick="szukaj({showBar:true},240)" style="font-size:15px;color:white !important"
+                                                 title="Strona 11"
+                    ">11</div>
+                            </td>
+                    <td class="Lne">
+                                    <div onclick="szukaj({showBar:true},264)" style="font-size:15px;color:white !important"
+                                                 title="Strona 12"
+                    ">12</div>
+                            </td>
+                    <td class="Lne">
+                                    <div onclick="szukaj({showBar:true},288)" style="font-size:15px;color:white !important"
+                                                 title="Strona 13"
+                    ">13</div>
+                            </td>
+                    <td class="Lne">
+                                    ...
+                            </td>
+                    <td class="Lne">
+                                    <div onclick="szukaj({showBar:true},960)" style="font-size:15px;color:white !important"
+                                                 title="Strona 41"
+                    ">41</div>
+                            </td>
+                    <td class="Lne">
+                                    <div onclick="szukaj({showBar:true},984)" style="font-size:15px;color:white !important"
+                                                 title="Strona 42"
+                    ">42</div>
+                            </td>
+                            <td class="Lne" style="white-space:nowrap">
+                <div title="Strona 1"
+                     onclick="szukaj({showBar:true},24)">następna&nbsp;<img src="/gfxn/right.png"
+                                                                                                                 style="display:inline;margin-bottom:-2px"></div>
+            </td>
+            </tr>
+</table>
+                                            </td>
+                </tr>
+            </table>
+        </td>
+    </tr>
+</table>
+    </div>
+<div class="tabhide" id="osob">
+    <table class="Space3" style="background-color:white;border:0px;border-right:3px solid white;border-bottom:3px solid white">
+    <tr>
+        <td class="BgGray21 RightShadow" style="vertical-align:middle;padding:5px">
+            <table class="NoPadding" style="width:100%;height:30px">
+                <tr>
+                    <td class="wyniki" style="width:280px;cursor:pointer">
+                         w serwisie Fotopolska.Eu
+                    </td>
+                    <td style="text-align:right">
+                                                    <table class="Pages NoPadding">
+    <tr>
+                            <td class="Lne">
+                                    <div onclick="szukaj({showBar:true},0)" style="font-size:15px;color:white !important"
+                         class="Scolor"                         title="Strona 1"
+                    ">1</div>
+                            </td>
+                    <td class="Lne">
+                                    <div onclick="szukaj({showBar:true},24)" style="font-size:15px;color:white !important"
+                                                 title="Strona 2"
+                    ">2</div>
+                            </td>
+                    <td class="Lne">
+                                    <div onclick="szukaj({showBar:true},48)" style="font-size:15px;color:white !important"
+                                                 title="Strona 3"
+                    ">3</div>
+                            </td>
+                    <td class="Lne">
+                                    <div onclick="szukaj({showBar:true},72)" style="font-size:15px;color:white !important"
+                                                 title="Strona 4"
+                    ">4</div>
+                            </td>
+                    <td class="Lne">
+                                    <div onclick="szukaj({showBar:true},96)" style="font-size:15px;color:white !important"
+                                                 title="Strona 5"
+                    ">5</div>
+                            </td>
+                    <td class="Lne">
+                                    <div onclick="szukaj({showBar:true},120)" style="font-size:15px;color:white !important"
+                                                 title="Strona 6"
+                    ">6</div>
+                            </td>
+                    <td class="Lne">
+                                    <div onclick="szukaj({showBar:true},144)" style="font-size:15px;color:white !important"
+                                                 title="Strona 7"
+                    ">7</div>
+                            </td>
+                    <td class="Lne">
+                                    <div onclick="szukaj({showBar:true},168)" style="font-size:15px;color:white !important"
+                                                 title="Strona 8"
+                    ">8</div>
+                            </td>
+                    <td class="Lne">
+                                    <div onclick="szukaj({showBar:true},192)" style="font-size:15px;color:white !important"
+                                                 title="Strona 9"
+                    ">9</div>
+                            </td>
+                    <td class="Lne">
+                                    <div onclick="szukaj({showBar:true},216)" style="font-size:15px;color:white !important"
+                                                 title="Strona 10"
+                    ">10</div>
+                            </td>
+                    <td class="Lne">
+                                    <div onclick="szukaj({showBar:true},240)" style="font-size:15px;color:white !important"
+                                                 title="Strona 11"
+                    ">11</div>
+                            </td>
+                    <td class="Lne">
+                                    <div onclick="szukaj({showBar:true},264)" style="font-size:15px;color:white !important"
+                                                 title="Strona 12"
+                    ">12</div>
+                            </td>
+                    <td class="Lne">
+                                    <div onclick="szukaj({showBar:true},288)" style="font-size:15px;color:white !important"
+                                                 title="Strona 13"
+                    ">13</div>
+                            </td>
+                    <td class="Lne">
+                                    ...
+                            </td>
+                    <td class="Lne">
+                                    <div onclick="szukaj({showBar:true},960)" style="font-size:15px;color:white !important"
+                                                 title="Strona 41"
+                    ">41</div>
+                            </td>
+                    <td class="Lne">
+                                    <div onclick="szukaj({showBar:true},984)" style="font-size:15px;color:white !important"
+                                                 title="Strona 42"
+                    ">42</div>
+                            </td>
+                            <td class="Lne" style="white-space:nowrap">
+                <div title="Strona 1"
+                     onclick="szukaj({showBar:true},24)">następna&nbsp;<img src="/gfxn/right.png"
+                                                                                                                 style="display:inline;margin-bottom:-2px"></div>
+            </td>
+            </tr>
+</table>
+                                            </td>
+                </tr>
+            </table>
+        </td>
+    </tr>
+    <tr>
+        <td>
+            <table class="s12" style="width:100%">
+                                    <tr>
+                        <td style="vertical-align:top;width:200px;background-color:#eee" rowspan="2">
+                                                                                                <table class="ObjectBar NoPadding">
+            <tbody>
+                <tr>
+                    <td data-src="/foto/m/0/12.jpg" style="text-align: left; vertical-align: top; background-size: cover; opacity: 1; height:" colspan="2" class="Miniatura lazy" animating="no">
+                        <a href="/2,zrodlo.html">
+                            <div style="width:px;height:px;position:absolute;"></div>
+                            <div style="margin-top:7px;margin-left:5px;background-color:rgba(0,0,0,0.5);display:inline-block;padding:2px 5px" class="r11b">źródło</div>                        </a>
+                    </td>
+                </tr>
+            </tbody>
+        </table>
+                                                                                    </td>
+                        <td style="vertical-align:top;padding:5px">
+                                                            <a href="/2,zrodlo.html" style="font-weight: normal;font-size: 22px;">
+                                    <span style="color:#666;font-size:0.7em">źródło</span> Aukcje internetowe
+                                </a>
+                                                                <div><strong></strong></div>
+                                                                    <div class="s10" style="text-align: justify;margin-top:10px;color:#999">
+                                           
+                                    </div>
+                                                                                    </td>
+                    </tr>
+                    <tr>
+                        <td style="vertical-align: bottom;padding:5px;color:#999"></td>
+                    </tr>
+                                            <tr><td colspan="2"><div style="border-bottom:1px solid #aaa"></div></td></tr>
+                                                        <tr>
+                        <td style="vertical-align:top;width:200px;background-color:#eee" rowspan="2">
+                                                            <table class="ObjectBar NoPadding">
+    <tbody>
+    <tr>
+        <td style="text-align: left; vertical-align: top; background-image: url('/foto/user/2357.jpg'); background-size: cover; opacity: 1; height:" colspan="2" class="Miniatura" animating="no">
+            <a href="/2357,user.html">
+                <div style="width:px;height:px;position:absolute;"></div>
+                <div style="margin-top:7px;margin-left:5px;background-color:rgba(0,0,0,0.5);display:inline-block;padding:2px 5px" class="r11b">zdjęcie</div>
+            </a>
+        </td>
+    </tr>
+    </tbody>
+</table>                                                    </td>
+                        <td style="vertical-align:top;padding:5px">
+                                                            <a href="/2357,user.html" style="font-weight: normal;font-size: 22px;">
+                                    <span style="color:#666;font-size:0.7em">użytkownik</span> piotr brzezina 
+                                </a>
+                                                                <div><strong></strong></div>
+                                                                    <div class="s10" style="text-align: justify;margin-top:10px;color:#999">
+                                        Galeria zdjęć użytkownika (136471  szt.)<br><br>panilon@wp.pl
+                                    </div>
+                                                                                    </td>
+                    </tr>
+                    <tr>
+                        <td style="vertical-align: bottom;padding:5px;color:#999"></td>
+                    </tr>
+                                            <tr><td colspan="2"><div style="border-bottom:1px solid #aaa"></div></td></tr>
+                                                        <tr>
+                        <td style="vertical-align:top;width:200px;background-color:#eee" rowspan="2">
+                                                            <table class="ObjectBar NoPadding">
+    <tbody>
+    <tr>
+        <td style="text-align: left; vertical-align: top; background-image: url('/foto/user/14885.jpg'); background-size: cover; opacity: 1; height:" colspan="2" class="Miniatura" animating="no">
+            <a href="/14885,user.html">
+                <div style="width:px;height:px;position:absolute;"></div>
+                <div style="margin-top:7px;margin-left:5px;background-color:rgba(0,0,0,0.5);display:inline-block;padding:2px 5px" class="r11b">zdjęcie</div>
+            </a>
+        </td>
+    </tr>
+    </tbody>
+</table>                                                    </td>
+                        <td style="vertical-align:top;padding:5px">
+                                                            <a href="/14885,user.html" style="font-weight: normal;font-size: 22px;">
+                                    <span style="color:#666;font-size:0.7em">użytkownik</span> da signa
+                                </a>
+                                                                <div><strong></strong></div>
+                                                                    <div class="s10" style="text-align: justify;margin-top:10px;color:#999">
+                                        Galeria zdjęć użytkownika (123849  szt.)<br><br>
+                                    </div>
+                                                                                    </td>
+                    </tr>
+                    <tr>
+                        <td style="vertical-align: bottom;padding:5px;color:#999"></td>
+                    </tr>
+                                            <tr><td colspan="2"><div style="border-bottom:1px solid #aaa"></div></td></tr>
+                                                        <tr>
+                        <td style="vertical-align:top;width:200px;background-color:#eee" rowspan="2">
+                                                    </td>
+                        <td style="vertical-align:top;padding:5px">
+                                                            <a href="/1985,user.html" style="font-weight: normal;font-size: 22px;">
+                                    <span style="color:#666;font-size:0.7em">użytkownik</span> Mariusz Brzeziński
+                                </a>
+                                                                <div><strong></strong></div>
+                                                                    <div class="s10" style="text-align: justify;margin-top:10px;color:#999">
+                                        Galeria zdjęć użytkownika (120262  szt.)<br><br>
+                                    </div>
+                                                                                    </td>
+                    </tr>
+                    <tr>
+                        <td style="vertical-align: bottom;padding:5px;color:#999"></td>
+                    </tr>
+                                            <tr><td colspan="2"><div style="border-bottom:1px solid #aaa"></div></td></tr>
+                                                        <tr>
+                        <td style="vertical-align:top;width:200px;background-color:#eee" rowspan="2">
+                                                            <table class="ObjectBar NoPadding">
+    <tbody>
+    <tr>
+        <td style="text-align: left; vertical-align: top; background-image: url('/foto/user/1.jpg'); background-size: cover; opacity: 1; height:" colspan="2" class="Miniatura" animating="no">
+            <a href="/1,user.html">
+                <div style="width:px;height:px;position:absolute;"></div>
+                <div style="margin-top:7px;margin-left:5px;background-color:rgba(0,0,0,0.5);display:inline-block;padding:2px 5px" class="r11b">zdjęcie</div>
+            </a>
+        </td>
+    </tr>
+    </tbody>
+</table>                                                    </td>
+                        <td style="vertical-align:top;padding:5px">
+                                                            <a href="/1,user.html" style="font-weight: normal;font-size: 22px;">
+                                    <span style="color:#666;font-size:0.7em">użytkownik</span> Neo[EZN]
+                                </a>
+                                                                <div><strong></strong></div>
+                                                                    <div class="s10" style="text-align: justify;margin-top:10px;color:#999">
+                                        Galeria zdjęć użytkownika (79032  szt.)<br><br>Zdjęcia udostępnione na licencji CC-By-SA-3.0. Autor: Neo[EZN], fotopolska.eu. W przypadku uzycia grafiki w internecie wymagany jest działający link do strony fotopolska.eu
+                                    </div>
+                                                                                    </td>
+                    </tr>
+                    <tr>
+                        <td style="vertical-align: bottom;padding:5px;color:#999"></td>
+                    </tr>
+                                            <tr><td colspan="2"><div style="border-bottom:1px solid #aaa"></div></td></tr>
+                                                        <tr>
+                        <td style="vertical-align:top;width:200px;background-color:#eee" rowspan="2">
+                                                            <table class="ObjectBar NoPadding">
+    <tbody>
+    <tr>
+        <td style="text-align: left; vertical-align: top; background-image: url('/foto/user/1010.jpg'); background-size: cover; opacity: 1; height:" colspan="2" class="Miniatura" animating="no">
+            <a href="/1010,user.html">
+                <div style="width:px;height:px;position:absolute;"></div>
+                <div style="margin-top:7px;margin-left:5px;background-color:rgba(0,0,0,0.5);display:inline-block;padding:2px 5px" class="r11b">zdjęcie</div>
+            </a>
+        </td>
+    </tr>
+    </tbody>
+</table>                                                    </td>
+                        <td style="vertical-align:top;padding:5px">
+                                                            <a href="/1010,user.html" style="font-weight: normal;font-size: 22px;">
+                                    <span style="color:#666;font-size:0.7em">użytkownik</span> ZPKSoft
+                                </a>
+                                                                <div><strong></strong></div>
+                                                                    <div class="s10" style="text-align: justify;margin-top:10px;color:#999">
+                                        Galeria zdjęć użytkownika (73355  szt.)<br><br>Tak w życiu jak i na Fotopolsce jesteśmy zawsze razem. 
+                                    </div>
+                                                                                    </td>
+                    </tr>
+                    <tr>
+                        <td style="vertical-align: bottom;padding:5px;color:#999"></td>
+                    </tr>
+                                            <tr><td colspan="2"><div style="border-bottom:1px solid #aaa"></div></td></tr>
+                                                        <tr>
+                        <td style="vertical-align:top;width:200px;background-color:#eee" rowspan="2">
+                                                            <table class="ObjectBar NoPadding">
+    <tbody>
+    <tr>
+        <td style="text-align: left; vertical-align: top; background-image: url('/foto/user/372.jpg'); background-size: cover; opacity: 1; height:" colspan="2" class="Miniatura" animating="no">
+            <a href="/372,user.html">
+                <div style="width:px;height:px;position:absolute;"></div>
+                <div style="margin-top:7px;margin-left:5px;background-color:rgba(0,0,0,0.5);display:inline-block;padding:2px 5px" class="r11b">zdjęcie</div>
+            </a>
+        </td>
+    </tr>
+    </tbody>
+</table>                                                    </td>
+                        <td style="vertical-align:top;padding:5px">
+                                                            <a href="/372,user.html" style="font-weight: normal;font-size: 22px;">
+                                    <span style="color:#666;font-size:0.7em">użytkownik</span> TW40
+                                </a>
+                                                                <div><strong></strong></div>
+                                                                    <div class="s10" style="text-align: justify;margin-top:10px;color:#999">
+                                        Galeria zdjęć użytkownika (60199  szt.)<br><br>
+                                    </div>
+                                                                                    </td>
+                    </tr>
+                    <tr>
+                        <td style="vertical-align: bottom;padding:5px;color:#999"></td>
+                    </tr>
+                                            <tr><td colspan="2"><div style="border-bottom:1px solid #aaa"></div></td></tr>
+                                                        <tr>
+                        <td style="vertical-align:top;width:200px;background-color:#eee" rowspan="2">
+                                                            <table class="ObjectBar NoPadding">
+    <tbody>
+    <tr>
+        <td style="text-align: left; vertical-align: top; background-image: url('/foto/user/1666.jpg'); background-size: cover; opacity: 1; height:" colspan="2" class="Miniatura" animating="no">
+            <a href="/1666,user.html">
+                <div style="width:px;height:px;position:absolute;"></div>
+                <div style="margin-top:7px;margin-left:5px;background-color:rgba(0,0,0,0.5);display:inline-block;padding:2px 5px" class="r11b">zdjęcie</div>
+            </a>
+        </td>
+    </tr>
+    </tbody>
+</table>                                                    </td>
+                        <td style="vertical-align:top;padding:5px">
+                                                            <a href="/1666,user.html" style="font-weight: normal;font-size: 22px;">
+                                    <span style="color:#666;font-size:0.7em">użytkownik</span> Marek W 
+                                </a>
+                                                                <div><strong></strong></div>
+                                                                    <div class="s10" style="text-align: justify;margin-top:10px;color:#999">
+                                        Galeria zdjęć użytkownika (59542  szt.)<br><br>
+                                    </div>
+                                                                                    </td>
+                    </tr>
+                    <tr>
+                        <td style="vertical-align: bottom;padding:5px;color:#999"></td>
+                    </tr>
+                                            <tr><td colspan="2"><div style="border-bottom:1px solid #aaa"></div></td></tr>
+                                                        <tr>
+                        <td style="vertical-align:top;width:200px;background-color:#eee" rowspan="2">
+                                                            <table class="ObjectBar NoPadding">
+    <tbody>
+    <tr>
+        <td style="text-align: left; vertical-align: top; background-image: url('/foto/user/2822.jpg'); background-size: cover; opacity: 1; height:" colspan="2" class="Miniatura" animating="no">
+            <a href="/2822,user.html">
+                <div style="width:px;height:px;position:absolute;"></div>
+                <div style="margin-top:7px;margin-left:5px;background-color:rgba(0,0,0,0.5);display:inline-block;padding:2px 5px" class="r11b">zdjęcie</div>
+            </a>
+        </td>
+    </tr>
+    </tbody>
+</table>                                                    </td>
+                        <td style="vertical-align:top;padding:5px">
+                                                            <a href="/2822,user.html" style="font-weight: normal;font-size: 22px;">
+                                    <span style="color:#666;font-size:0.7em">użytkownik</span> maj
+                                </a>
+                                                                <div><strong></strong></div>
+                                                                    <div class="s10" style="text-align: justify;margin-top:10px;color:#999">
+                                        Galeria zdjęć użytkownika (58246  szt.)<br><br>majsterzalewski@gmail.com
+                                    </div>
+                                                                                    </td>
+                    </tr>
+                    <tr>
+                        <td style="vertical-align: bottom;padding:5px;color:#999"></td>
+                    </tr>
+                                            <tr><td colspan="2"><div style="border-bottom:1px solid #aaa"></div></td></tr>
+                                                        <tr>
+                        <td style="vertical-align:top;width:200px;background-color:#eee" rowspan="2">
+                                                                                                <table class="ObjectBar NoPadding">
+            <tbody>
+                <tr>
+                    <td data-src="/foto/m/634/634674.jpg" style="text-align: left; vertical-align: top; background-size: cover; opacity: 1; height:" colspan="2" class="Miniatura lazy" animating="no">
+                        <a href="/327,zrodlo.html">
+                            <div style="width:px;height:px;position:absolute;"></div>
+                            <div style="margin-top:7px;margin-left:5px;background-color:rgba(0,0,0,0.5);display:inline-block;padding:2px 5px" class="r11b">źródło</div>                        </a>
+                    </td>
+                </tr>
+            </tbody>
+        </table>
+                                                                                    </td>
+                        <td style="vertical-align:top;padding:5px">
+                                                            <a href="/327,zrodlo.html" style="font-weight: normal;font-size: 22px;">
+                                    <span style="color:#666;font-size:0.7em">źródło</span> inne
+                                </a>
+                                                                <div><strong></strong></div>
+                                                                    <div class="s10" style="text-align: justify;margin-top:10px;color:#999">
+                                           
+                                    </div>
+                                                                                    </td>
+                    </tr>
+                    <tr>
+                        <td style="vertical-align: bottom;padding:5px;color:#999"></td>
+                    </tr>
+                                            <tr><td colspan="2"><div style="border-bottom:1px solid #aaa"></div></td></tr>
+                                                        <tr>
+                        <td style="vertical-align:top;width:200px;background-color:#eee" rowspan="2">
+                                                            <table class="ObjectBar NoPadding">
+    <tbody>
+    <tr>
+        <td style="text-align: left; vertical-align: top; background-image: url('/foto/user/8502.jpg'); background-size: cover; opacity: 1; height:" colspan="2" class="Miniatura" animating="no">
+            <a href="/8502,user.html">
+                <div style="width:px;height:px;position:absolute;"></div>
+                <div style="margin-top:7px;margin-left:5px;background-color:rgba(0,0,0,0.5);display:inline-block;padding:2px 5px" class="r11b">zdjęcie</div>
+            </a>
+        </td>
+    </tr>
+    </tbody>
+</table>                                                    </td>
+                        <td style="vertical-align:top;padding:5px">
+                                                            <a href="/8502,user.html" style="font-weight: normal;font-size: 22px;">
+                                    <span style="color:#666;font-size:0.7em">użytkownik</span> Desperado
+                                </a>
+                                                                <div><strong></strong></div>
+                                                                    <div class="s10" style="text-align: justify;margin-top:10px;color:#999">
+                                        Galeria zdjęć użytkownika (53361  szt.)<br><br>
+                                    </div>
+                                                                                    </td>
+                    </tr>
+                    <tr>
+                        <td style="vertical-align: bottom;padding:5px;color:#999"></td>
+                    </tr>
+                                            <tr><td colspan="2"><div style="border-bottom:1px solid #aaa"></div></td></tr>
+                                                        <tr>
+                        <td style="vertical-align:top;width:200px;background-color:#eee" rowspan="2">
+                                                            <table class="ObjectBar NoPadding">
+    <tbody>
+    <tr>
+        <td style="text-align: left; vertical-align: top; background-image: url('/foto/user/335.jpg'); background-size: cover; opacity: 1; height:" colspan="2" class="Miniatura" animating="no">
+            <a href="/335,user.html">
+                <div style="width:px;height:px;position:absolute;"></div>
+                <div style="margin-top:7px;margin-left:5px;background-color:rgba(0,0,0,0.5);display:inline-block;padding:2px 5px" class="r11b">zdjęcie</div>
+            </a>
+        </td>
+    </tr>
+    </tbody>
+</table>                                                    </td>
+                        <td style="vertical-align:top;padding:5px">
+                                                            <a href="/335,user.html" style="font-weight: normal;font-size: 22px;">
+                                    <span style="color:#666;font-size:0.7em">użytkownik</span> Wiesław Smyk
+                                </a>
+                                                                <div><strong></strong></div>
+                                                                    <div class="s10" style="text-align: justify;margin-top:10px;color:#999">
+                                        Galeria zdjęć użytkownika (51929  szt.)<br><br>
+                                    </div>
+                                                                                    </td>
+                    </tr>
+                    <tr>
+                        <td style="vertical-align: bottom;padding:5px;color:#999"></td>
+                    </tr>
+                                            <tr><td colspan="2"><div style="border-bottom:1px solid #aaa"></div></td></tr>
+                                                        <tr>
+                        <td style="vertical-align:top;width:200px;background-color:#eee" rowspan="2">
+                                                    </td>
+                        <td style="vertical-align:top;padding:5px">
+                                                            <a href="/6159,user.html" style="font-weight: normal;font-size: 22px;">
+                                    <span style="color:#666;font-size:0.7em">użytkownik</span> ireneusz1966
+                                </a>
+                                                                <div><strong></strong></div>
+                                                                    <div class="s10" style="text-align: justify;margin-top:10px;color:#999">
+                                        Galeria zdjęć użytkownika (46428  szt.)<br><br>
+                                    </div>
+                                                                                    </td>
+                    </tr>
+                    <tr>
+                        <td style="vertical-align: bottom;padding:5px;color:#999"></td>
+                    </tr>
+                                            <tr><td colspan="2"><div style="border-bottom:1px solid #aaa"></div></td></tr>
+                                                        <tr>
+                        <td style="vertical-align:top;width:200px;background-color:#eee" rowspan="2">
+                                                                                                <table class="ObjectBar NoPadding">
+            <tbody>
+                <tr>
+                    <td data-src="/foto/m/0/37.jpg" style="text-align: left; vertical-align: top; background-size: cover; opacity: 1; height:" colspan="2" class="Miniatura lazy" animating="no">
+                        <a href="/1271,zrodlo.html">
+                            <div style="width:px;height:px;position:absolute;"></div>
+                            <div style="margin-top:7px;margin-left:5px;background-color:rgba(0,0,0,0.5);display:inline-block;padding:2px 5px" class="r11b">źródło</div>                        </a>
+                    </td>
+                </tr>
+            </tbody>
+        </table>
+                                                                                    </td>
+                        <td style="vertical-align:top;padding:5px">
+                                                            <a href="/1271,zrodlo.html" style="font-weight: normal;font-size: 22px;">
+                                    <span style="color:#666;font-size:0.7em">źródło</span> NAC - Narodowe Archiwum Cyfrowe www.nac.gov.pl/
+                                </a>
+                                                                <div><strong></strong></div>
+                                                                    <div class="s10" style="text-align: justify;margin-top:10px;color:#999">
+                                           
+                                    </div>
+                                                                                    </td>
+                    </tr>
+                    <tr>
+                        <td style="vertical-align: bottom;padding:5px;color:#999"></td>
+                    </tr>
+                                            <tr><td colspan="2"><div style="border-bottom:1px solid #aaa"></div></td></tr>
+                                                        <tr>
+                        <td style="vertical-align:top;width:200px;background-color:#eee" rowspan="2">
+                                                            <table class="ObjectBar NoPadding">
+    <tbody>
+    <tr>
+        <td style="text-align: left; vertical-align: top; background-image: url('/foto/user/5455.jpg'); background-size: cover; opacity: 1; height:" colspan="2" class="Miniatura" animating="no">
+            <a href="/5455,user.html">
+                <div style="width:px;height:px;position:absolute;"></div>
+                <div style="margin-top:7px;margin-left:5px;background-color:rgba(0,0,0,0.5);display:inline-block;padding:2px 5px" class="r11b">zdjęcie</div>
+            </a>
+        </td>
+    </tr>
+    </tbody>
+</table>                                                    </td>
+                        <td style="vertical-align:top;padding:5px">
+                                                            <a href="/5455,user.html" style="font-weight: normal;font-size: 22px;">
+                                    <span style="color:#666;font-size:0.7em">użytkownik</span>  legion
+                                </a>
+                                                                <div><strong></strong></div>
+                                                                    <div class="s10" style="text-align: justify;margin-top:10px;color:#999">
+                                        Galeria zdjęć użytkownika (45700  szt.)<br><br>Zezwalam na użycie moich zdjęć pod warunkiem podania autora i linku do zdjęcia na fotopolska.eu
+
+                                    </div>
+                                                                                    </td>
+                    </tr>
+                    <tr>
+                        <td style="vertical-align: bottom;padding:5px;color:#999"></td>
+                    </tr>
+                                            <tr><td colspan="2"><div style="border-bottom:1px solid #aaa"></div></td></tr>
+                                                        <tr>
+                        <td style="vertical-align:top;width:200px;background-color:#eee" rowspan="2">
+                                                            <table class="ObjectBar NoPadding">
+    <tbody>
+    <tr>
+        <td style="text-align: left; vertical-align: top; background-image: url('/foto/user/15924.jpg'); background-size: cover; opacity: 1; height:" colspan="2" class="Miniatura" animating="no">
+            <a href="/15924,user.html">
+                <div style="width:px;height:px;position:absolute;"></div>
+                <div style="margin-top:7px;margin-left:5px;background-color:rgba(0,0,0,0.5);display:inline-block;padding:2px 5px" class="r11b">zdjęcie</div>
+            </a>
+        </td>
+    </tr>
+    </tbody>
+</table>                                                    </td>
+                        <td style="vertical-align:top;padding:5px">
+                                                            <a href="/15924,user.html" style="font-weight: normal;font-size: 22px;">
+                                    <span style="color:#666;font-size:0.7em">użytkownik</span> 4elza
+                                </a>
+                                                                <div><strong></strong></div>
+                                                                    <div class="s10" style="text-align: justify;margin-top:10px;color:#999">
+                                        Galeria zdjęć użytkownika (45400  szt.)<br><br>
+                                    </div>
+                                                                                    </td>
+                    </tr>
+                    <tr>
+                        <td style="vertical-align: bottom;padding:5px;color:#999"></td>
+                    </tr>
+                                            <tr><td colspan="2"><div style="border-bottom:1px solid #aaa"></div></td></tr>
+                                                        <tr>
+                        <td style="vertical-align:top;width:200px;background-color:#eee" rowspan="2">
+                                                            <table class="ObjectBar NoPadding">
+    <tbody>
+    <tr>
+        <td style="text-align: left; vertical-align: top; background-image: url('/foto/user/49043.jpg'); background-size: cover; opacity: 1; height:" colspan="2" class="Miniatura" animating="no">
+            <a href="/49043,user.html">
+                <div style="width:px;height:px;position:absolute;"></div>
+                <div style="margin-top:7px;margin-left:5px;background-color:rgba(0,0,0,0.5);display:inline-block;padding:2px 5px" class="r11b">zdjęcie</div>
+            </a>
+        </td>
+    </tr>
+    </tbody>
+</table>                                                    </td>
+                        <td style="vertical-align:top;padding:5px">
+                                                            <a href="/49043,user.html" style="font-weight: normal;font-size: 22px;">
+                                    <span style="color:#666;font-size:0.7em">użytkownik</span> Nemezis
+                                </a>
+                                                                <div><strong></strong></div>
+                                                                    <div class="s10" style="text-align: justify;margin-top:10px;color:#999">
+                                        Galeria zdjęć użytkownika (44698  szt.)<br><br>
+                                    </div>
+                                                                                    </td>
+                    </tr>
+                    <tr>
+                        <td style="vertical-align: bottom;padding:5px;color:#999"></td>
+                    </tr>
+                                            <tr><td colspan="2"><div style="border-bottom:1px solid #aaa"></div></td></tr>
+                                                        <tr>
+                        <td style="vertical-align:top;width:200px;background-color:#eee" rowspan="2">
+                                                            <table class="ObjectBar NoPadding">
+    <tbody>
+    <tr>
+        <td style="text-align: left; vertical-align: top; background-image: url('/foto/user/1108.jpg'); background-size: cover; opacity: 1; height:" colspan="2" class="Miniatura" animating="no">
+            <a href="/1108,user.html">
+                <div style="width:px;height:px;position:absolute;"></div>
+                <div style="margin-top:7px;margin-left:5px;background-color:rgba(0,0,0,0.5);display:inline-block;padding:2px 5px" class="r11b">zdjęcie</div>
+            </a>
+        </td>
+    </tr>
+    </tbody>
+</table>                                                    </td>
+                        <td style="vertical-align:top;padding:5px">
+                                                            <a href="/1108,user.html" style="font-weight: normal;font-size: 22px;">
+                                    <span style="color:#666;font-size:0.7em">użytkownik</span> Eugeniusz S.
+                                </a>
+                                                                <div><strong></strong></div>
+                                                                    <div class="s10" style="text-align: justify;margin-top:10px;color:#999">
+                                        Galeria zdjęć użytkownika (43840  szt.)<br><br>http://youtu.be/4Fx4mshinO0
+"Człowiek zakłada państwa, wznosi potężne mury i fortece, które uchodzą za niezdobyte. Przychodzi drugi, niszczy dzieła poprzednika i znów stawia niezdobyte mury. Trzeci i czwarty potomek tak samo czyni, a wszystko jest zmienne i przemijające."
+(Blaise Pascal)
+                                    </div>
+                                                                                    </td>
+                    </tr>
+                    <tr>
+                        <td style="vertical-align: bottom;padding:5px;color:#999"></td>
+                    </tr>
+                                            <tr><td colspan="2"><div style="border-bottom:1px solid #aaa"></div></td></tr>
+                                                        <tr>
+                        <td style="vertical-align:top;width:200px;background-color:#eee" rowspan="2">
+                                                    </td>
+                        <td style="vertical-align:top;padding:5px">
+                                                            <a href="/32994,user.html" style="font-weight: normal;font-size: 22px;">
+                                    <span style="color:#666;font-size:0.7em">użytkownik</span> marek45
+                                </a>
+                                                                <div><strong></strong></div>
+                                                                    <div class="s10" style="text-align: justify;margin-top:10px;color:#999">
+                                        Galeria zdjęć użytkownika (38314  szt.)<br><br>
+                                    </div>
+                                                                                    </td>
+                    </tr>
+                    <tr>
+                        <td style="vertical-align: bottom;padding:5px;color:#999"></td>
+                    </tr>
+                                            <tr><td colspan="2"><div style="border-bottom:1px solid #aaa"></div></td></tr>
+                                                        <tr>
+                        <td style="vertical-align:top;width:200px;background-color:#eee" rowspan="2">
+                                                            <table class="ObjectBar NoPadding">
+    <tbody>
+    <tr>
+        <td style="text-align: left; vertical-align: top; background-image: url('/foto/user/173.jpg'); background-size: cover; opacity: 1; height:" colspan="2" class="Miniatura" animating="no">
+            <a href="/173,user.html">
+                <div style="width:px;height:px;position:absolute;"></div>
+                <div style="margin-top:7px;margin-left:5px;background-color:rgba(0,0,0,0.5);display:inline-block;padding:2px 5px" class="r11b">zdjęcie</div>
+            </a>
+        </td>
+    </tr>
+    </tbody>
+</table>                                                    </td>
+                        <td style="vertical-align:top;padding:5px">
+                                                            <a href="/173,user.html" style="font-weight: normal;font-size: 22px;">
+                                    <span style="color:#666;font-size:0.7em">użytkownik</span> bonczek_hydroforgroup
+                                </a>
+                                                                <div><strong></strong></div>
+                                                                    <div class="s10" style="text-align: justify;margin-top:10px;color:#999">
+                                        Galeria zdjęć użytkownika (36706  szt.)<br><br>
+                                    </div>
+                                                                                    </td>
+                    </tr>
+                    <tr>
+                        <td style="vertical-align: bottom;padding:5px;color:#999"></td>
+                    </tr>
+                                                </table>
+        </td>
+    </tr>
+    <tr>
+        <td class="BgGray21 RightShadow" style="vertical-align:middle;padding:5px">
+            <table class="NoPadding" style="width:100%;height:30px">
+                <tr>
+                    <td class="wyniki" style="width:280px;cursor:pointer">
+                         w serwisie Fotopolska.Eu
+                    </td>
+                    <td style="text-align:right">
+                                                    <table class="Pages NoPadding">
+    <tr>
+                            <td class="Lne">
+                                    <div onclick="szukaj({showBar:true},0)" style="font-size:15px;color:white !important"
+                         class="Scolor"                         title="Strona 1"
+                    ">1</div>
+                            </td>
+                    <td class="Lne">
+                                    <div onclick="szukaj({showBar:true},24)" style="font-size:15px;color:white !important"
+                                                 title="Strona 2"
+                    ">2</div>
+                            </td>
+                    <td class="Lne">
+                                    <div onclick="szukaj({showBar:true},48)" style="font-size:15px;color:white !important"
+                                                 title="Strona 3"
+                    ">3</div>
+                            </td>
+                    <td class="Lne">
+                                    <div onclick="szukaj({showBar:true},72)" style="font-size:15px;color:white !important"
+                                                 title="Strona 4"
+                    ">4</div>
+                            </td>
+                    <td class="Lne">
+                                    <div onclick="szukaj({showBar:true},96)" style="font-size:15px;color:white !important"
+                                                 title="Strona 5"
+                    ">5</div>
+                            </td>
+                    <td class="Lne">
+                                    <div onclick="szukaj({showBar:true},120)" style="font-size:15px;color:white !important"
+                                                 title="Strona 6"
+                    ">6</div>
+                            </td>
+                    <td class="Lne">
+                                    <div onclick="szukaj({showBar:true},144)" style="font-size:15px;color:white !important"
+                                                 title="Strona 7"
+                    ">7</div>
+                            </td>
+                    <td class="Lne">
+                                    <div onclick="szukaj({showBar:true},168)" style="font-size:15px;color:white !important"
+                                                 title="Strona 8"
+                    ">8</div>
+                            </td>
+                    <td class="Lne">
+                                    <div onclick="szukaj({showBar:true},192)" style="font-size:15px;color:white !important"
+                                                 title="Strona 9"
+                    ">9</div>
+                            </td>
+                    <td class="Lne">
+                                    <div onclick="szukaj({showBar:true},216)" style="font-size:15px;color:white !important"
+                                                 title="Strona 10"
+                    ">10</div>
+                            </td>
+                    <td class="Lne">
+                                    <div onclick="szukaj({showBar:true},240)" style="font-size:15px;color:white !important"
+                                                 title="Strona 11"
+                    ">11</div>
+                            </td>
+                    <td class="Lne">
+                                    <div onclick="szukaj({showBar:true},264)" style="font-size:15px;color:white !important"
+                                                 title="Strona 12"
+                    ">12</div>
+                            </td>
+                    <td class="Lne">
+                                    <div onclick="szukaj({showBar:true},288)" style="font-size:15px;color:white !important"
+                                                 title="Strona 13"
+                    ">13</div>
+                            </td>
+                    <td class="Lne">
+                                    ...
+                            </td>
+                    <td class="Lne">
+                                    <div onclick="szukaj({showBar:true},960)" style="font-size:15px;color:white !important"
+                                                 title="Strona 41"
+                    ">41</div>
+                            </td>
+                    <td class="Lne">
+                                    <div onclick="szukaj({showBar:true},984)" style="font-size:15px;color:white !important"
+                                                 title="Strona 42"
+                    ">42</div>
+                            </td>
+                            <td class="Lne" style="white-space:nowrap">
+                <div title="Strona 1"
+                     onclick="szukaj({showBar:true},24)">następna&nbsp;<img src="/gfxn/right.png"
+                                                                                                                 style="display:inline;margin-bottom:-2px"></div>
+            </td>
+            </tr>
+</table>
+                                            </td>
+                </tr>
+            </table>
+        </td>
+    </tr>
+</table>
+</div>
+<script>
+    $('.tabtn').click(function(){
+        $('.tab_active').removeClass('tab_active');
+        $(this).addClass('tab_active');
+        $('.tabshow').removeClass('tabshow').addClass('tabhide');
+        $('#'+$(this).attr('rel')).removeClass('tabhide').addClass('tabshow');
+    });
+</script>
+</td>
+	</tr>
+</table>
+<div class="scroll-to-top off"><i class="fa fa-arrow-up"></i></div>
+<div class="r12" style="text-align:center;font-weight:bold;margin-top:10px">Kontakt do administrator&#243;w strony Fotopolska.Eu: <script type="text/javascript"><!--
+        var lijahmm = ['>','m','h','"',' ','t','e','a','k','a','@','t','o','=','l','s','k',':','e','t','l','f','a','o','s','t','i',' ','o','f','@','<','l','o','<','a','c','p','p','i','>','m','f','l','o','n','s','.','a','k','.','u','t','"','t','o','/','t','r','a','o','l','s','e','"','a','o','n','o','a','e','k','u','a','"','k','k','='];var yoxbvqc = [52,9,3,8,38,19,35,20,21,57,23,13,29,7,50,31,53,15,46,63,67,6,41,17,68,26,49,2,25,24,60,0,12,62,74,1,39,65,28,11,77,47,61,40,54,18,43,34,48,58,71,73,59,51,22,14,75,56,4,10,66,30,42,5,37,70,27,55,64,76,72,32,36,33,45,16,69,44];var ilokkah= new Array();for(var i=0;i<yoxbvqc.length;i++){ilokkah[yoxbvqc[i]] = lijahmm[i]; }for(var i=0;i<ilokkah.length;i++){document.write(ilokkah[i]);}
+        // --></script> | Regulamin serwisu: <a href="https://fotopolska.eu/2,artykul.html">https://fotopolska.eu/2,artykul.html</a></div>
+<div class="r11" style="text-align:center;">&copy; Copyright 2012 Neo & Siloy</div>
+<div class="r11" style="text-align:center;margin-bottom:10px"><a href="http://amsnet.pl/">Kolokacja serwer&#243;w Amsnet</a></div>
+<div style="text-align:center"><div class="fb-like" style="text-align:center" data-href="http://www.facebook.com/pages/Fotopolska/148625248481610" data-send="true" data-width="520" data-show-faces="true" data-colorscheme="dark" data-font="arial"></div></div>
+<div style="width:1150px;text-align:center;margin-top:10px;margin-left:auto;margin-right:auto" class="r12">Ostatnio przeglądane: <a href="/zadory" rel="nofollow">zadory</a> <a href="/Jelenia+G%C3%B3ra+rynek" rel="nofollow">Jelenia Góra rynek</a> <a href="/kopiec+krakusa" rel="nofollow">kopiec krakusa</a> <a href="/kolej+linowa+czantoria" rel="nofollow">kolej linowa czantoria</a> <a href="/%C5%81owicz+ko%C5%9Bcio%C5%82+ducha+%C5%9Awi%C4%99tego" rel="nofollow">Łowicz kościoł ducha Świętego</a> <a href="/%C5%81owicz" rel="nofollow">Łowicz</a> <a href="/%C5%81owicz" rel="nofollow">Łowicz</a> <a href="/Stryk%C3%B3w" rel="nofollow">Stryków</a> <a href="/Stryk%C3%B3w" rel="nofollow">Stryków</a> <a href="/Stryk%C3%B3w" rel="nofollow">Stryków</a> <a href="/Stryk%C3%B3w" rel="nofollow">Stryków</a> <a href="/proszowice" rel="nofollow">proszowice</a> <a href="/stary+rynek+%C5%82odx" rel="nofollow">stary rynek łodx</a> <a href="/Stary+Rynek+%C5%82od%C5%BA" rel="nofollow">Stary Rynek łodź</a> <a href="/ulica+Krakowska" rel="nofollow">ulica Krakowska</a> <a href="/ulica+Krakowska" rel="nofollow">ulica Krakowska</a> <a href="/Myszk%C3%B3w%2C+Pohulanka" rel="nofollow">Myszków, Pohulanka</a> <a href="/Myszk%C3%B3w%2C+Pohulanka" rel="nofollow">Myszków, Pohulanka</a> <a href="/ulica+Krakowska" rel="nofollow">ulica Krakowska</a> <a href="/ulica+Krakowska" rel="nofollow">ulica Krakowska</a> <a href="/Krak%C3%B3w+Krakowska+" rel="nofollow">Kraków Krakowska </a> <a href="/Krak%C3%B3w+Krakowska+" rel="nofollow">Kraków Krakowska </a> <a href="/Myszk%C3%B3w" rel="nofollow">Myszków</a> <a href="/Myszk%C3%B3w" rel="nofollow">Myszków</a> <a href="/Myszk%C3%B3w%2C+ulica+Jaworznicka" rel="nofollow">Myszków, ulica Jaworznicka</a> <a href="/Stryk%C3%B3w" rel="nofollow">Stryków</a> <a href="/Stryk%C3%B3w" rel="nofollow">Stryków</a> <a href="/+Krak%C3%B3w+ulica+Krakowska+lata+70." rel="nofollow"> Kraków ulica Krakowska lata 70.</a> <a href="/%C5%81owicz" rel="nofollow">Łowicz</a> <a href="/%C5%81owicz" rel="nofollow">Łowicz</a> <a href="/+ulica+Krakowska+lata+80." rel="nofollow"> ulica Krakowska lata 80.</a> <a href="/wy%C5%9Bmierzyce" rel="nofollow">wyśmierzyce</a> <a href="/+ulica+Krakowska+" rel="nofollow"> ulica Krakowska </a> <a href="/+ulica+Krakowska+" rel="nofollow"> ulica Krakowska </a> <a href="/Aula+UAM" rel="nofollow">Aula UAM</a> </div><script type="text/javascript" language="text/javascript">NadajMiniatury();</script>
+<script type="text/javascript">
+
+    $('.lazy').lazy({threshold:200});
+
+    (function(i,s,o,g,r,a,m){i['GoogleAnalyticsObject']=r;i[r]=i[r]||function(){
+        (i[r].q=i[r].q||[]).push(arguments)},i[r].l=1*new Date();a=s.createElement(o),
+        m=s.getElementsByTagName(o)[0];a.async=1;a.src=g;m.parentNode.insertBefore(a,m)
+    })(window,document,'script','//www.google-analytics.com/analytics.js','ga');
+
+    ga('create', 'UA-10433538-1', 'auto');
+        ga('send', 'pageview');
+
+    </script>
+</body>
+</html>
