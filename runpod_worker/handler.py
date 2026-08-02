@@ -1175,17 +1175,20 @@ def process_job(inp: dict) -> dict:
                     if wrote:
                         # Second line of defense: soft/tiny stills (pod may lag
                         # scan.py sync; grain fools raw Laplacian on EFG crops).
+                        # Fail closed: missing blur.py on old pods was silently
+                        # inserting soft EFG stills (ImportError → pass).
                         try:
                             from shtetl_core.blur import still_path_is_poor
 
-                            if still_path_is_poor(wrote):
-                                try:
-                                    tmp_path.unlink(missing_ok=True)
-                                except OSError:
-                                    pass
-                                continue
+                            poor = bool(still_path_is_poor(wrote))
                         except Exception:
-                            pass
+                            poor = True
+                        if poor:
+                            try:
+                                tmp_path.unlink(missing_ok=True)
+                            except OSError:
+                                pass
+                            continue
                         # Vision verify on the pod with the local JPEG (OpenAI only).
                         os.environ.setdefault("OPENAI_VERIFY", "1")
                         oai_key = (

@@ -26,7 +26,9 @@ DRIVER_RISKY_IMAGE_MARKERS = ("cu1290", "cu129-", "-cu129")
 # raw.githubusercontent serves new commits immediately; jsDelivr 500s on fresh
 # commits for many minutes, and the bootstrap's curl -f turns that into a
 # dead fleet (bootstrap exits before uvicorn starts).
-WORKER_COMMIT = "de5412c"
+# Updated when blur gate landed — older pins lacked shtetl_core/blur.py and
+# inserted soft EFG stills (handler ImportError was swallowed).
+WORKER_COMMIT = "dcf7654"
 _RAW = f"https://raw.githubusercontent.com/AIQAEngineer/ShtetlFrames/{WORKER_COMMIT}"
 WORKER_RAW_BASE = f"{_RAW}/runpod_worker"
 CORE_RAW_BASE = f"{_RAW}/src/shtetl_core"
@@ -35,6 +37,7 @@ CORE_RAW_BASE = f"{_RAW}/src/shtetl_core"
 CORE_MODULES = (
     "__init__.py",
     "cues.py",
+    "blur.py",
     "scoring.py",
     "scan.py",
     "segments.py",

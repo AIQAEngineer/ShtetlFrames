@@ -2585,6 +2585,36 @@ def _materialize_segment_stills(out: dict[str, Any]) -> None:
             pass
 
 
+def _candidate_row_still_is_poor(row: dict[str, Any]) -> bool:
+    """True when the Review still is soft/tiny — local gate even if pods lag."""
+    try:
+        from shtetl_core.blur import is_blurry_crop, still_path_is_poor
+    except Exception:
+        return True
+    local = row.get("_local_still") or row.get("local_still")
+    if local:
+        try:
+            return bool(still_path_is_poor(local))
+        except Exception:
+            return True
+    b64 = row.get("still_b64") or row.get("image_b64")
+    if not b64:
+        return False
+    try:
+        import base64
+
+        import cv2
+        import numpy as np
+
+        raw = base64.b64decode(b64)
+        im = cv2.imdecode(np.frombuffer(raw, dtype=np.uint8), cv2.IMREAD_COLOR)
+        if im is None:
+            return True
+        return bool(is_blurry_crop(im))
+    except Exception:
+        return True
+
+
 def segments_to_candidate_rows(out: dict[str, Any], source_url: str = "") -> list[dict]:
     rows = []
     for s in out.get("segments") or []:
@@ -2611,6 +2641,15 @@ def segments_to_candidate_rows(out: dict[str, Any], source_url: str = "") -> lis
         local = s.get("_local_still") or s.get("local_still")
         if local:
             row["_local_still"] = str(local)
+        # Pods often lag the blur gate (pinned bootstrap / missing blur.py).
+        if _candidate_row_still_is_poor(row):
+            local_p = row.get("_local_still")
+            if local_p:
+                try:
+                    Path(str(local_p)).unlink(missing_ok=True)
+                except OSError:
+                    pass
+            continue
         rows.append(row)
     return rows
 
