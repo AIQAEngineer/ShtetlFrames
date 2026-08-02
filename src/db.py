@@ -27,6 +27,7 @@ CREATE TABLE IF NOT EXISTS queue_items (
   hub_url TEXT DEFAULT '',
   error TEXT DEFAULT '',
   detail TEXT DEFAULT '',
+  attempts INTEGER NOT NULL DEFAULT 0,
   created_at REAL
 );
 
@@ -123,6 +124,10 @@ def init_db() -> None:
             conn.execute("ALTER TABLE queue_items ADD COLUMN error TEXT DEFAULT ''")
         if "detail" not in cols:
             conn.execute("ALTER TABLE queue_items ADD COLUMN detail TEXT DEFAULT ''")
+        if "attempts" not in cols:
+            conn.execute(
+                "ALTER TABLE queue_items ADD COLUMN attempts INTEGER NOT NULL DEFAULT 0"
+            )
         for jid in (
             "discover",
             "scrape",
@@ -130,6 +135,7 @@ def init_db() -> None:
             "pathe_scrape",
             "train_seed",
             "clip_ft",
+            "import",
         ):
             conn.execute(
                 "INSERT OR IGNORE INTO jobs (id, status, phase, updated_at) VALUES (?, 'idle', 'idle', ?)",
@@ -180,6 +186,7 @@ def list_jobs() -> dict[str, dict]:
 
 _PATHE_URL_SQL = "url LIKE '%britishpathe.com%'"
 _NON_PATHE_URL_SQL = "url NOT LIKE '%britishpathe.com%'"
+_YOUTUBE_URL_SQL = "(url LIKE '%youtube.com%' OR url LIKE '%youtu.be%')"
 
 
 def _source_sql(source: str) -> str:
@@ -189,6 +196,12 @@ def _source_sql(source: str) -> str:
         return _PATHE_URL_SQL
     if s in ("youtube", "yt", "web", "non_pathe", "non-pathe"):
         return _NON_PATHE_URL_SQL
+    if s in ("catalog", "catalogs", "efg_europeana", "discovery"):
+        return "(source LIKE 'efg:%' OR source LIKE 'europeana%')"
+    if s == "efg":
+        return "source LIKE 'efg:%'"
+    if s == "europeana":
+        return "source LIKE 'europeana%'"
     return ""
 
 
@@ -426,6 +439,43 @@ def _queue_id_dir() -> str:
     return "DESC" if queue_claim_from_end() else "ASC"
 
 
+def is_youtube_url(url: str) -> bool:
+    u = (url or "").lower()
+    return "youtube.com" in u or "youtu.be" in u
+
+
+def queue_youtube_last() -> bool:
+    """True unless Settings/env QUEUE_YOUTUBE_LAST=off (claim YouTube URLs last)."""
+    import os
+
+    raw = (os.environ.get("QUEUE_YOUTUBE_LAST") or "").strip().lower()
+    if not raw:
+        try:
+            from settings_store import get_setting
+
+            raw = (get_setting("QUEUE_YOUTUBE_LAST") or "on").strip().lower()
+        except Exception:
+            raw = "on"
+    return raw not in ("off", "no", "0", "false", "first")
+
+
+def _youtube_last_sql() -> str:
+    """ORDER BY fragment pushing YouTube behind direct/archive URLs ('' when off)."""
+    if not queue_youtube_last():
+        return ""
+    return f"CASE WHEN {_YOUTUBE_URL_SQL} THEN 1 ELSE 0 END, "
+
+
+def _max_item_attempts() -> int:
+    """Cap on pod attempts per queue item (lazy import: config reads env/db)."""
+    try:
+        import config as _c
+
+        return max(1, int(getattr(_c, "SCRAPE_ITEM_MAX_ATTEMPTS", 5) or 5))
+    except Exception:
+        return 5
+
+
 def take_pending(
     limit: int | None,
     *,
@@ -440,35 +490,44 @@ def take_pending(
     scrape retries them; ``only_pending=True`` claims fresh ``pending`` rows only,
     so a continuous discover+scrape never double-claims in-flight work.
     Order follows Settings ``QUEUE_CLAIM_ORDER`` (start=oldest id, end=newest id).
+    Within each status band, YouTube/youtu.be URLs claim last (slow, bot-checked)
+    unless Settings ``QUEUE_YOUTUBE_LAST`` is off.
     """
     frag = _source_sql(source)
     and_frag = f" AND {frag}" if frag else ""
     id_dir = _queue_id_dir()
+    yt_last = _youtube_last_sql()
+    params: list = []
     if only_pending:
         claim = f"status='pending' AND downloadable='yes'{and_frag}"
-        order = f"ORDER BY id {id_dir}"
+        order = f"ORDER BY {yt_last}id {id_dir}"
     else:
+        # Error rows that exhausted their pod-attempt budget stay parked — Start
+        # scrape must not requeue-loop permanently-undownloadable URLs forever.
         claim = (
             "status IN ('pending','queued','scanning','downloading','uploading','error') "
-            f"AND downloadable='yes'{and_frag}"
+            f"AND downloadable='yes'{and_frag} "
+            "AND NOT (status='error' AND COALESCE(attempts,0) >= ?)"
         )
+        params.append(_max_item_attempts())
         order = (
             "ORDER BY CASE status "
             "WHEN 'pending' THEN 0 "
             "WHEN 'queued' THEN 1 "
             "WHEN 'error' THEN 2 "
-            f"ELSE 3 END, id {id_dir}"
+            f"ELSE 3 END, {yt_last}id {id_dir}"
         )
     with db(write=True) as conn:
         if limit is None:
             rows = conn.execute(
-                f"SELECT * FROM queue_items WHERE {claim} {order}"
+                f"SELECT * FROM queue_items WHERE {claim} {order}",
+                params,
             ).fetchall()
         else:
             # Prefer fresh pending first, then retry errors / stuck jobs.
             rows = conn.execute(
                 f"SELECT * FROM queue_items WHERE {claim} {order} LIMIT ?",
-                (int(limit),),
+                (*params, int(limit)),
             ).fetchall()
         ids = [r["id"] for r in rows]
         if ids:
@@ -652,6 +711,7 @@ def set_queue_status(item_id: int, status: str, error: str = "", detail: str = "
             time.sleep(0.15 * attempt)
     if last_err is not None:
         raise RuntimeError(f"set_queue_status_failed:{last_err}") from last_err
+
     # #region agent log
     from logutil import agent_dbg
 
@@ -667,6 +727,24 @@ def set_queue_status(item_id: int, status: str, error: str = "", detail: str = "
         tid=True,
     )
     # #endregion
+
+
+def bump_queue_attempt(item_id: int) -> int:
+    """Increment the pod-attempt counter for a queue row; returns new count.
+
+    Called by the scrape coordinator when an item consumed a pod attempt and
+    failed with a retriable (infra) error, so permanently-undownloadable URLs
+    cannot requeue-loop forever across scrape runs.
+    """
+    with db(write=True) as conn:
+        conn.execute(
+            "UPDATE queue_items SET attempts=COALESCE(attempts,0)+1 WHERE id=?",
+            (item_id,),
+        )
+        row = conn.execute(
+            "SELECT attempts FROM queue_items WHERE id=?", (item_id,)
+        ).fetchone()
+    return int(row["attempts"]) if row else 0
 
 
 def insert_candidates(rows: list[dict]) -> int:

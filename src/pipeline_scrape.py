@@ -24,7 +24,15 @@ from config import (
     load_env,
 )
 import config as app_config
-from db import get_job, init_db, insert_candidates, set_job, set_queue_status, take_pending
+from db import (
+    bump_queue_attempt,
+    get_job,
+    init_db,
+    insert_candidates,
+    set_job,
+    set_queue_status,
+    take_pending,
+)
 
 
 def _safe_queue_status(item_id: int, status: str, error: str = "", detail: str = "") -> None:
@@ -366,20 +374,24 @@ def start_scrape(max_videos: str | int = "all", workers: int = DEFAULT_WORKERS) 
         )
         return {"ok": False, "error": "queue_empty", "job": get_job("scrape")}
 
-    # Manual "next" / priority rows first, then Settings QUEUE_CLAIM_ORDER.
-    from db import queue_claim_from_end
+    # Manual "next" / priority rows first, YouTube last, then Settings QUEUE_CLAIM_ORDER.
+    from db import is_youtube_url, queue_claim_from_end, queue_youtube_last
 
     id_sign = -1 if queue_claim_from_end() else 1
+    yt_last = queue_youtube_last()
     items = sorted(
         items,
         key=lambda r: (
             0 if (r.get("detail") or "") == "next" else 1,
+            1 if (yt_last and is_youtube_url(r.get("url"))) else 0,
             id_sign * int(r.get("id") or 0),
         ),
     )
 
     n_retry = sum(1 for r in items if (r.get("status") or "") == "error")
     order_label = "end→newest" if queue_claim_from_end() else "start→oldest"
+    if yt_last:
+        order_label += " · youtube-last"
     start_msg = (
         f"Starting scrape of {len(items)} video(s) · backend={backend} · "
         f"workers={workers} · queue={order_label}"
@@ -530,8 +542,10 @@ def _scrape_job(items: list[dict], workers: int, backend: str = "local") -> None
                 progress=5,
             )
             # Modest fan-out — too many PC threads stampede a dead pool into mass failures.
+            # Stacking >1 overlaps slow archive downloads on each GPU (GPU scan serializes pod-side).
+            stack = max(1, min(int(app_config.RUNPOD_STACK_PER_POD or 2), 8))
             workers = max(workers, n_pods)
-            workers = min(max(workers, n_pods * 2), MAX_PARALLEL_PODS * 2)
+            workers = min(max(workers, n_pods * stack), MAX_PARALLEL_PODS * stack)
         else:
             status(f"Loading models for {len(items)} video(s), {workers} worker(s)…", job="scrape", persist=True)
             set_job("scrape", message=f"Loading {workers} worker model set(s)…", progress=5)
@@ -722,40 +736,80 @@ def _scrape_job(items: list[dict], workers: int, backend: str = "local") -> None
                                 infra_streak["n"] = 0
                             elif infra:
                                 # Put back on the queue — GPU/proxy blips must not burn videos.
-                                _safe_queue_status(
-                                    qid,
-                                    "pending",
-                                    error="",
-                                    detail=f"retry later: {err_txt[:140]}",
-                                )
-                                infra_streak["n"] += 1
-                                if infra_streak["n"] >= 3:
-                                    pause_until["t"] = time.time() + 45.0
-                                    status(
-                                        f"Infra streak ({infra_streak['n']}) — "
-                                        "pausing new submits 45s and refreshing pods…",
-                                        job="scrape",
-                                        persist=True,
-                                    )
-                                    try:
-                                        refresh_pod_pool(
-                                            count=max(
-                                                1,
-                                                min(
-                                                    int(app_config.RUNPOD_MAX_INFLIGHT or 1),
-                                                    4,
-                                                ),
-                                            ),
-                                            on_status=lambda m: status(m, job="scrape"),
-                                            force=True,
+                                # But count pod attempts so permanently-undownloadable
+                                # URLs cannot requeue-loop forever across scrape runs.
+                                try:
+                                    n_att = bump_queue_attempt(qid)
+                                except Exception:
+                                    n_att = 0
+                                cap = max(
+                                    1,
+                                    int(
+                                        getattr(
+                                            app_config, "SCRAPE_ITEM_MAX_ATTEMPTS", 5
                                         )
-                                    except Exception as refresh_err:
+                                        or 5
+                                    ),
+                                )
+                                if n_att and n_att >= cap:
+                                    _safe_queue_status(
+                                        qid,
+                                        "error",
+                                        error=(
+                                            f"parked after {n_att} pod attempts: "
+                                            f"{err_txt[:120]}"
+                                        ),
+                                        detail="attempt budget exhausted",
+                                    )
+                                    with _scrape_counts_lock:
+                                        _scrape_counts["errors"] += 1
+                                        _scrape_counts["done"] += 1
+                                    infra_streak["n"] = 0
+                                else:
+                                    _safe_queue_status(
+                                        qid,
+                                        "pending",
+                                        error="",
+                                        detail=(
+                                            f"retry later ({n_att}/{cap}): "
+                                            f"{err_txt[:120]}"
+                                        ),
+                                    )
+                                    infra_streak["n"] += 1
+                                    if infra_streak["n"] >= 3:
+                                        pause_until["t"] = time.time() + 45.0
                                         status(
-                                            f"Circuit refresh failed: {refresh_err}"[:160],
+                                            f"Infra streak ({infra_streak['n']}) — "
+                                            "pausing new submits 45s and refreshing pods…",
                                             job="scrape",
                                             persist=True,
                                         )
-                                    infra_streak["n"] = 0
+                                        try:
+                                            refresh_pod_pool(
+                                                count=max(
+                                                    1,
+                                                    min(
+                                                        int(
+                                                            app_config.RUNPOD_MAX_INFLIGHT
+                                                            or 1
+                                                        ),
+                                                        4,
+                                                    ),
+                                                ),
+                                                on_status=lambda m: status(
+                                                    m, job="scrape"
+                                                ),
+                                                force=True,
+                                            )
+                                        except Exception as refresh_err:
+                                            status(
+                                                f"Circuit refresh failed: {refresh_err}"[
+                                                    :160
+                                                ],
+                                                job="scrape",
+                                                persist=True,
+                                            )
+                                        infra_streak["n"] = 0
                             else:
                                 _safe_queue_status(qid, "error", error=err_txt, detail="")
                                 set_job("scrape", error=err_txt)

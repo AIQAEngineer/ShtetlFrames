@@ -530,7 +530,8 @@ def _verify_still_one(
         mime = _sniff_image_mime(raw) or "image/jpeg"
     elif image_b64:
         try:
-            raw = base64.standard_b64decode(str(image_b64).encode("ascii"), validate=False)
+            # standard_b64decode takes no validate kwarg (TypeError); b64decode does.
+            raw = base64.b64decode(str(image_b64).encode("ascii"), validate=False)
         except Exception:
             raw = None
         if raw:

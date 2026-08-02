@@ -438,6 +438,7 @@ def _download_once(
     format_selector: str | None = None,
     concurrent_fragments: int = 0,
     sleep_requests: str = "1",
+    job_deadline: float | None = None,
 ) -> Path:
     out_tmpl = str(VIDEOS / f"{vid}.%(ext)s")
     fmt = format_selector or "bv*[height<=720]+ba/b[height<=720]/b"
@@ -527,6 +528,10 @@ def _download_once(
             reason = ""
             if now - activity["t"] > stall_s:
                 reason = f"yt-dlp stalled — no output {int(now - activity['t'])}s"
+            elif job_deadline and now > job_deadline:
+                # Client-imposed per-item budget — stop instead of becoming a
+                # zombie download after the client already timed out.
+                reason = f"pod_job_budget exhausted after {int(now - t0)}s"
             elif now - t0 > 1800:
                 reason = "yt-dlp timeout after 1800s"
             if reason:
@@ -643,6 +648,7 @@ def download_video(
     m3u8_url: str | None = None,
     work_id: str | None = None,
     queue_id: Any = None,
+    job_deadline: float | None = None,
 ) -> Path:
     """Download on the GPU pod only — cookies and/or residential proxy, never the user's PC."""
     VIDEOS.mkdir(parents=True, exist_ok=True)
@@ -735,6 +741,10 @@ def download_video(
                 )
             for client in phase_clients:
                 attempt_i += 1
+                if job_deadline and time.time() > job_deadline:
+                    raise RuntimeError(
+                        f"pod_job_budget exhausted before attempt {attempt_i}"
+                    )
                 try:
                     for p in VIDEOS.glob(f"{vid}.*"):
                         if p.suffix.lower() in {".part", ".ytdl", ".temp"}:
@@ -751,6 +761,7 @@ def download_video(
                         proxy_url=phase_proxy,
                         proxy_label=label if phase_proxy else "proxy",
                         proxy_insecure=bool(proxy_insecure and phase_proxy),
+                        job_deadline=job_deadline,
                     )
                     mb = path.stat().st_size / (1024 * 1024)
                     set_progress(
@@ -767,6 +778,9 @@ def download_video(
                         f"retry download ({phase_name} {attempt_i})",
                         detail=last_err[:200],
                     )
+                    if "pod_job_budget" in last_err:
+                        # Budget dead — cycling player clients just burns time.
+                        raise RuntimeError(last_err)
                     if _is_permanent_ytdlp_error(last_err):
                         break
                     # Scrapfly / 429: fail FAST so the PC client can switch to ScrapingDog.
@@ -856,7 +870,11 @@ def download_video_prefetched(*args, **kwargs) -> Path:
     )
     _dl_queue.put(((args, kwargs), done_evt, box))
     # A throttled long preview can take many minutes; don't wait forever.
-    if not done_evt.wait(timeout=1800):
+    wait_s = 1800.0
+    dl = kwargs.get("job_deadline")
+    if dl:
+        wait_s = max(1.0, min(wait_s, float(dl) - time.time()))
+    if not done_evt.wait(timeout=wait_s):
         raise RuntimeError("prefetch_download_timeout")
     err = box.get("error")
     if err is not None:
@@ -979,6 +997,13 @@ def process_job(inp: dict) -> dict:
     m3u8_url = m3u8_url.strip() or None
     preloaded = (inp.get("video_path") or "").strip()
     skip_download = bool(inp.get("skip_download") or preloaded)
+    try:
+        job_budget_sec = float(inp.get("job_budget_sec") or 0)
+    except (TypeError, ValueError):
+        job_budget_sec = 0.0
+    # Client-imposed per-item wall-clock budget. Enforced pod-side so a job
+    # stops instead of running as a zombie after the client's timeout fired.
+    job_deadline = (time.time() + job_budget_sec) if job_budget_sec > 0 else None
     video_id = _work_slug(title, url=url, queue_id=queue_id)
     path = None
     crop_dir = CROPS / video_id
@@ -1022,6 +1047,11 @@ def process_job(inp: dict) -> dict:
                         m3u8_url=m3u8_url,
                         work_id=video_id,
                         queue_id=queue_id,
+                        job_deadline=job_deadline,
+                    )
+                if job_deadline and time.time() > job_deadline:
+                    raise RuntimeError(
+                        "pod_job_budget exhausted before GPU scan"
                     )
                 # Keep asset-/queue-scoped id — do not collapse back to title slug.
                 crop_dir = CROPS / video_id
@@ -1172,6 +1202,9 @@ def process_job(inp: dict) -> dict:
                         pass
                     path = None
                 shutil.rmtree(crop_dir, ignore_errors=True)
+                if "pod_job_budget" in last_err.lower():
+                    # Client budget spent — in-pod retries would only overrun it.
+                    break
                 if attempt < max_attempts and _is_retryable_job_error(last_err):
                     set_progress(
                         "queued",

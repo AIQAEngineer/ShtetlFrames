@@ -84,7 +84,8 @@ def save_candidate_still(
             data = p.read_bytes()
     if data is None and b64:
         try:
-            data = base64.standard_b64decode(str(b64).encode("ascii"), validate=False)
+            # standard_b64decode takes no validate kwarg (TypeError); b64decode does.
+            data = base64.b64decode(str(b64).encode("ascii"), validate=False)
         except Exception:
             data = None
     if data is None and image_url and str(image_url).startswith(("http://", "https://")):

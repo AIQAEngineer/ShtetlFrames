@@ -1,0 +1,119 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>Scraped catalogs — ShtetlFrames</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link href="https://fonts.googleapis.com/css2?family=Figtree:wght@400;500;600&family=Fraunces:opsz,wght@9..144,500;9..144,560&display=swap" rel="stylesheet" />
+  <link rel="stylesheet" href="/assets/styles.css" />
+</head>
+<body>
+  <div class="wrap">
+    <nav id="siteNav"></nav>
+
+    <header class="review-head">
+      <div>
+        <h1>Scraped catalogs</h1>
+        <p class="section-lede" style="margin:0">
+          EFG pre-1950 · Europeana through 1980 — import discovery CSVs into the shared queue,
+          then Start scrape from the <a href="/">Scan page</a>.
+        </p>
+      </div>
+    </header>
+  </div>
+
+  <main>
+    <section>
+      <div class="wrap">
+        <h2>1 · Import</h2>
+        <p class="section-lede" style="margin-top:0">
+          Loads rows from the discovery CSVs (output/efg_discovery_pre1950.csv,
+          output/europeana_discovery_1980.csv) into the queue — no download yet.
+          Europeana items resolve to a playable media URL at import (resumable; duplicates skipped).
+        </p>
+        <form class="add-source-form discover-form" id="importForm" novalidate style="align-items:center">
+          <label class="run-max-label"><input type="checkbox" id="importEfg" checked /> EFG</label>
+          <label class="run-max-label"><input type="checkbox" id="importEuropeana" checked /> Europeana</label>
+          <label class="run-max-label">EU limit
+            <input id="importEuLimit" class="run-max-input discover-max-input" type="number" min="0" max="100000" value="0" step="1" inputmode="numeric" title="0 = all Europeana rows" />
+          </label>
+          <button class="btn small" type="submit" id="importBtn">Import into queue</button>
+        </form>
+        <div id="importProgress" class="job-status" hidden>
+          <div class="job-bar"><span id="importBar" style="width:0%"></span></div>
+          <p id="importJobMsg"></p>
+        </div>
+        <p id="importMsg" class="job-hint" style="min-height:1.2em"></p>
+
+        <div class="stats" id="catalogStats" style="margin:1.5rem 0">
+          <div class="stat"><strong>—</strong><span>In queue</span></div>
+          <div class="stat"><strong>—</strong><span>Pending</span></div>
+          <div class="stat"><strong>—</strong><span>Active</span></div>
+          <div class="stat"><strong>—</strong><span>Done</span></div>
+          <div class="stat"><strong>—</strong><span>Errors</span></div>
+        </div>
+
+        <h2 style="margin-top:2rem">2 · Queued catalog videos</h2>
+        <p class="section-lede" style="margin-top:0">
+          These ride the shared scrape — Start scrape on the <a href="/">Scan page</a>.
+          Archive/direct items scan first; YouTube goes last.
+        </p>
+        <div class="queue-toolbar">
+          <input id="catalogQueueSearch" type="search" placeholder="Search title, URL, error…" autocomplete="off" />
+          <select id="catalogSource" aria-label="Filter catalog">
+            <option value="catalog">All catalogs</option>
+            <option value="efg">EFG</option>
+            <option value="europeana">Europeana</option>
+          </select>
+          <select id="catalogQueueStatus" aria-label="Filter status">
+            <option value="">All statuses</option>
+            <option value="pending">pending</option>
+            <option value="queued">queued</option>
+            <option value="scanning">scanning</option>
+            <option value="downloading">downloading</option>
+            <option value="done">done</option>
+            <option value="error">error</option>
+          </select>
+          <label class="run-max-label">Page
+            <select id="catalogPageSize">
+              <option value="50">50</option>
+              <option value="100" selected>100</option>
+              <option value="250">250</option>
+              <option value="500">500</option>
+            </select>
+          </label>
+          <span id="catalogQueueMeta" class="queue-meta">—</span>
+          <button type="button" class="btn ghost small" id="catalogPrev" disabled>Prev</button>
+          <button type="button" class="btn ghost small" id="catalogNext" disabled>Next</button>
+        </div>
+        <div class="queue-table-wrap">
+          <table class="queue-table" aria-label="Catalog videos">
+            <thead>
+              <tr>
+                <th class="col-id">ID</th>
+                <th>Status</th>
+                <th>Title</th>
+                <th>Source</th>
+                <th>Year</th>
+                <th></th>
+              </tr>
+            </thead>
+            <tbody id="catalogQueueBody">
+              <tr><td colspan="6" class="empty-cell">Nothing imported yet — run an import above.</td></tr>
+            </tbody>
+          </table>
+        </div>
+      </div>
+    </section>
+  </main>
+
+  <footer class="site-footer">
+    <div class="wrap">ShtetlFrames · scraped catalog workspace</div>
+  </footer>
+
+  <script src="/assets/common.js"></script>
+  <script src="/assets/catalogs.js"></script>
+</body>
+</html>

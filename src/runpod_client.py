@@ -106,9 +106,12 @@ _BROKEN_WARM_MARKERS = (
     "nonetype' object has no attribute 'predict",
 )
 
-# Pods that already received this checkout's handler via /sync_push (Catbox-less stills),
-# OR confirmed to lack /sync_push (404) — must not retry on every Pathé submit.
+# Pods that already received this checkout's handler via /sync_push (Catbox-less stills).
 _handler_pushed: set[str] = set()
+# Failed push attempts (booting pod, proxy 404/503) — retried after a cooldown.
+# Caching failures forever left recreated pods running stale handler code all run.
+_handler_push_failed: dict[str, float] = {}
+_HANDLER_PUSH_RETRY_SEC = 180.0
 _handler_push_inflight: set[str] = set()
 _handler_push_lock = threading.Lock()
 # Pods that already have the current local CLIP Keep/Pass probe (base → probe sha256).
@@ -159,8 +162,9 @@ def _ensure_local_handler(base: str, *, on_status: OnStatus | None = None) -> bo
     GitHub main may lag this checkout; without a push, pods keep ``upload_failed``
     and Review gets no contact sheet.
 
-    Pods without ``/sync_push`` (HTTP 404) are remembered so we never block every
-    Pathé submit on a doomed 120s POST. Concurrent callers share one in-flight push.
+    Pods without ``/sync_push`` yet (booting, proxy 404) are retried after a short
+    cooldown instead of being remembered as hopeless. Concurrent callers share one
+    in-flight push.
     """
     root = (base or "").rstrip("/")
     if not root:
@@ -170,6 +174,9 @@ def _ensure_local_handler(base: str, *, on_status: OnStatus | None = None) -> bo
             return True
         if root in _handler_push_inflight:
             # Another worker is already syncing this pod — do not stampede.
+            return False
+        last_fail = _handler_push_failed.get(root, 0.0)
+        if last_fail and (time.monotonic() - last_fail) < _HANDLER_PUSH_RETRY_SEC:
             return False
         _handler_push_inflight.add(root)
     files = _local_worker_files_for_push()
@@ -191,19 +198,23 @@ def _ensure_local_handler(base: str, *, on_status: OnStatus | None = None) -> bo
             body = r.json() if r.content else {}
         except Exception:
             body = {}
-        # One attempt per pod URL per process — success or fail. Retrying a
-        # multi‑file sync on every Pathé submit was starving GPU submits.
+        good = ok and isinstance(body, dict) and body.get("ok")
         with _handler_push_lock:
-            _handler_pushed.add(root)
-        if ok and isinstance(body, dict) and body.get("ok"):
+            if good:
+                _handler_pushed.add(root)
+                _handler_push_failed.pop(root, None)
+            else:
+                # Booting pod / proxy hiccup — retry after cooldown, never poison.
+                _handler_push_failed[root] = time.monotonic()
+        if good:
             if on_status:
                 on_status("pod still-handler pinned (local sync)")
             return True
         return False
     except requests.RequestException:
-        # Transient network — remember briefly so 32 workers don't each wait 20s.
+        # Transient network — back off briefly so 32 workers don't each wait 20s.
         with _handler_push_lock:
-            _handler_pushed.add(root)
+            _handler_push_failed[root] = time.monotonic()
         return False
     finally:
         with _handler_push_lock:
@@ -265,6 +276,11 @@ _INFRA_MARKERS = (
     "name or service not known",
     "temporary failure in name resolution",
     "has no attribute 'predict'",
+    "pod_total_timeout",
+    "pod_job_budget",
+    # Proxy-hop SSL failures (Scrapfly/ScrapingDog/cert rotation) are transient.
+    "certificate_verify_failed",
+    "ssl.c:",
 )
 
 
@@ -1773,6 +1789,23 @@ def process_video_remote(
     local_fallback is ignored (kept for call-site compat) — PC download/upload is disabled.
     """
     load_env()
+    # Provider item pages (EUScreen/IWM) — resolve to a direct MP4 locally (like
+    # prepare_pathe_job) so the pod gets a plain downloadable URL; yt-dlp's
+    # EUScreen extractor is broken and IWM is Cloudflare-blocked on pods.
+    try:
+        from provider_resolvers import needs_resolve, resolve_media_url
+
+        if needs_resolve(url):
+            if on_status:
+                on_status("Resolving provider media URL…")
+            resolved = resolve_media_url(url)
+            if not resolved:
+                raise RuntimeError(f"provider_resolve_failed: {url[:120]}")
+            url = resolved
+    except RuntimeError:
+        raise
+    except Exception as e:
+        raise RuntimeError(f"provider_resolve_failed: {e}") from e
     from yt_proxy import (
         acquire_scrapfly_slot,
         fallback_proxy_provider,
@@ -1919,6 +1952,14 @@ def _process_video_remote_attempts(
     # 6 attempts on the same dead CDN object was parking every worker for minutes.
     pathe_reresolved = False
 
+    # Overall wall-clock cap across ALL attempts of this queue item. Without it a
+    # single pathological URL can hold a worker for total_attempts×timeout hours
+    # (huge archival films at trickle speeds never trip the stall watchdog).
+    t_overall = time.time()
+    overall_deadline = t_overall + float(
+        getattr(app_config, "RUNPOD_JOB_TOTAL_TIMEOUT_SEC", None) or 3600
+    )
+
     def _failover_to_scrapingdog(reason: str) -> bool:
         nonlocal active_provider, active_proxy
         nxt = fallback_proxy_provider(active_provider)
@@ -1943,6 +1984,17 @@ def _process_video_remote_attempts(
     is_pathe_job = str(payload.get("source") or "").lower() == "britishpathe"
 
     for attempt in range(1, total_attempts + 1):
+        remaining_total = overall_deadline - time.time()
+        if remaining_total <= 0:
+            raise TimeoutError(
+                f"pod_total_timeout after {int(time.time() - t_overall)}s "
+                f"({attempt - 1}/{total_attempts} attempts)"
+            )
+        # Give the pod its own budget so it stops the download/scan instead of
+        # becoming a zombie when the client-side per-attempt timeout fires first.
+        payload["job_budget_sec"] = max(
+            120.0, min(float(timeout), remaining_total - 15.0)
+        )
         # Never sit on Scrapfly Retry-After when ScrapingDog is available.
         if active_provider == "scrapfly" and payload.get("proxy_url"):
             if proxy_cooldown_remaining() > 0:
@@ -2106,7 +2158,7 @@ def _process_video_remote_attempts(
                     raise RuntimeError("pod_scan_accepted_without_queue_id")
                 if on_status and not adopted:
                     on_status("pod accepted · polling result…")
-                deadline = t0 + timeout
+                deadline = min(t0 + timeout, overall_deadline)
                 stall_limit = float(
                     getattr(app_config, "RUNPOD_PROGRESS_STALL_SEC", None) or 1200
                 )
@@ -2154,6 +2206,10 @@ def _process_video_remote_attempts(
                             raise RuntimeError("http_404")
                     time.sleep(2.0)
                 if out is None:
+                    if time.time() >= overall_deadline:
+                        raise TimeoutError(
+                            f"pod_total_timeout after {int(time.time() - t_overall)}s"
+                        )
                     raise TimeoutError(f"pod_scan_timeout after {int(time.time() - t0)}s")
             elif r.status_code >= 400 or not out.get("ok", True):
                 err = out.get("error") or f"http_{r.status_code}"
@@ -2186,6 +2242,9 @@ def _process_video_remote_attempts(
         except Exception as e:
             last_err = e
             err_s = str(e)
+            if "pod_total_timeout" in err_s.lower():
+                # Overall item budget exhausted — retrying would just burn time.
+                raise
             if is_pathe_job:
                 note_pathe_stack_outcome(ok=False, err=err_s)
 
@@ -2486,7 +2545,8 @@ def _materialize_segment_stills(out: dict[str, Any]) -> None:
         if not b64:
             continue
         try:
-            raw = base64.standard_b64decode(str(b64).encode("ascii"), validate=False)
+            # standard_b64decode takes no validate kwarg (TypeError); b64decode does.
+            raw = base64.b64decode(str(b64).encode("ascii"), validate=False)
         except Exception:
             continue
         if not raw or len(raw) < 200:

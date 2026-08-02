@@ -30,6 +30,8 @@ PAGES = {
     "/tools.html": "tools.html",
     "/pathe": "pathe.html",
     "/pathe.html": "pathe.html",
+    "/catalogs": "catalogs.html",
+    "/catalogs.html": "catalogs.html",
 }
 
 PAGE_REDIRECTS = {
@@ -93,6 +95,7 @@ POST_ROUTES = {
     "/api/runpod/pod/reload": "api_runpod:handle_post_pod_reload",
     "/api/runpod/pool/sync": "api_runpod:handle_post_pool_sync",
     "/api/discover": "api_queue:handle_post_discover",
+    "/api/discoveries/import": "api_import:handle_post_import",
     "/api/pathe/discover": "api_pathe:handle_post_discover",
     "/api/pathe/scrape": "api_pathe:handle_post_scrape",
     "/api/pathe/scrape/stop": "api_pathe:handle_post_scrape_stop",

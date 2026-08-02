@@ -17,8 +17,9 @@ def handle_get_queue(handler: BaseHTTPRequestHandler, parsed: ParseResult) -> No
     limit = int((qs.get("limit") or [str(QUEUE_PAGE_SIZE)])[0] or QUEUE_PAGE_SIZE)
     status = (qs.get("status") or [""])[0].strip()
     q = (qs.get("q") or [""])[0].strip()
-    page = list_queue_page(offset=offset, limit=limit, status=status, q=q)
-    json_response(handler, 200, {**queue_stats(), **page})
+    source = (qs.get("source") or [""])[0].strip()
+    page = list_queue_page(offset=offset, limit=limit, status=status, q=q, source=source)
+    json_response(handler, 200, {**queue_stats(source), **page})
 
 
 def handle_post_queue_clear(handler: BaseHTTPRequestHandler, body: dict) -> None:

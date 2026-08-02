@@ -131,7 +131,7 @@ function setChipGroup(rowId, attr, value) {
   });
 }
 
-/* One canonical nav — active: "scan" | "review" | "train" | "tools" | "pathe". */
+/* One canonical nav — active: "scan" | "review" | "train" | "tools" | "pathe" | "catalogs". */
 const NAV_LINKS = [
   ["scan", "/", "Scan"],
   ["review", "/review", "Review"],
@@ -147,6 +147,7 @@ function renderNav(active) {
     <div class="nav-left">
       <a class="brand-mark" href="/">Shtetl<span>Frames</span></a>
       <a class="nav-pathe${active === "pathe" ? " active" : ""}" href="/pathe">British Pathé</a>
+      <a class="nav-pathe${active === "catalogs" ? " active" : ""}" href="/catalogs">Catalogs</a>
     </div>
     <div class="nav-links">
       ${NAV_LINKS.map(

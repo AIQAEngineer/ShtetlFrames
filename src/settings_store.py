@@ -72,6 +72,17 @@ SETTING_DEFS: dict[str, dict[str, Any]] = {
         "default": "start",
         "help": "Which end of the pending queue to score first. end = claim highest ids (latest discovers) first.",
     },
+    "QUEUE_YOUTUBE_LAST": {
+        "label": "YouTube last in queue",
+        "type": "select",
+        "options": ["on", "off"],
+        "option_labels": {
+            "on": "on — scan archive/direct URLs first, YouTube last",
+            "off": "off — plain queue order (YouTube mixed in)",
+        },
+        "default": "on",
+        "help": "YouTube downloads are slow and bot-checked. Keep on so EFG/Europeana direct files scan first.",
+    },
     "SCORE_THRESHOLD": {
         "label": "Hit score threshold",
         "type": "number",
@@ -167,6 +178,9 @@ _HIDDEN_KEYS = (
     "DOCKER_HUB_TOKEN",
     "RUNPOD_JOB_TIMEOUT_SEC",
     "RUNPOD_PROGRESS_STALL_SEC",
+    "RUNPOD_JOB_TOTAL_TIMEOUT_SEC",
+    "SCRAPE_ITEM_MAX_ATTEMPTS",
+    "RUNPOD_STACK_PER_POD",
     "RUNPOD_POD_ID",
     "SCRAPFLY_PROXY_URL",
     "SCRAPFLY_COUNTRY",

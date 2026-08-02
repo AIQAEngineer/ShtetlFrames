@@ -302,6 +302,26 @@ def is_direct_video_url(url: str) -> bool:
     return any(path.endswith(ext) for ext in VIDEO_EXTS)
 
 
+def is_hls_playlist_url(url: str) -> bool:
+    return urlparse(url).path.lower().endswith(".m3u8")
+
+
+def _should_use_ytdlp(url: str) -> bool:
+    """HLS playlists and known EFG/Europeana provider pages resolve via yt-dlp."""
+    u = (url or "").lower()
+    if is_hls_playlist_url(u):
+        return True
+    hosts = (
+        "youtube.com", "youtu.be",
+        "inatheque.ina.fr", "www.ina.fr", "ina.fr",
+        "europeanfilmgateway.eu",
+        "movingimage.nls.uk", "filmportal.de", "filmdatabase.eyefilm.nl",
+        "player.vimeo.com", "vimeo.com", "dailymotion.com", "dai.ly",
+        "media.library.ohio.edu", "www.cineressources.net",
+    )
+    return any(h in u for h in hosts)
+
+
 def download_britishpathe(
     url: str,
     dest_dir: Path,
@@ -347,6 +367,16 @@ def download_entry(url: str, title: str, video_id: str | None = None) -> dict:
     result = {"video_id": vid, "url": url, "title": title, "path": None, "sha256": None, "error": None}
 
     try:
+        # Provider item pages (EUScreen/IWM) — yt-dlp is broken/blocked there;
+        # resolve locally to a direct MP4 first, then take the direct branch.
+        from provider_resolvers import needs_resolve, resolve_media_url
+
+        if needs_resolve(url):
+            resolved = resolve_media_url(url)
+            if not resolved:
+                raise RuntimeError(f"provider_resolve_failed: {url[:120]}")
+            url = resolved
+
         if is_direct_video_url(url):
             ext = Path(urlparse(url).path).suffix or ".mp4"
             dest = VIDEOS_DIR / f"{vid}{ext}"
@@ -370,9 +400,16 @@ def download_entry(url: str, title: str, video_id: str | None = None) -> dict:
                     detail = ": " + err_side.read_text(encoding="utf-8", errors="ignore")[:500]
                 raise RuntimeError(f"yt-dlp returned no file{detail}")
         else:
-            result["error"] = "not_a_direct_download_url"
-            meta_path.write_text(json.dumps(result, indent=2), encoding="utf-8")
-            return result
+            # HLS (.m3u8), YouTube/INA embeds, and Europeana/EFG provider pages all
+            # go through yt-dlp — its generic extractor handles NRK, Vimeo embeds,
+            # Luce/EUScreen-style players, and any dedicated extractor match.
+            path = download_ytdlp(url, VIDEOS_DIR, vid)
+            if path is None:
+                err_side = VIDEOS_DIR / f"{vid}.ytdlp_error.txt"
+                detail = ""
+                if err_side.exists():
+                    detail = ": " + err_side.read_text(encoding="utf-8", errors="ignore")[:500]
+                raise RuntimeError(f"yt-dlp returned no file{detail}")
 
         result["path"] = str(path)
         result["sha256"] = sha256_file(path)
