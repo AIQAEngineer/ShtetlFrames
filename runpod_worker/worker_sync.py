@@ -86,8 +86,9 @@ def cues_snapshot() -> dict[str, Any]:
             "NEG_SCORE_WEIGHT": float(c.NEG_SCORE_WEIGHT),
             "TOP_K_NEGS": int(c.TOP_K_NEGS),
             "YOLO_CONF": float(c.YOLO_CONF),
-            "MIN_PERSON_WIDTH": int(getattr(c, "MIN_PERSON_WIDTH", 72)),
-            "MIN_SHARPNESS_LAPLACIAN": float(getattr(c, "MIN_SHARPNESS_LAPLACIAN", 120.0)),
+            "MIN_PERSON_WIDTH": int(getattr(c, "MIN_PERSON_WIDTH", 120)),
+            "MIN_SHARPNESS_LAPLACIAN": float(getattr(c, "MIN_SHARPNESS_LAPLACIAN", 150.0)),
+            "MIN_CROP_SHORT_SIDE": int(getattr(c, "MIN_CROP_SHORT_SIDE", 96)),
         }
     except Exception as e:
         return {"error": str(e)[:200]}

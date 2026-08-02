@@ -20,8 +20,9 @@ DEFAULT_SCORE_THRESHOLD = float(getattr(_cues, "DEFAULT_SCORE_THRESHOLD", 0.10))
 MIN_PERSON_AREA = int(getattr(_cues, "MIN_PERSON_AREA", 40 * 80))
 MIN_PERSON_ASPECT = float(getattr(_cues, "MIN_PERSON_ASPECT", 1.15))
 MIN_PERSON_HEIGHT = int(getattr(_cues, "MIN_PERSON_HEIGHT", 100))
-MIN_PERSON_WIDTH = int(getattr(_cues, "MIN_PERSON_WIDTH", 72))
-MIN_SHARPNESS_LAPLACIAN = float(getattr(_cues, "MIN_SHARPNESS_LAPLACIAN", 120.0))
+MIN_PERSON_WIDTH = int(getattr(_cues, "MIN_PERSON_WIDTH", 120))
+MIN_SHARPNESS_LAPLACIAN = float(getattr(_cues, "MIN_SHARPNESS_LAPLACIAN", 150.0))
+MIN_CROP_SHORT_SIDE = int(getattr(_cues, "MIN_CROP_SHORT_SIDE", 96))
 YOLO_CONF = float(getattr(_cues, "YOLO_CONF", 0.32))
 
 ProgressCallback = Callable[[float, float, int], None]
@@ -125,7 +126,11 @@ def scan_video(
             if ch < MIN_PERSON_HEIGHT or cw < MIN_PERSON_WIDTH or (ch / float(max(cw, 1))) < 0.95:
                 continue
             # Soft / motion-blurred / tiny-upscale crops — don't waste CLIP on them.
-            if is_blurry_crop(crop, min_laplacian=MIN_SHARPNESS_LAPLACIAN):
+            if is_blurry_crop(
+                crop,
+                min_laplacian=MIN_SHARPNESS_LAPLACIAN,
+                min_short_side=MIN_CROP_SHORT_SIDE,
+            ):
                 continue
             rgb = cv2.cvtColor(crop, cv2.COLOR_BGR2RGB)
             pil = Image.fromarray(rgb)

@@ -1182,6 +1182,17 @@ def _process_one(row: dict, backend: str = "local") -> int:
                 wrote = write_sheet_from_crops(seg_hits, tmp_path)
                 local_still = None
                 if wrote:
+                    try:
+                        from shtetl_core.blur import still_path_is_poor
+
+                        if still_path_is_poor(wrote):
+                            try:
+                                Path(wrote).unlink(missing_ok=True)
+                            except OSError:
+                                pass
+                            continue
+                    except Exception:
+                        pass
                     if use_openai:
                         if i == 1 or i % 2 == 0 or i == len(segs):
                             _set_worker_phase(

@@ -126,11 +126,13 @@ MIN_PERSON_AREA = 40 * 80
 MIN_PERSON_ASPECT = 1.15
 # Absolute min bbox height in px — tiny face crops fail even if area clears.
 MIN_PERSON_HEIGHT = 100
-# Reject postage-stamp-wide boxes (far / soft EFG crops that only look like blobs).
-MIN_PERSON_WIDTH = 72
-# Laplacian variance on a 256px-normalized crop. Soft EFG stills cluster <~100–150;
-# sharp Pathé crops are typically 400–1000+. Skip scoring when below this.
-MIN_SHARPNESS_LAPLACIAN = 120.0
+# Reject far / soft EFG postage-stamp boxes (often 40–80px wide and unreadable).
+MIN_PERSON_WIDTH = 120
+# Laplacian variance on a 256px-normalized crop (legacy raw gate). Soft EFG
+# stills often have high raw Lap from pixel noise — blur.py also uses denoise.
+MIN_SHARPNESS_LAPLACIAN = 150.0
+# After upper-body crop, short side must clear this (see blur.is_blurry_crop).
+MIN_CROP_SHORT_SIDE = 96
 YOLO_CONF = 0.32
 TOP_K_CUES = 1
 TOP_K_NEGS = 3

@@ -1173,6 +1173,19 @@ def process_job(inp: dict) -> dict:
                         tmp_path = Path(tmp.name)
                     wrote = write_sheet_from_crops(group, tmp_path)
                     if wrote:
+                        # Second line of defense: soft/tiny stills (pod may lag
+                        # scan.py sync; grain fools raw Laplacian on EFG crops).
+                        try:
+                            from shtetl_core.blur import still_path_is_poor
+
+                            if still_path_is_poor(wrote):
+                                try:
+                                    tmp_path.unlink(missing_ok=True)
+                                except OSError:
+                                    pass
+                                continue
+                        except Exception:
+                            pass
                         # Vision verify on the pod with the local JPEG (OpenAI only).
                         os.environ.setdefault("OPENAI_VERIFY", "1")
                         oai_key = (
