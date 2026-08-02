@@ -22,6 +22,7 @@ _scan_threads: dict[str, threading.Thread] = {}
 
 # Adaptive per-pod concurrency: try high, ratchet down on overload / hard failures.
 _MAX_INFLIGHT_SCANS = 3
+_HARD_INFLIGHT_CAP = 8  # absolute ceiling for client-hinted stacking
 _HARD_PATHE_INFLIGHT_CAP = 6  # absolute ceiling (Settings PATHE_STACK_MAX may raise toward this)
 _MAX_PATHE_INFLIGHT = 3
 _yt_inflight_limit = _MAX_INFLIGHT_SCANS
@@ -72,6 +73,35 @@ def _apply_pathe_inflight_hint(inp: dict) -> None:
         if want > _pathe_inflight_limit:
             _pathe_inflight_limit = want
             print(f"[shtetl] pathe inflight limit → {_pathe_inflight_limit}", flush=True)
+
+
+def _apply_inflight_hint(inp: dict) -> None:
+    """Raise the generic inflight ceiling when the client stacks more jobs per pod.
+
+    Without this the pod admits 3 while the client stacks 4 — the 4th submit
+    gets a 503 pod_saturated, which the overload ratchet reads as a signal to
+    shrink further, spiralling the fleet toward serial processing. Only raises;
+    a ratcheted-down limit (overload recovery) is left alone to scale back up.
+    """
+    global _MAX_INFLIGHT_SCANS, _yt_inflight_limit
+    raw = inp.get("max_inflight")
+    if raw is None:
+        return
+    try:
+        want = max(1, min(_HARD_INFLIGHT_CAP, int(raw)))
+    except (TypeError, ValueError):
+        return
+    with _scan_threads_lock:
+        old_max = _MAX_INFLIGHT_SCANS
+        if want > old_max:
+            _MAX_INFLIGHT_SCANS = want
+            if _yt_inflight_limit >= old_max:
+                _yt_inflight_limit = want
+            print(
+                f"[shtetl] inflight ceiling → {_MAX_INFLIGHT_SCANS}, "
+                f"limit → {_yt_inflight_limit}",
+                flush=True,
+            )
 
 
 def _note_job_outcome(*, is_pathe: bool, ok: bool, err: str = "") -> None:
@@ -423,6 +453,8 @@ def scan(payload: dict) -> JSONResponse:
 
     if _is_pathe_payload(inp):
         _apply_pathe_inflight_hint(inp)
+    else:
+        _apply_inflight_hint(inp)
 
     # Reject duplicate in-flight job for same queue id; cap total concurrency.
     with _scan_threads_lock:

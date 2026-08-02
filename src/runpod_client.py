@@ -1837,6 +1837,12 @@ def process_video_remote(
     }
     if download_sections:
         payload["download_sections"] = list(download_sections)
+    # Match the pod's admission cap to client-side stacking — otherwise the Nth
+    # concurrent submit per pod gets a 503 pod_saturated rejection.
+    try:
+        payload["max_inflight"] = max(1, min(int(app_config.RUNPOD_STACK_PER_POD or 2), 8))
+    except (TypeError, ValueError):
+        payload["max_inflight"] = 2
     if cookies:
         payload["cookies_text"] = cookies
     # Only attach Scrapfly when we must — cookies-first jobs omit proxy_url so the pod
@@ -2290,10 +2296,13 @@ def _process_video_remote_attempts(
                 active_proxy
                 and not payload.get("force_proxy")
                 and (
+                    # Proxy only helps against bot-walls (YouTube sign-in/403).
+                    # Slow-origin read timeouts and dead 404 links re-fail
+                    # slower through a residential proxy and burn Scrapfly rate.
                     is_google_block_error(err_s)
-                    or "yt-dlp failed" in err_s.lower()
-                    or "download_failed" in err_s.lower()
                     or "sign in to confirm" in err_s.lower()
+                    or "http error 403" in err_s.lower()
+                    or "403 forbidden" in err_s.lower()
                 )
             )
             if need_proxy:
