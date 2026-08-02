@@ -100,12 +100,12 @@ RUNPOD_JOB_TOTAL_TIMEOUT_SEC = int(
 )
 # Total pod attempts per queue item before it is parked (no auto-retry on Start).
 SCRAPE_ITEM_MAX_ATTEMPTS = int(os.environ.get("SCRAPE_ITEM_MAX_ATTEMPTS") or "5")
-# Skip downloads larger than this (0 = no cap). Monster archival films at
-# 300KB/s dominate per-item time; the pod aborts them early as oversize_skip.
+# Skip downloads larger than this (0 = no cap). The pod aborts oversize files
+# early as oversize_skip. Disabled by default — the long tail stays scannable.
 try:
-    SCRAPE_MAX_DOWNLOAD_MB = int(os.environ.get("SCRAPE_MAX_DOWNLOAD_MB") or "100")
+    SCRAPE_MAX_DOWNLOAD_MB = int(os.environ.get("SCRAPE_MAX_DOWNLOAD_MB") or "0")
 except ValueError:
-    SCRAPE_MAX_DOWNLOAD_MB = 100
+    SCRAPE_MAX_DOWNLOAD_MB = 0
 SCRAPE_MAX_DOWNLOAD_MB = max(0, SCRAPE_MAX_DOWNLOAD_MB)
 # Concurrent client jobs stacked per GPU pod (downloads overlap; GPU serializes).
 try:
@@ -194,9 +194,9 @@ def load_env() -> None:
     except ValueError:
         SCRAPE_ITEM_MAX_ATTEMPTS = 5
     try:
-        SCRAPE_MAX_DOWNLOAD_MB = int(os.environ.get("SCRAPE_MAX_DOWNLOAD_MB") or "100")
+        SCRAPE_MAX_DOWNLOAD_MB = int(os.environ.get("SCRAPE_MAX_DOWNLOAD_MB") or "0")
     except ValueError:
-        SCRAPE_MAX_DOWNLOAD_MB = 100
+        SCRAPE_MAX_DOWNLOAD_MB = 0
     SCRAPE_MAX_DOWNLOAD_MB = max(0, SCRAPE_MAX_DOWNLOAD_MB)
     try:
         RUNPOD_STACK_PER_POD = int(os.environ.get("RUNPOD_STACK_PER_POD") or "2")
