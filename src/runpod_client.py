@@ -585,6 +585,7 @@ def _local_worker_files_for_push() -> dict[str, str]:
         "src/label_feedback.py",
         "src/shtetl_core/__init__.py",
         "src/shtetl_core/cues.py",
+        "src/shtetl_core/blur.py",
         "src/shtetl_core/scoring.py",
         "src/shtetl_core/scan.py",
         "src/shtetl_core/segments.py",
