@@ -42,6 +42,7 @@ _SYNC_FILES: tuple[tuple[str, str], ...] = (
     ("worker_sync.py", _sync_url("runpod_worker/worker_sync.py")),
     ("openai_verify.py", _sync_url("src/openai_verify.py")),
     ("label_feedback.py", _sync_url("src/label_feedback.py")),
+    ("clip_ft_remote_train.py", _sync_url("runpod_worker/clip_ft_remote_train.py")),
     ("shtetl_core/__init__.py", _sync_url("src/shtetl_core/__init__.py")),
     ("shtetl_core/cues.py", _sync_url("src/shtetl_core/cues.py")),
     ("shtetl_core/scoring.py", _sync_url("src/shtetl_core/scoring.py")),
