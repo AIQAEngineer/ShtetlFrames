@@ -24,7 +24,7 @@ DRIVER_RISKY_IMAGE_MARKERS = ("cu1290", "cu129-", "-cu129")
 
 # Pin after each worker/cues change so pods do not keep stale jsDelivr @main.
 # jsDelivr @main can lag GitHub by many minutes; commit pins are immediate.
-WORKER_COMMIT = "078d2d7"
+WORKER_COMMIT = "f05112b"
 _RAW = f"https://cdn.jsdelivr.net/gh/AIQAEngineer/ShtetlFrames@{WORKER_COMMIT}"
 WORKER_RAW_BASE = f"{_RAW}/runpod_worker"
 CORE_RAW_BASE = f"{_RAW}/src/shtetl_core"
