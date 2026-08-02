@@ -1792,15 +1792,20 @@ def process_video_remote(
     # Provider item pages (EUScreen/IWM) — resolve to a direct MP4 locally (like
     # prepare_pathe_job) so the pod gets a plain downloadable URL; yt-dlp's
     # EUScreen extractor is broken and IWM is Cloudflare-blocked on pods.
+    payload_referer: str | None = None
     try:
         from provider_resolvers import needs_resolve, resolve_media_url
 
         if needs_resolve(url):
             if on_status:
                 on_status("Resolving provider media URL…")
+            page_url = url
             resolved = resolve_media_url(url)
             if not resolved:
                 raise RuntimeError(f"provider_resolve_failed: {url[:120]}")
+            # Private Vimeo embeds need the host page as Referer on the pod.
+            if "vimeo.com" in resolved.lower():
+                payload_referer = page_url
             url = resolved
     except RuntimeError:
         raise
@@ -1835,6 +1840,10 @@ def process_video_remote(
         "proxy_provider": provider,
         "proxy_insecure": bool(proxy and proxy_needs_insecure_ssl()),
     }
+    if payload_referer:
+        payload["referer"] = payload_referer
+    if "vimeo.com" in (url or "").lower():
+        payload["impersonate"] = "chrome"
     if download_sections:
         payload["download_sections"] = list(download_sections)
     # Match the pod's admission cap to client-side stacking — otherwise the Nth

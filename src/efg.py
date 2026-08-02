@@ -57,10 +57,38 @@ _SKIP_DOMAINS = (
 
 # Provider domains routed to dedicated resolvers.
 _INA_RE = re.compile(r'ina\.fr/(?:video|notice)/([A-Z0-9]{8,})', re.I)
+_YOUTUBE_RE = re.compile(
+    r'(?:www\.)?(?:youtube(?:-nocookie)?\.com/(?:embed/|watch\?v=)|youtu\.be/)'
+    r'([A-Za-z0-9_-]{6,})',
+    re.I,
+)
+
 
 # Static partner signature observed on ina.fr player config (partnerId=2).
 # If it ever rotates, ina_resolve falls back to scraping the ina.fr page.
 _INA_SIGN = "11c8b4d6087c3cd2fe18c341819398444b4653fb"
+
+# Embedded CDNs that 404 / are parked — never queue these as stream_url.
+# Prefer shown_at YouTube (common for Luce/Cinecittà) or fall through to linked_out.
+DEAD_EMBED_HOSTS = (
+    "videocinecitta.bytewise.it",
+    "bytewise.it",
+    "repozytorium.fn.org.pl",
+    "fn.org.pl",
+)
+
+
+def _is_dead_embed(url: str) -> bool:
+    host = urllib.parse.urlparse(url or "").netloc.lower()
+    return any(d in host for d in DEAD_EMBED_HOSTS)
+
+
+def _youtube_url_from(text: str) -> str | None:
+    m = _YOUTUBE_RE.search(text or "")
+    if not m:
+        return None
+    return f"https://www.youtube.com/watch?v={m.group(1)}"
+
 
 
 def _scrapfly_html(url: str) -> str:
@@ -308,17 +336,32 @@ def resolve_record(rec: dict) -> dict:
     if info.get("shown_at"):
         out["shown_at"] = info["shown_at"]
         out["shown_at_name"] = info["shown_at_name"]
-    streams = [s for s in info["streams"] if s.lower().endswith(".mp4") or ".mp4?" in s.lower()]
-    hls = [s for s in info["streams"] if ".m3u8" in s.lower()]
+    streams = [
+        s for s in info["streams"]
+        if (s.lower().endswith(".mp4") or ".mp4?" in s.lower()) and not _is_dead_embed(s)
+    ]
+    dead_streams = [
+        s for s in info["streams"]
+        if (s.lower().endswith(".mp4") or ".mp4?" in s.lower()) and _is_dead_embed(s)
+    ]
+    hls = [s for s in info["streams"] if ".m3u8" in s.lower() and not _is_dead_embed(s)]
 
+    # Prefer live embeds, then YouTube (detail embed or shown_at), then HLS.
     if streams:
         out.update(kind="embedded", stream_url=streams[0])
         return out
-    if hls:
-        out.update(kind="embedded", stream_url=hls[0])
-        return out
     if info["youtube"]:
         out.update(kind="youtube", stream_url=info["youtube"][0])
+        return out
+    shown_yt = _youtube_url_from(info.get("shown_at") or "")
+    if shown_yt:
+        # Luce/Cinecittà often has a dead videocinecitta MP4 + working youtu.be shown_at.
+        out.update(kind="youtube", stream_url=shown_yt)
+        if dead_streams:
+            out["dead_embed"] = dead_streams[0]
+        return out
+    if hls:
+        out.update(kind="embedded", stream_url=hls[0])
         return out
 
     for link in info["external"]:
@@ -331,10 +374,26 @@ def resolve_record(rec: dict) -> dict:
                 return out
             out.update(kind="linked_out", external_url=link, resolver="ina_failed")
             return out
+        # Provider page covered by a local JIT resolver / yt-dlp-native host.
+        try:
+            from provider_resolvers import can_import_provider_page
+            if can_import_provider_page(link):
+                out.update(
+                    kind="linked_out",
+                    external_url=link,
+                    external_host=urllib.parse.urlparse(link).netloc,
+                    resolvable=True,
+                )
+                return out
+        except Exception:
+            pass
 
     if info["external"]:
         out.update(kind="linked_out", external_url=info["external"][0],
                    external_host=urllib.parse.urlparse(info["external"][0]).netloc)
+        return out
+    if dead_streams:
+        out.update(kind="no_media", error="dead_embed_only", dead_embed=dead_streams[0])
         return out
     out.update(kind="no_media")
     return out

@@ -45,6 +45,7 @@ _SYNC_FILES: tuple[tuple[str, str], ...] = (
     ("clip_ft_remote_train.py", _sync_url("runpod_worker/clip_ft_remote_train.py")),
     ("shtetl_core/__init__.py", _sync_url("src/shtetl_core/__init__.py")),
     ("shtetl_core/cues.py", _sync_url("src/shtetl_core/cues.py")),
+    ("shtetl_core/blur.py", _sync_url("src/shtetl_core/blur.py")),
     ("shtetl_core/scoring.py", _sync_url("src/shtetl_core/scoring.py")),
     ("shtetl_core/scan.py", _sync_url("src/shtetl_core/scan.py")),
     ("shtetl_core/segments.py", _sync_url("src/shtetl_core/segments.py")),
@@ -85,6 +86,8 @@ def cues_snapshot() -> dict[str, Any]:
             "NEG_SCORE_WEIGHT": float(c.NEG_SCORE_WEIGHT),
             "TOP_K_NEGS": int(c.TOP_K_NEGS),
             "YOLO_CONF": float(c.YOLO_CONF),
+            "MIN_PERSON_WIDTH": int(getattr(c, "MIN_PERSON_WIDTH", 72)),
+            "MIN_SHARPNESS_LAPLACIAN": float(getattr(c, "MIN_SHARPNESS_LAPLACIAN", 120.0)),
         }
     except Exception as e:
         return {"error": str(e)[:200]}
@@ -123,6 +126,7 @@ def _reload_modules(changed: list[str]) -> list[str]:
     # Order: leaves first-ish, then packages, then handler.
     order = [
         "shtetl_core.cues",
+        "shtetl_core.blur",
         "shtetl_core.textutil",
         "shtetl_core.upload",
         "shtetl_core.scoring",

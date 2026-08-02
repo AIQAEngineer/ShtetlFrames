@@ -106,7 +106,7 @@ CLIP_PRETRAINED = "laion2b_s32b_b82k"
 YOLO_WEIGHTS = "yolov8s.pt"
 
 # CLIP pre-filter before vision verify. Soft -0.28 flooded pods (~6–20 segs/video).
-# 0.08 missed clear kippah Pathé (peak ~0.04); 0.04 + softer negs recovers those; OpenAI still gates.
+# 0.04 flooded Review (~9k rows, mostly AI drops). Default 0.10 matches keep-safe band.
 # Keep-safe: human Keeps often raw ~0.11–0.19; Pass rejects stay ≤~0.00 raw.
 # 0.12 + MAX_NEG 0.82 clamped almost all Keeps to thr-0.05 (0.07) via neg_ratio.
 DEFAULT_SCORE_THRESHOLD = 0.10
@@ -126,6 +126,11 @@ MIN_PERSON_AREA = 40 * 80
 MIN_PERSON_ASPECT = 1.15
 # Absolute min bbox height in px — tiny face crops fail even if area clears.
 MIN_PERSON_HEIGHT = 100
+# Reject postage-stamp-wide boxes (far / soft EFG crops that only look like blobs).
+MIN_PERSON_WIDTH = 72
+# Laplacian variance on a 256px-normalized crop. Soft EFG stills cluster <~100–150;
+# sharp Pathé crops are typically 400–1000+. Skip scoring when below this.
+MIN_SHARPNESS_LAPLACIAN = 120.0
 YOLO_CONF = 0.32
 TOP_K_CUES = 1
 TOP_K_NEGS = 3

@@ -35,12 +35,16 @@ def resolve_media_url(url: str) -> str | None:
     """Map an IWM collections item URL to a direct MP4 URL (or None)."""
     if not is_iwm_url(url):
         return None
-    from britishpathe import scrapfly_fetch_html
-
+    html = ""
+    # Plain HTTP often works now; Scrapfly only if Cloudflare challenges us.
     try:
-        html = scrapfly_fetch_html(url, render_js=False)
+        from provider_html import fetch_html
+
+        html = fetch_html(url, scrapfly_fallback=True)
     except Exception:
         try:
+            from britishpathe import scrapfly_fetch_html
+
             html = scrapfly_fetch_html(url, render_js=True, rendering_wait=4000)
         except Exception:
             return None

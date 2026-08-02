@@ -746,7 +746,11 @@ $("backfillStillsBtn")?.addEventListener("click", () => {
 });
 
 document.addEventListener("keydown", (e) => {
-  if (e.target.matches("input, textarea")) return;
+  const galleryPane = document.querySelector('.tab-pane[data-tab="gallery"]');
+  if (galleryPane && !galleryPane.hidden) return;
+  if (e.target.matches("input, textarea, select")) return;
+  const reviewPane = document.querySelector('.tab-pane[data-tab="review"]');
+  if (reviewPane && reviewPane.hidden) return;
   const src = currentSource();
   if (!src) return;
   if (
@@ -784,6 +788,9 @@ initTabs("review", (tab) => {
     cropsPoller.start();
   } else {
     cropsPoller.stop();
+  }
+  if (tab === "gallery" && typeof Gallery !== "undefined") {
+    Gallery.show();
   }
 });
 

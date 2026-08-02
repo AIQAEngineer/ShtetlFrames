@@ -9,7 +9,8 @@ URL strategy per source:
   video; HLS/INA fall through to yt-dlp).
 - EFG youtube   -> youtube stream_url (yt-dlp).
 - EFG ina       -> INA resourceUrl MP4.
-- EFG linked_out-> not downloadable (provider page only) — skipped.
+- EFG linked_out-> provider page URL when a local resolver or yt-dlp-native
+  host covers it (IWM, filmportal, EYE, Vimeo, NLS, …); otherwise skipped.
 - Europeana     -> needs a per-item resolve to edmIsShownBy / provider media;
   we store the Europeana item API url and resolve at import time.
 
@@ -22,6 +23,7 @@ Reads (whichever exist):
 from __future__ import annotations
 
 import csv
+import html as htmlmod
 import json
 import os
 import threading
@@ -40,7 +42,20 @@ EFG_CSVS = [
 ]
 EUROPEANA_CSV = OUTPUT_DIR / "europeana_discovery_1980.csv"
 
-DOWNLOADABLE_KINDS = {"embedded", "youtube", "ina"}
+DOWNLOADABLE_KINDS = {"embedded", "youtube", "ina", "linked_out"}
+
+# Embedded CDNs that must never enter the scrape queue.
+_DEAD_EMBED_MARKERS = (
+    "videocinecitta.bytewise.it",
+    "bytewise.it",
+    "repozytorium.fn.org.pl",
+    "fn.org.pl",
+)
+
+
+def _is_dead_embed_url(url: str) -> bool:
+    u = (url or "").lower()
+    return any(m in u for m in _DEAD_EMBED_MARKERS)
 
 
 def _is_direct_video(url: str) -> bool:
@@ -49,6 +64,8 @@ def _is_direct_video(url: str) -> bool:
 
 
 def efg_rows() -> list[dict]:
+    from provider_resolvers import can_import_provider_page
+
     out: list[dict] = []
     seen: set[str] = set()
     for path in EFG_CSVS:
@@ -58,12 +75,21 @@ def efg_rows() -> list[dict]:
             kind = (r.get("kind") or "").strip().lower()
             if kind not in DOWNLOADABLE_KINDS:
                 continue
-            url = (r.get("stream_url") or "").strip()
-            if not url:
-                continue
             rid = (r.get("record_id") or "").strip()
             if rid and rid in seen:
                 continue
+
+            if kind == "linked_out":
+                url = htmlmod.unescape((r.get("external_url") or "").strip())
+                if not url or not can_import_provider_page(url):
+                    continue
+                source = "efg:linked_out"
+            else:
+                url = htmlmod.unescape((r.get("stream_url") or "").strip())
+                if not url or _is_dead_embed_url(url):
+                    continue
+                source = f"efg:{kind}"
+
             if rid:
                 seen.add(rid)
             title = (r.get("title") or rid or "efg video").strip()
@@ -73,7 +99,7 @@ def efg_rows() -> list[dict]:
                 "url": url,
                 "title": f"[EFG] {title}"[:300],
                 "year": year,
-                "source": f"efg:{kind}",
+                "source": source,
                 "downloadable": "yes",
                 "hub_url": detail or "efg",
             })

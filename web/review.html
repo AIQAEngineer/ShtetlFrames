@@ -15,6 +15,7 @@
 
     <div class="tabs" role="tablist">
       <button type="button" data-tab="review" class="active">Review</button>
+      <button type="button" data-tab="gallery">Gallery</button>
       <button type="button" data-tab="crops">Crops</button>
     </div>
 
@@ -57,6 +58,52 @@
       </div>
     </div>
 
+    <div class="tab-pane" data-tab="gallery" hidden>
+      <header class="review-head">
+        <div>
+          <h1>Gallery</h1>
+          <p class="section-lede" style="margin:0">
+            Scroll every still — AI pass, AI fail, and not sent to AI. Mark Keep or Pass on each tile.
+          </p>
+        </div>
+        <div class="filters">
+          <div class="chip-row" id="galleryChips">
+            <button class="chip active" data-gfilter="all">All</button>
+            <button class="chip" data-gfilter="openai_keep">AI pass</button>
+            <button class="chip" data-gfilter="openai_drop">AI fail</button>
+            <button class="chip" data-gfilter="openai_none">Not sent to AI</button>
+            <button class="chip" data-gfilter="pending">To check</button>
+            <button class="chip" data-gfilter="accept">Kept</button>
+            <button class="chip" data-gfilter="reject">Passed</button>
+          </div>
+          <input id="gallerySearch" type="search" placeholder="Search titles…" />
+          <select id="gallerySort" aria-label="Sort gallery">
+            <option value="score:desc" selected>Score · high → low</option>
+            <option value="score:asc">Score · low → high</option>
+            <option value="scored:desc">Scored · newest</option>
+            <option value="scored:asc">Scored · oldest</option>
+          </select>
+          <select id="galleryPageSize" aria-label="Batch size">
+            <option value="24">+24</option>
+            <option value="48" selected>+48</option>
+            <option value="96">+96</option>
+          </select>
+          <button class="btn ghost small" id="galleryRefresh" type="button">Refresh</button>
+        </div>
+      </header>
+
+      <div class="gallery-toolbar">
+        <p class="gallery-summary" id="gallerySummary">Loading…</p>
+        <div class="gallery-pager" id="galleryPager">
+          <button type="button" class="btn ghost small" id="galleryPrev">↑ Top</button>
+          <span id="galleryPageLabel">—</span>
+          <button type="button" class="btn ghost small" id="galleryNext">More ↓</button>
+        </div>
+      </div>
+      <div class="gallery-grid" id="galleryGrid" tabindex="0" aria-label="Candidate thumbnails"></div>
+      <p class="hit-hint gallery-hint">Scroll or ↓ for more · arrows move · A keep · R / X pass · U undo</p>
+    </div>
+
     <div class="tab-pane" data-tab="crops" hidden>
       <header class="review-head">
         <div>
@@ -76,6 +123,7 @@
   </div>
 
   <script src="/assets/common.js"></script>
+  <script src="/assets/gallery.js"></script>
   <script src="/assets/review.js"></script>
 </body>
 </html>

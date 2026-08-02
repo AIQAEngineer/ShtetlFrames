@@ -57,6 +57,7 @@ from run_archive import delete_local_video, download_queue_item
 
 # Live scrape workers: queue_id -> {title, phase, detail, started}
 _scrape_live: dict[int, dict] = {}
+_scrape_stop = threading.Event()
 _scrape_counts = {"done": 0, "hits": 0, "errors": 0, "total": 0}
 _scrape_counts_lock = threading.Lock()
 _scrape_last_publish = 0.0
@@ -306,7 +307,12 @@ def prioritize_queue_url(url: str, *, title: str = "") -> dict:
     }
 
 
-def start_scrape(max_videos: str | int = "all", workers: int = DEFAULT_WORKERS) -> dict:
+def start_scrape(
+    max_videos: str | int = "all",
+    workers: int = DEFAULT_WORKERS,
+    *,
+    source: str = "youtube",
+) -> dict:
     init_db()
     load_env()
     backend = effective_scan_backend()
@@ -314,6 +320,7 @@ def start_scrape(max_videos: str | int = "all", workers: int = DEFAULT_WORKERS) 
         if _active["discover"] or _active["scrape"]:
             return {"ok": False, "error": "busy", "job": get_job("scrape")}
         _active["scrape"] = True
+    _scrape_stop.clear()
 
     # RunPod: fan out many in-flight jobs; local: thread pool size
     if backend == "runpod":
@@ -361,7 +368,8 @@ def start_scrape(max_videos: str | int = "all", workers: int = DEFAULT_WORKERS) 
         except (TypeError, ValueError):
             limit = None
             max_label = "all"
-    items = take_pending(limit)
+    claim_source = (source or "youtube").strip().lower() or "youtube"
+    items = take_pending(limit, source=claim_source)
     if not items:
         with _lock:
             _active["scrape"] = False
@@ -392,9 +400,10 @@ def start_scrape(max_videos: str | int = "all", workers: int = DEFAULT_WORKERS) 
     order_label = "end→newest" if queue_claim_from_end() else "start→oldest"
     if yt_last:
         order_label += " · youtube-last"
+    src_label = claim_source if claim_source not in ("youtube", "yt", "web", "non_pathe", "non-pathe") else "non-pathe"
     start_msg = (
         f"Starting scrape of {len(items)} video(s) · backend={backend} · "
-        f"workers={workers} · queue={order_label}"
+        f"source={src_label} · workers={workers} · queue={order_label}"
     )
     if n_retry:
         start_msg += f" · retrying {n_retry} earlier error(s)"
@@ -414,7 +423,37 @@ def start_scrape(max_videos: str | int = "all", workers: int = DEFAULT_WORKERS) 
     )
     t = threading.Thread(target=_scrape_job, args=(items, workers, backend), daemon=True)
     t.start()
-    return {"ok": True, "job": get_job("scrape"), "backend": backend}
+    return {"ok": True, "job": get_job("scrape"), "backend": backend, "source": claim_source}
+
+
+def stop_scrape(*, message: str = "Scrape stopped by user") -> dict:
+    """Request cooperative stop of the shared scrape job."""
+    _scrape_stop.set()
+    try:
+        set_job(
+            "scrape",
+            status="idle",
+            phase="stopped",
+            message=(message or "Scrape stopped by user")[:400],
+            progress=100,
+        )
+    except Exception:
+        pass
+    return {"ok": True, "job": get_job("scrape")}
+
+
+def scrape_live_snapshot() -> list[dict]:
+    with _lock:
+        return [
+            {
+                "queue_id": qid,
+                "title": info.get("title") or "",
+                "phase": info.get("phase") or "",
+                "detail": info.get("detail") or "",
+                "started": info.get("started") or 0,
+            }
+            for qid, info in list(_scrape_live.items())[:12]
+        ]
 
 
 def _scrape_job(items: list[dict], workers: int, backend: str = "local") -> None:
@@ -600,6 +639,9 @@ def _scrape_job(items: list[dict], workers: int, backend: str = "local") -> None
                     if time.time() < pause_until["t"]:
                         return
                     while len(inflight) < workers:
+                        if _scrape_stop.is_set():
+                            more_items["v"] = False
+                            return
                         row = None
                         with _scrape_priority_lock:
                             if _scrape_priority:
@@ -621,6 +663,10 @@ def _scrape_job(items: list[dict], workers: int, backend: str = "local") -> None
 
                 _submit_more()
                 while inflight or more_items["v"]:
+                    if _scrape_stop.is_set():
+                        for fut in list(inflight):
+                            fut.cancel()
+                        break
                     if not inflight:
                         # Wait out circuit-breaker pause, then refill — don't end the batch.
                         if time.time() < pause_until["t"]:

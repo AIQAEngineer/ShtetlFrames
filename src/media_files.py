@@ -4,7 +4,7 @@ from __future__ import annotations
 
 from pathlib import Path
 
-VIDEO_EXTS = {".mp4", ".webm", ".mkv", ".avi", ".mov", ".ogv", ".mpg", ".mpeg"}
+VIDEO_EXTS = {".mp4", ".webm", ".mkv", ".avi", ".mov", ".ogv", ".mpg", ".mpeg", ".flv"}
 
 
 def find_video_file(videos_dir: Path, video_id: str) -> Path | None:

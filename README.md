@@ -103,7 +103,7 @@ Do not commit secrets. Copy from `.env.example`.
 | `RUNPOD_MAX_INFLIGHT` | No | Scrape GPU pods, **1–8** (default `8`); Pathé +1 discover (hard cap 9) |
 | `RUNPOD_STOP_WHEN_DONE` | No | `1` = stop pods after scrape (saves money) |
 | `RUNPOD_JOB_TIMEOUT_SEC` | No | Per-video timeout (default `1800`) |
-| `SCORE_THRESHOLD` | No | CLIP gate before vision verify (default `0.04`) |
+| `SCORE_THRESHOLD` | No | CLIP gate before vision verify (default `0.10`) |
 | `OPENAI_API_KEY` | No | Vision second pass before Review |
 | `OPENAI_VERIFY` | No | `1` = only vision-approved stills in Review |
 | `OPENAI_MODEL` | No | Vision model (default `gpt-5.4-mini`) |

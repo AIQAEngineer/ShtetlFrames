@@ -1,4 +1,4 @@
-﻿"""GET /api/candidates, GET /api/review/label_stats, POST /api/review."""
+"""GET /api/candidates, GET /api/review/label_stats, POST /api/review."""
 
 from __future__ import annotations
 
@@ -9,9 +9,10 @@ from api_http import json_response
 from db import init_db, list_candidates, update_review
 
 
-def load_candidates() -> list[dict]:
+def load_candidates(limit: int = 5000) -> list[dict]:
     init_db()
-    return list_candidates(limit=5000)
+    limit = max(1, min(int(limit or 5000), 20000))
+    return list_candidates(limit=limit)
 
 
 def handle_get_label_stats(handler: BaseHTTPRequestHandler) -> None:
@@ -26,21 +27,33 @@ def handle_get_label_stats(handler: BaseHTTPRequestHandler) -> None:
 
 def handle_get_candidates(handler: BaseHTTPRequestHandler, parsed: ParseResult) -> None:
     qs = parse_qs(parsed.query)
-    rows = load_candidates()
+    limit = int((qs.get("limit") or ["2000"])[0])
+    limit = max(1, min(limit, 20000))
+    # Gallery / "all" needs the full pool; otherwise keep the lighter default load.
+    load_n = max(limit, 5000)
+    rows = load_candidates(limit=load_n)
     status = (qs.get("status") or [""])[0].lower().strip()
     openai = (qs.get("openai") or [""])[0].lower().strip()
+    show_all = status in ("all", "any") or openai in ("all", "any")
     show_openai_drop = openai == "drop" or status == "openai_drop"
     show_openai_keep = openai == "keep" or status == "openai_keep"
     show_openai_uncertain = openai == "uncertain" or status == "openai_uncertain"
+    show_openai_none = openai in ("none", "skip", "unverified") or status in (
+        "openai_none",
+        "openai_skip",
+        "unverified",
+    )
     show_pending = status == "pending"
     show_human_accept = status == "accept"
     show_human_reject = status == "reject"
     # Default: when OpenAI verify is on, Review shows OpenAI keeps only.
+    # status=all / openai=all: no AI gate (gallery wants pass + fail + not sent).
     # "To check" / Kept / Passed: human workflow — do not hide by OpenAI tag
     # (a human Keep must appear under Kept even if notes say openai:drop).
-    # openai=keep / openai=drop: explicit OpenAI pass / fail filters.
+    # openai=keep / openai=drop / openai=none: explicit AI filters.
     try:
         from openai_verify import (
+            notes_already_verified,
             notes_openai_approved,
             notes_openai_dropped,
             notes_openai_uncertain,
@@ -53,7 +66,9 @@ def handle_get_candidates(handler: BaseHTTPRequestHandler, parsed: ParseResult) 
             rows = [r for r in rows if notes_openai_approved(r.get("notes"))]
         elif show_openai_uncertain:
             rows = [r for r in rows if notes_openai_uncertain(r.get("notes"))]
-        elif show_pending or show_human_accept or show_human_reject:
+        elif show_openai_none:
+            rows = [r for r in rows if not notes_already_verified(r.get("notes"))]
+        elif show_all or show_pending or show_human_accept or show_human_reject:
             pass
         elif openai_verify_enabled():
             rows = [r for r in rows if notes_openai_approved(r.get("notes"))]
@@ -62,7 +77,7 @@ def handle_get_candidates(handler: BaseHTTPRequestHandler, parsed: ParseResult) 
     q = (qs.get("q") or [""])[0].lower().strip()
     if show_pending:
         rows = [r for r in rows if not (r.get("decision") or "").strip()]
-    elif not show_openai_drop and not show_openai_keep and not show_openai_uncertain:
+    elif not show_openai_drop and not show_openai_keep and not show_openai_uncertain and not show_openai_none:
         if show_human_accept:
             rows = [r for r in rows if r.get("decision") == "accept"]
         elif show_human_reject:
@@ -74,7 +89,6 @@ def handle_get_candidates(handler: BaseHTTPRequestHandler, parsed: ParseResult) 
             if q in (r.get("video_id") or "").lower()
             or q in (r.get("best_cue") or "").lower()
         ]
-    limit = int((qs.get("limit") or ["2000"])[0])
     json_response(handler, 200, {"candidates": rows[:limit], "total": len(rows)})
 
 

@@ -86,11 +86,11 @@ SETTING_DEFS: dict[str, dict[str, Any]] = {
     "SCORE_THRESHOLD": {
         "label": "Hit score threshold",
         "type": "number",
-        "default": "0.04",
+        "default": "0.10",
         "min": -0.5,
         "max": 0.25,
         "step": 0.01,
-        "help": "CLIP gate before vision verify (default 0.04). Raise toward 0.08–0.10 to cut Pathé noise.",
+        "help": "CLIP gate before vision verify (default 0.10). Lower toward 0.04 only if recall is too thin.",
     },
     "YT_COOKIES_BROWSER": {
         "label": "YouTube cookies browser",

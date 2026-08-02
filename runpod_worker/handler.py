@@ -457,6 +457,7 @@ def _download_once(
     sleep_requests: str = "1",
     job_deadline: float | None = None,
     max_download_mb: float = 0.0,
+    impersonate: str | None = None,
 ) -> Path:
     out_tmpl = str(VIDEOS / f"{vid}.%(ext)s")
     fmt = format_selector or "bv*[height<=720]+ba/b[height<=720]/b"
@@ -482,6 +483,8 @@ def _download_once(
         # Prefer IPv4 — some pod IPv6 routes trip YouTube bot checks harder.
         "-4",
     ]
+    if impersonate:
+        cmd.extend(["--impersonate", impersonate])
     if concurrent_fragments and concurrent_fragments > 1:
         # HLS previews are dozens of small .ts segments; yt-dlp defaults to
         # serial fetches, which dominates per-job time on long clips.
@@ -695,6 +698,7 @@ def download_video(
     queue_id: Any = None,
     job_deadline: float | None = None,
     max_download_mb: float = 0.0,
+    impersonate: str | None = None,
 ) -> Path:
     """Download on the GPU pod only — cookies and/or residential proxy, never the user's PC."""
     VIDEOS.mkdir(parents=True, exist_ok=True)
@@ -702,6 +706,15 @@ def download_video(
     vid = (work_id or "").strip() or _work_slug(title, url=url, queue_id=queue_id)
     download_url = (m3u8_url or url or "").strip()
     ref = (referer or "").strip() or None
+    imp = (impersonate or "").strip() or None
+    if not imp and "vimeo.com" in (download_url or "").lower():
+        imp = "chrome"
+        if "player.vimeo.com" not in download_url.lower():
+            import re as _re
+
+            m = _re.search(r"vimeo\.com/(?:video/)?(\d+)", download_url, _re.I)
+            if m:
+                download_url = f"https://player.vimeo.com/video/{m.group(1)}"
     # British Pathé preview HLS — no YouTube cookies / residential proxy.
     is_pathe = _is_pathe_download(source, m3u8_url, referer, url)
     if is_pathe:
@@ -808,8 +821,10 @@ def download_video(
                         proxy_url=phase_proxy,
                         proxy_label=label if phase_proxy else "proxy",
                         proxy_insecure=bool(proxy_insecure and phase_proxy),
+                        referer=ref,
                         job_deadline=job_deadline,
                         max_download_mb=max_download_mb,
+                        impersonate=imp,
                     )
                     mb = path.stat().st_size / (1024 * 1024)
                     set_progress(
@@ -1041,6 +1056,12 @@ def process_job(inp: dict) -> dict:
     if not isinstance(referer, str):
         referer = ""
     referer = referer.strip() or None
+    impersonate = inp.get("impersonate") or ""
+    if not isinstance(impersonate, str):
+        impersonate = ""
+    impersonate = impersonate.strip() or None
+    if not impersonate and "vimeo.com" in (url or "").lower():
+        impersonate = "chrome"
     source = str(inp.get("source") or "").strip() or None
     m3u8_url = inp.get("m3u8_url") or ""
     if not isinstance(m3u8_url, str):
@@ -1104,6 +1125,7 @@ def process_job(inp: dict) -> dict:
                         queue_id=queue_id,
                         job_deadline=job_deadline,
                         max_download_mb=max_download_mb,
+                        impersonate=impersonate,
                     )
                 if job_deadline and time.time() > job_deadline:
                     raise RuntimeError(

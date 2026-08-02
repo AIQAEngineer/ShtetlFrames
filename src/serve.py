@@ -32,7 +32,11 @@ PAGES = {
     "/pathe.html": "pathe.html",
     "/catalogs": "catalogs.html",
     "/catalogs.html": "catalogs.html",
+    "/efg": "efg.html",
+    "/efg.html": "efg.html",
 }
+
+KNOWN_HIT_PROBE_DIR = OUTPUT_DIR / "known_hit_probe"
 
 PAGE_REDIRECTS = {
     "/health": "/?tab=ops",
@@ -41,6 +45,8 @@ PAGE_REDIRECTS = {
     "/probe.html": "/train?tab=frames",
     "/crops": "/review?tab=crops",
     "/crops.html": "/review?tab=crops",
+    "/gallery": "/review?tab=gallery",
+    "/gallery.html": "/review?tab=gallery",
     "/mark": "/tools?tab=mark",
     "/mark.html": "/tools?tab=mark",
     "/clip": "/tools?tab=clip",
@@ -59,6 +65,8 @@ GET_ROUTES = {
     "/api/queue/items": "api_queue:handle_get_queue",
     "/api/pathe/summary": "api_pathe:handle_get_summary",
     "/api/pathe/queue": "api_pathe:handle_get_queue",
+    "/api/efg/summary": "api_efg:handle_get_summary",
+    "/api/efg/queue": "api_efg:handle_get_queue",
     "/api/train/summary": "api_train:handle_get_summary",
     "/api/train/clips": "api_train:handle_get_clips",
     "/api/train/youtube": "api_train:handle_get_youtube",
@@ -99,6 +107,12 @@ POST_ROUTES = {
     "/api/pathe/discover": "api_pathe:handle_post_discover",
     "/api/pathe/scrape": "api_pathe:handle_post_scrape",
     "/api/pathe/scrape/stop": "api_pathe:handle_post_scrape_stop",
+    "/api/efg/import": "api_efg:handle_post_import",
+    "/api/efg/rewrite": "api_efg:handle_post_rewrite",
+    "/api/efg/park": "api_efg:handle_post_park",
+    "/api/efg/scrape": "api_efg:handle_post_scrape",
+    "/api/efg/scrape/stop": "api_efg:handle_post_scrape_stop",
+    "/api/efg/queue/clear": "api_efg:handle_post_queue_clear",
     "/api/train/seed": "api_train:handle_post_seed",
     "/api/train/youtube": "api_train:handle_post_youtube",
     "/api/train/clear": "api_train:handle_post_clear",
@@ -253,6 +267,39 @@ class Handler(BaseHTTPRequestHandler):
                 self._json(404, {"error": "frame not found", "path": rel})
                 return
             ctype = mimetypes.guess_type(f.name)[0] or "image/jpeg"
+            self._file(f, ctype)
+            return
+
+        if path in ("/known-hits", "/known-hits/", "/known_hits.html"):
+            report = KNOWN_HIT_PROBE_DIR / "index.html"
+            if not report.is_file():
+                self._json(
+                    404,
+                    {
+                        "error": "known-hit probe report missing",
+                        "hint": "run scripts/score_known_hits_probe.py",
+                    },
+                )
+                return
+            self._file(report, "text/html; charset=utf-8")
+            return
+
+        if path.startswith("/media/known_hit_probe/"):
+            rel = path.split("/media/known_hit_probe/", 1)[1]
+            rel = rel.replace("\\", "/").lstrip("/")
+            if ".." in rel or not rel:
+                self._json(400, {"error": "bad known_hit_probe path"})
+                return
+            f = (KNOWN_HIT_PROBE_DIR / rel).resolve()
+            try:
+                f.relative_to(KNOWN_HIT_PROBE_DIR.resolve())
+            except ValueError:
+                self._json(400, {"error": "path escape"})
+                return
+            if not f.is_file():
+                self._json(404, {"error": "not found", "path": rel})
+                return
+            ctype = mimetypes.guess_type(f.name)[0] or "application/octet-stream"
             self._file(f, ctype)
             return
 

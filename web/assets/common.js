@@ -147,6 +147,7 @@ function renderNav(active) {
     <div class="nav-left">
       <a class="brand-mark" href="/">Shtetl<span>Frames</span></a>
       <a class="nav-pathe${active === "pathe" ? " active" : ""}" href="/pathe">British Pathé</a>
+      <a class="nav-pathe${active === "efg" ? " active" : ""}" href="/efg">EFG</a>
       <a class="nav-pathe${active === "catalogs" ? " active" : ""}" href="/catalogs">Catalogs</a>
     </div>
     <div class="nav-links">

@@ -4,6 +4,7 @@ from __future__ import annotations
 
 import hashlib
 import json
+import re
 import subprocess
 import sys
 from pathlib import Path
@@ -26,17 +27,37 @@ def sha256_file(path: Path) -> str:
     return h.hexdigest()
 
 
-def download_http(url: str, dest: Path) -> Path:
+def download_http(url: str, dest: Path, *, referer: str | None = None) -> Path:
     dest.parent.mkdir(parents=True, exist_ok=True)
     if dest.exists() and dest.stat().st_size > 0:
         return dest
-    r = requests.get(url, stream=True, timeout=120, headers={"User-Agent": USER_AGENT})
-    r.raise_for_status()
+    headers = {"User-Agent": USER_AGENT}
+    if referer:
+        headers["Referer"] = referer
     tmp = dest.with_suffix(dest.suffix + ".part")
-    with tmp.open("wb") as f:
-        for chunk in r.iter_content(1024 * 256):
-            if chunk:
-                f.write(chunk)
+
+    def _write_stream(resp) -> None:
+        with tmp.open("wb") as f:
+            for chunk in resp.iter_content(1024 * 256):
+                if chunk:
+                    f.write(chunk)
+
+    # Vimeo CDN progressive URLs often 403 without a Chrome TLS fingerprint.
+    if "vimeocdn.com" in (url or "").lower() or "vimeo.com" in (url or "").lower():
+        try:
+            from curl_cffi import requests as creq
+
+            r = creq.get(url, impersonate="chrome", headers=headers, stream=True, timeout=120)
+            r.raise_for_status()
+            _write_stream(r)
+            tmp.replace(dest)
+            return dest
+        except Exception:
+            pass
+
+    r = requests.get(url, stream=True, timeout=120, headers=headers)
+    r.raise_for_status()
+    _write_stream(r)
     tmp.replace(dest)
     return dest
 
@@ -51,6 +72,7 @@ def _ytdlp_base_cmd(
     proxy_insecure: bool = False,
     referer: str | None = None,
     format_selector: str | None = None,
+    impersonate: str | None = None,
 ) -> list[str]:
     cmd = [
         sys.executable,
@@ -72,18 +94,23 @@ def _ytdlp_base_cmd(
         "--newline",
         "-4",
     ]
+    if impersonate:
+        cmd.extend(["--impersonate", impersonate])
     if proxy_url:
         cmd.extend(["--proxy", proxy_url])
         if proxy_insecure:
             cmd.append("--no-check-certificates")
     if referer:
         cmd.extend(["--referer", referer])
-        try:
-            origin = f"{urlparse(referer).scheme}://{urlparse(referer).netloc}"
-            if origin.startswith("http"):
-                cmd.extend(["--add-header", f"Origin:{origin}"])
-        except Exception:
-            pass
+        # Origin helps some CDNs (e.g. NB Wowza) but Vimeo returns 401 when
+        # Origin is set to the embedding host — skip it for player.vimeo.com.
+        if "vimeo.com" not in (url or "").lower():
+            try:
+                origin = f"{urlparse(referer).scheme}://{urlparse(referer).netloc}"
+                if origin.startswith("http"):
+                    cmd.extend(["--add-header", f"Origin:{origin}"])
+            except Exception:
+                pass
     if player_client:
         cmd.extend(["--extractor-args", f"youtube:player_client={player_client}"])
     if use_cookies:
@@ -114,6 +141,7 @@ def _ytdlp_try_attempts(
     proxy_insecure: bool = False,
     referer: str | None = None,
     format_selector: str | None = None,
+    impersonate: str | None = None,
 ) -> tuple[Path | None, str]:
     pattern = str(dest_dir / f"{out_name}.%(ext)s")
     last_err = ""
@@ -132,6 +160,7 @@ def _ytdlp_try_attempts(
             proxy_insecure=proxy_insecure,
             referer=referer,
             format_selector=format_selector,
+            impersonate=impersonate,
         )
         try:
             proc = subprocess.run(cmd, capture_output=True, text=True, timeout=900)
@@ -232,12 +261,17 @@ def download_ytdlp_via_proxy(url: str, dest_dir: Path, out_name: str) -> Path | 
 # Back-compat alias
 
 
+def _is_vimeo_url(url: str) -> bool:
+    return "vimeo.com" in (url or "").lower()
+
+
 def download_ytdlp(
     url: str,
     dest_dir: Path,
     out_name: str,
     *,
     allow_proxy: bool = True,
+    referer: str | None = None,
 ) -> Path | None:
     """Download via yt-dlp; residential proxy only if Google/YouTube bot-blocks."""
     dest_dir.mkdir(parents=True, exist_ok=True)
@@ -248,10 +282,36 @@ def download_ytdlp(
 
     is_youtube = "youtube.com" in url.lower() or "youtu.be" in url.lower()
     attempts = _youtube_attempts(with_cookies=True) if is_youtube else [(None, False)]
+    # Vimeo requires TLS fingerprint impersonation (OAuth token endpoint 401 otherwise).
+    # Private/embed clips also need the host page as Referer + player.vimeo.com URL.
+    impersonate = "chrome" if _is_vimeo_url(url) else None
+    if _is_vimeo_url(url) and "player.vimeo.com" not in url.lower():
+        m = re.search(r"vimeo\.com/(?:video/)?(\d+)", url, re.I)
+        if m:
+            url = f"https://player.vimeo.com/video/{m.group(1)}"
 
-    path, last_err = _ytdlp_try_attempts(url, dest_dir, out_name, attempts=attempts)
+    path, last_err = _ytdlp_try_attempts(
+        url,
+        dest_dir,
+        out_name,
+        attempts=attempts,
+        impersonate=impersonate,
+        referer=referer,
+    )
     if path:
         return path
+    # Retry once with an explicit modern Chrome target if generic "chrome" failed.
+    if impersonate and "impersonate" in (last_err or "").lower():
+        path, last_err = _ytdlp_try_attempts(
+            url,
+            dest_dir,
+            out_name,
+            attempts=attempts,
+            impersonate="chrome-131:android-14",
+            referer=referer,
+        )
+        if path:
+            return path
 
     # Only use residential proxy when Google/YouTube actually blocked us.
     from yt_proxy import is_google_block_error, proxy_configured
@@ -367,20 +427,24 @@ def download_entry(url: str, title: str, video_id: str | None = None) -> dict:
     result = {"video_id": vid, "url": url, "title": title, "path": None, "sha256": None, "error": None}
 
     try:
-        # Provider item pages (EUScreen/IWM) — yt-dlp is broken/blocked there;
-        # resolve locally to a direct MP4 first, then take the direct branch.
+        # Provider item pages (EUScreen/IWM/filmportal/…) — yt-dlp is broken/blocked
+        # there; resolve locally to a direct MP4 / YouTube / Vimeo player URL first.
         from provider_resolvers import needs_resolve, resolve_media_url
 
+        referer = None
         if needs_resolve(url):
+            page_url = url
             resolved = resolve_media_url(url)
             if not resolved:
                 raise RuntimeError(f"provider_resolve_failed: {url[:120]}")
+            # Keep host page as Referer for private Vimeo embeds / CDN tickets / NB HLS.
+            referer = page_url
             url = resolved
 
         if is_direct_video_url(url):
             ext = Path(urlparse(url).path).suffix or ".mp4"
             dest = VIDEOS_DIR / f"{vid}{ext}"
-            path = download_http(url, dest)
+            path = download_http(url, dest, referer=referer)
         elif "archive.org/details/" in url:
             identifier = url.rstrip("/").split("/")[-1].split("?")[0]
             path = download_archive_org(identifier, VIDEOS_DIR)
@@ -400,10 +464,11 @@ def download_entry(url: str, title: str, video_id: str | None = None) -> dict:
                     detail = ": " + err_side.read_text(encoding="utf-8", errors="ignore")[:500]
                 raise RuntimeError(f"yt-dlp returned no file{detail}")
         else:
-            # HLS (.m3u8), YouTube/INA embeds, and Europeana/EFG provider pages all
-            # go through yt-dlp — its generic extractor handles NRK, Vimeo embeds,
-            # Luce/EUScreen-style players, and any dedicated extractor match.
-            path = download_ytdlp(url, VIDEOS_DIR, vid)
+            # HLS (.m3u8), YouTube/INA embeds, Vimeo player URLs, and Europeana/EFG
+            # provider pages go through yt-dlp.
+            if referer is None and "wow.nb.no" in url.lower():
+                referer = "https://www.nb.no/"
+            path = download_ytdlp(url, VIDEOS_DIR, vid, referer=referer)
             if path is None:
                 err_side = VIDEOS_DIR / f"{vid}.ytdlp_error.txt"
                 detail = ""
