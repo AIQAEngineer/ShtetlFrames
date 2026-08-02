@@ -22,10 +22,12 @@ DEFAULT_BASE_IMAGE = IMAGE_CANDIDATES[0]
 # Images that often fail nvidia-container-cli on older host drivers.
 DRIVER_RISKY_IMAGE_MARKERS = ("cu1290", "cu129-", "-cu129")
 
-# Pin after each worker/cues change so pods do not keep stale jsDelivr @main.
-# jsDelivr @main can lag GitHub by many minutes; commit pins are immediate.
+# Pin after each worker/cues change so pods boot from a known revision.
+# raw.githubusercontent serves new commits immediately; jsDelivr 500s on fresh
+# commits for many minutes, and the bootstrap's curl -f turns that into a
+# dead fleet (bootstrap exits before uvicorn starts).
 WORKER_COMMIT = "6001358"
-_RAW = f"https://cdn.jsdelivr.net/gh/AIQAEngineer/ShtetlFrames@{WORKER_COMMIT}"
+_RAW = f"https://raw.githubusercontent.com/AIQAEngineer/ShtetlFrames/{WORKER_COMMIT}"
 WORKER_RAW_BASE = f"{_RAW}/runpod_worker"
 CORE_RAW_BASE = f"{_RAW}/src/shtetl_core"
 
