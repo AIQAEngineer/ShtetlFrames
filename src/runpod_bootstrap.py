@@ -26,7 +26,7 @@ DRIVER_RISKY_IMAGE_MARKERS = ("cu1290", "cu129-", "-cu129")
 # raw.githubusercontent serves new commits immediately; jsDelivr 500s on fresh
 # commits for many minutes, and the bootstrap's curl -f turns that into a
 # dead fleet (bootstrap exits before uvicorn starts).
-WORKER_COMMIT = "6001358"
+WORKER_COMMIT = "de5412c"
 _RAW = f"https://raw.githubusercontent.com/AIQAEngineer/ShtetlFrames/{WORKER_COMMIT}"
 WORKER_RAW_BASE = f"{_RAW}/runpod_worker"
 CORE_RAW_BASE = f"{_RAW}/src/shtetl_core"
