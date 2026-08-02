@@ -100,6 +100,13 @@ RUNPOD_JOB_TOTAL_TIMEOUT_SEC = int(
 )
 # Total pod attempts per queue item before it is parked (no auto-retry on Start).
 SCRAPE_ITEM_MAX_ATTEMPTS = int(os.environ.get("SCRAPE_ITEM_MAX_ATTEMPTS") or "5")
+# Skip downloads larger than this (0 = no cap). Monster archival films at
+# 300KB/s dominate per-item time; the pod aborts them early as oversize_skip.
+try:
+    SCRAPE_MAX_DOWNLOAD_MB = int(os.environ.get("SCRAPE_MAX_DOWNLOAD_MB") or "100")
+except ValueError:
+    SCRAPE_MAX_DOWNLOAD_MB = 100
+SCRAPE_MAX_DOWNLOAD_MB = max(0, SCRAPE_MAX_DOWNLOAD_MB)
 # Concurrent client jobs stacked per GPU pod (downloads overlap; GPU serializes).
 try:
     RUNPOD_STACK_PER_POD = int(os.environ.get("RUNPOD_STACK_PER_POD") or "2")
@@ -122,7 +129,7 @@ def load_env() -> None:
     global RUNPOD_POD_ID, RUNPOD_STOP_WHEN_DONE, RUNPOD_ENDPOINT_ID
     global RUNPOD_MAX_INFLIGHT, PATHE_STACK_MAX, RUNPOD_JOB_TIMEOUT_SEC, RUNPOD_POLL_SEC
     global RUNPOD_PROGRESS_STALL_SEC, RUNPOD_JOB_TOTAL_TIMEOUT_SEC, SCRAPE_ITEM_MAX_ATTEMPTS
-    global RUNPOD_STACK_PER_POD
+    global RUNPOD_STACK_PER_POD, SCRAPE_MAX_DOWNLOAD_MB
     global SCORE_THRESHOLD, YT_COOKIES_BROWSER, YT_COOKIES_FILE
     global PROXY_PROVIDER, SCRAPFLY_API_KEY, SCRAPINGDOG_API_KEY
     global SPARSE_SECTION_SEC, SPARSE_STRIDE_SEC, DENSE_PAD_SEC, MAX_DENSE_SEC
@@ -186,6 +193,11 @@ def load_env() -> None:
         SCRAPE_ITEM_MAX_ATTEMPTS = int(os.environ.get("SCRAPE_ITEM_MAX_ATTEMPTS") or "5")
     except ValueError:
         SCRAPE_ITEM_MAX_ATTEMPTS = 5
+    try:
+        SCRAPE_MAX_DOWNLOAD_MB = int(os.environ.get("SCRAPE_MAX_DOWNLOAD_MB") or "100")
+    except ValueError:
+        SCRAPE_MAX_DOWNLOAD_MB = 100
+    SCRAPE_MAX_DOWNLOAD_MB = max(0, SCRAPE_MAX_DOWNLOAD_MB)
     try:
         RUNPOD_STACK_PER_POD = int(os.environ.get("RUNPOD_STACK_PER_POD") or "2")
     except ValueError:

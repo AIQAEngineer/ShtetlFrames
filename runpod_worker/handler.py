@@ -84,6 +84,23 @@ _YTDLP_SPEED_RE = re.compile(r"at\s+(\S+/s)")
 _YTDLP_SIZE_RE = re.compile(r"of\s+~?\s*([\d.]+\s*[KMG]i?B)", re.I)
 
 
+class OversizeSkip(Exception):
+    """File exceeds the configured download cap — deterministic, never retried."""
+
+
+def _size_str_to_mb(size: str) -> float:
+    m = re.match(r"([\d.]+)\s*([KMG])i?B", (size or "").strip(), re.I)
+    if not m:
+        return 0.0
+    val = float(m.group(1))
+    unit = m.group(2).upper()
+    if unit == "K":
+        return val / 1024.0
+    if unit == "G":
+        return val * 1024.0
+    return val
+
+
 def _job_key(queue_id: Any) -> str:
     return str(queue_id) if queue_id is not None else "_default"
 
@@ -439,6 +456,7 @@ def _download_once(
     concurrent_fragments: int = 0,
     sleep_requests: str = "1",
     job_deadline: float | None = None,
+    max_download_mb: float = 0.0,
 ) -> Path:
     out_tmpl = str(VIDEOS / f"{vid}.%(ext)s")
     fmt = format_selector or "bv*[height<=720]+ba/b[height<=720]/b"
@@ -534,6 +552,17 @@ def _download_once(
                 reason = f"pod_job_budget exhausted after {int(now - t0)}s"
             elif now - t0 > 1800:
                 reason = "yt-dlp timeout after 1800s"
+            if not reason and max_download_mb > 0:
+                # Backstop for stalled stdout: abort once bytes on disk pass the cap.
+                try:
+                    part_bytes = sum(p.stat().st_size for p in VIDEOS.glob(f"{vid}.*"))
+                except OSError:
+                    part_bytes = 0
+                if part_bytes > max_download_mb * 1024 * 1024:
+                    reason = (
+                        f"oversize_skip: {part_bytes / (1024 * 1024):.0f}MB on disk"
+                        f" > {max_download_mb:.0f}MB cap"
+                    )
             if reason:
                 activity["killed"] = reason
                 set_progress(
@@ -569,6 +598,20 @@ def _download_once(
                 eta = eta_m.group(1) if eta_m else ""
                 speed = speed_m.group(1) if speed_m else ""
                 size = size_m.group(1) if size_m else ""
+                if size and max_download_mb > 0:
+                    total_mb = _size_str_to_mb(size)
+                    if total_mb > max_download_mb:
+                        # Announced size already over cap — kill before the
+                        # slow host drips the whole file at 300KB/s.
+                        activity["killed"] = (
+                            f"oversize_skip: ~{total_mb:.0f}MB"
+                            f" > {max_download_mb:.0f}MB cap"
+                        )
+                        try:
+                            proc.kill()
+                        except OSError:
+                            pass
+                        raise OversizeSkip(activity["killed"])
                 bits = [
                     x
                     for x in (
@@ -599,6 +642,8 @@ def _download_once(
             pass
         raise
     if activity["killed"]:
+        if activity["killed"].startswith("oversize_skip"):
+            raise OversizeSkip(activity["killed"])
         # Stalled partials (fragmented HLS without a moov atom) fail to open in
         # the scanner — surface as a retriable download failure instead.
         raise TimeoutError(activity["killed"])
@@ -649,6 +694,7 @@ def download_video(
     work_id: str | None = None,
     queue_id: Any = None,
     job_deadline: float | None = None,
+    max_download_mb: float = 0.0,
 ) -> Path:
     """Download on the GPU pod only — cookies and/or residential proxy, never the user's PC."""
     VIDEOS.mkdir(parents=True, exist_ok=True)
@@ -687,6 +733,7 @@ def download_video(
             # aggregate pressure near the level that sustained ~24/min.
             concurrent_fragments=3,
             sleep_requests="0",
+            max_download_mb=max_download_mb,
         )
 
     is_youtube = "youtube.com" in url.lower() or "youtu.be" in url.lower()
@@ -762,6 +809,7 @@ def download_video(
                         proxy_label=label if phase_proxy else "proxy",
                         proxy_insecure=bool(proxy_insecure and phase_proxy),
                         job_deadline=job_deadline,
+                        max_download_mb=max_download_mb,
                     )
                     mb = path.stat().st_size / (1024 * 1024)
                     set_progress(
@@ -780,6 +828,9 @@ def download_video(
                     )
                     if "pod_job_budget" in last_err:
                         # Budget dead — cycling player clients just burns time.
+                        raise RuntimeError(last_err)
+                    if "oversize_skip" in last_err.lower():
+                        # Cap is deterministic — proxy/client cycling won't shrink the file.
                         raise RuntimeError(last_err)
                     if _is_permanent_ytdlp_error(last_err):
                         break
@@ -1001,6 +1052,10 @@ def process_job(inp: dict) -> dict:
         job_budget_sec = float(inp.get("job_budget_sec") or 0)
     except (TypeError, ValueError):
         job_budget_sec = 0.0
+    try:
+        max_download_mb = float(inp.get("max_download_mb") or 0)
+    except (TypeError, ValueError):
+        max_download_mb = 0.0
     # Client-imposed per-item wall-clock budget. Enforced pod-side so a job
     # stops instead of running as a zombie after the client's timeout fired.
     job_deadline = (time.time() + job_budget_sec) if job_budget_sec > 0 else None
@@ -1048,6 +1103,7 @@ def process_job(inp: dict) -> dict:
                         work_id=video_id,
                         queue_id=queue_id,
                         job_deadline=job_deadline,
+                        max_download_mb=max_download_mb,
                     )
                 if job_deadline and time.time() > job_deadline:
                     raise RuntimeError(
@@ -1204,6 +1260,9 @@ def process_job(inp: dict) -> dict:
                 shutil.rmtree(crop_dir, ignore_errors=True)
                 if "pod_job_budget" in last_err.lower():
                     # Client budget spent — in-pod retries would only overrun it.
+                    break
+                if "oversize_skip" in last_err.lower():
+                    # Deterministic cap — retrying re-downloads the same file.
                     break
                 if attempt < max_attempts and _is_retryable_job_error(last_err):
                     set_progress(

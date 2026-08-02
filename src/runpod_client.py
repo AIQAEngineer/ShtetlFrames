@@ -1995,6 +1995,10 @@ def _process_video_remote_attempts(
         payload["job_budget_sec"] = max(
             120.0, min(float(timeout), remaining_total - 15.0)
         )
+        # Size cap — pod aborts the download early on monster archival films.
+        payload["max_download_mb"] = float(
+            getattr(app_config, "SCRAPE_MAX_DOWNLOAD_MB", 0) or 0
+        )
         # Never sit on Scrapfly Retry-After when ScrapingDog is available.
         if active_provider == "scrapfly" and payload.get("proxy_url"):
             if proxy_cooldown_remaining() > 0:

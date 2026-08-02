@@ -713,7 +713,9 @@ def _scrape_job(items: list[dict], workers: int, backend: str = "local") -> None
                             refresh_pod_pool,
                         )
 
-                        skip = is_permanent_youtube_skip(err_txt)
+                        skip = is_permanent_youtube_skip(err_txt) or (
+                            "oversize_skip" in err_txt.lower()
+                        )
                         infra = (not skip) and is_infra_error(err_txt)
                         with _scrape_counts_lock:
                             if skip:
