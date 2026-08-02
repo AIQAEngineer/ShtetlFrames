@@ -17,7 +17,7 @@ from pathlib import Path
 ROOT = Path(__file__).resolve().parents[1]
 DB = ROOT / "output" / "shtetlframes.db"
 
-# Direct-media / known-good patterns we keep claimable among Europeana/EFG.
+# Direct-media / known-good / locally-resolvable patterns we keep claimable.
 KEEP_URL_SQL = """
   url LIKE '%.mp4%'
   OR url LIKE '%.webm%'
@@ -28,12 +28,19 @@ KEEP_URL_SQL = """
   OR url LIKE '%euscreen.eu%'
   OR url LIKE '%iwm.org.uk%'
   OR url LIKE '%filmportal.de%'
-  OR url LIKE '%nfa.cz%'
+  OR url LIKE '%data.nfa.cz%'
   OR url LIKE '%cinememoire.net%'
   OR url LIKE '%britishpathe.com%'
   OR url LIKE '%openbeelden.nl%'
-  OR url LIKE '%digilab.nfa.cz%'
+  OR url LIKE '%filmarkivet.se%'
+  OR url LIKE '%tv.nrk.no%'
+  OR url LIKE '%av.tib.eu%'
+  OR url LIKE '%patrimonio.archivioluce.com%'
+  OR url LIKE '%elonet.finna.fi%'
+  OR url LIKE '%urn.nb.no%'
+  OR url LIKE '%nb.no/items/%'
 """
+# Note: digilab.nfa.cz portal pages removed — only data.nfa.cz direct MP4s.
 
 
 def main() -> int:
