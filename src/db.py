@@ -814,10 +814,13 @@ def insert_candidates(rows: list[dict]) -> int:
                     image_url=None,
                 )
                 if saved is not None and still_path_is_poor is not None:
+                    # FHO sub-SD newsreel stills can never pass the still-tuned
+                    # blur/px gates — CLIP already gated them pod-side (0.08).
+                    _is_fho = "filmhiradokonline.hu" in str(r.get("source_url") or "").lower()
                     try:
-                        poor = bool(still_path_is_poor(saved))
+                        poor = bool(still_path_is_poor(saved)) if not _is_fho else False
                     except Exception:
-                        poor = True
+                        poor = not _is_fho
                     if poor:
                         conn.execute("DELETE FROM candidates WHERE id=?", (cid,))
                         try:

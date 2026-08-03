@@ -1803,6 +1803,9 @@ def process_video_remote(
         # true Hasidic hits at 0.125+. 0.08 keeps the separation while giving
         # borderline grainy crops margin vs the 0.10 default.
         score_threshold = min(score_threshold, 0.08)
+        # 0.5 fps misses the hits entirely on short sub-SD story windows
+        # (proven: same segment 0 hits @0.5fps, 2 hits @1.5fps on-pod).
+        sample_fps = max(sample_fps, 1.5)
     try:
         from provider_resolvers import needs_resolve, resolve_media_url
 
@@ -2718,7 +2721,11 @@ def segments_to_candidate_rows(out: dict[str, Any], source_url: str = "") -> lis
         if local:
             row["_local_still"] = str(local)
         # Pods often lag the blur gate (pinned bootstrap / missing blur.py).
-        if _candidate_row_still_is_poor(row):
+        # FHO sub-SD newsreel crops can never pass the still-tuned blur/px
+        # gates (same rationale as lowres_relaxed pod-side) — CLIP already
+        # gated them at 0.08; dropping them here zeroed every FHO hit.
+        _is_fho = "filmhiradokonline.hu" in str(row.get("source_url") or "").lower()
+        if not _is_fho and _candidate_row_still_is_poor(row):
             local_p = row.get("_local_still")
             if local_p:
                 try:

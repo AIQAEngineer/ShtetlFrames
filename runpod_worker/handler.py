@@ -1351,18 +1351,20 @@ def process_job(inp: dict) -> dict:
                     still_flags: list[str] = []
                     with tempfile.NamedTemporaryFile(suffix=".jpg", delete=False) as tmp:
                         tmp_path = Path(tmp.name)
-                    wrote = write_sheet_from_crops(group, tmp_path)
+                    wrote = write_sheet_from_crops(group, tmp_path, relaxed=lowres_relaxed)
                     if wrote:
                         # Second line of defense: soft/tiny stills (pod may lag
                         # scan.py sync; grain fools raw Laplacian on EFG crops).
                         # Fail closed: missing blur.py on old pods was silently
                         # inserting soft EFG stills (ImportError → pass).
+                        # lowres_relaxed (FHO newsreels): skip — sub-SD crops can
+                        # never pass; dropping here silently deleted real hits.
                         try:
                             from shtetl_core.blur import still_path_is_poor
 
-                            poor = bool(still_path_is_poor(wrote))
+                            poor = bool(still_path_is_poor(wrote)) and not lowres_relaxed
                         except Exception:
-                            poor = True
+                            poor = not lowres_relaxed
                         if poor:
                             try:
                                 tmp_path.unlink(missing_ok=True)

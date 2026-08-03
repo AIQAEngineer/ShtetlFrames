@@ -30,12 +30,27 @@ _backfill_lock = threading.Lock()
 _backfill_active = False
 
 
+def _ffmpeg_exe() -> str:
+    """PATH ffmpeg, else the imageio-ffmpeg bundled binary (Windows has no PATH ffmpeg)."""
+    import shutil
+
+    exe = shutil.which("ffmpeg")
+    if exe:
+        return exe
+    try:
+        import imageio_ffmpeg
+
+        return imageio_ffmpeg.get_ffmpeg_exe()
+    except Exception:
+        return "ffmpeg"
+
+
 def extract_frame(video: Path, time_sec: float, out: Path) -> bool:
     """Grab one JPEG frame at time_sec (ffmpeg, OpenCV fallback)."""
     out.parent.mkdir(parents=True, exist_ok=True)
     t = max(0.0, float(time_sec))
     cmd = [
-        "ffmpeg",
+        _ffmpeg_exe(),
         "-hide_banner",
         "-loglevel",
         "error",
@@ -87,7 +102,7 @@ def extract_frame_from_url(
     out.parent.mkdir(parents=True, exist_ok=True)
     t = max(0.0, float(time_sec))
     cmd = [
-        "ffmpeg",
+        _ffmpeg_exe(),
         "-hide_banner",
         "-loglevel",
         "error",
@@ -211,6 +226,28 @@ def ensure_candidate_still(
                     print(f"[still-ensure] #{cid} hls-frame {saved.name}", flush=True)
                     return saved
 
+    # Filmhíradók: seek one frame from the issue MP4 with a same-site Referer
+    # (plain requests 403). Hit times are relative to the story window, so
+    # shift by the segment start into the full-issue timeline.
+    if "filmhiradokonline.hu" in src.lower():
+        try:
+            from filmhiradok import resolve_segment
+
+            seg = resolve_segment(src)
+        except Exception:
+            seg = None
+        if seg and seg.get("mp4"):
+            t_abs = float(seg.get("start") or 0.0) + mid
+            with tempfile.TemporaryDirectory(prefix=f"still_{cid}_") as td:
+                tmp = Path(td) / f"{cid}.jpg"
+                if extract_frame_from_url(
+                    seg["mp4"], t_abs, tmp, referer=(seg.get("referer") or src)
+                ):
+                    saved = save_candidate_still(cid, path=tmp)
+                    if saved:
+                        print(f"[still-ensure] #{cid} fho-frame {saved.name}", flush=True)
+                        return saved
+
     from frame_strip import _download_source
 
     existing = find_video_file(VIDEOS_DIR, vid)
@@ -242,15 +279,20 @@ def ensure_candidate_still(
 
 
 def start_ensure_worker() -> None:
-    """Idempotent: start the background still-ensure daemon (serve process)."""
+    """Idempotent: start the background still-ensure daemons (serve process).
+
+    Pool of 8: FHO frame seeks are HTTP-bound (~10s each) and a single worker
+    fell behind the hit rate during scrapes, leaving Review images missing.
+    """
     global _worker_started
     with _ensure_lock:
         if _worker_started:
             return
         _worker_started = True
-        threading.Thread(
-            target=_ensure_worker, daemon=True, name="still-ensure"
-        ).start()
+        for i in range(8):
+            threading.Thread(
+                target=_ensure_worker, daemon=True, name=f"still-ensure-{i}"
+            ).start()
 
 
 def enqueue_ensure_still(row: dict[str, Any]) -> None:

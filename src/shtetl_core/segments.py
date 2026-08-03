@@ -52,13 +52,16 @@ def write_sheet_from_crops(
     hits: list[FrameHit],
     out_path: Path,
     n_thumbs: int = 4,
+    relaxed: bool = False,
 ) -> Path | None:
     """Collage top-scoring person crops into a review still (no video seek).
 
     Single-crop sheets keep native resolution. Multi-crop sheets scale down to a
     shared height while preserving aspect ratio — never stretch to a fixed WxH
     and never upscale tiny soft crops (that made EFG postage stamps look scored).
-    Soft / tiny crops are dropped before the sheet is written.
+    Soft / tiny crops are dropped before the sheet is written — except under
+    ``relaxed`` (sub-SD archival newsreels whose crops can never pass the
+    still-tuned blur gate; CLIP already gated them).
     """
     from shtetl_core.blur import is_blurry_crop
 
@@ -72,7 +75,7 @@ def write_sheet_from_crops(
         img = cv2.imread(str(hit.crop_path))
         if img is None:
             continue
-        if is_blurry_crop(img):
+        if not relaxed and is_blurry_crop(img):
             continue
         thumbs.append(img)
     if not thumbs:
