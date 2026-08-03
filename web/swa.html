@@ -1,0 +1,118 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>SWA photos — ShtetlFrames</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link href="https://fonts.googleapis.com/css2?family=Figtree:wght@400;500;600&family=Fraunces:opsz,wght@9..144,500;9..144,560&display=swap" rel="stylesheet" />
+  <link rel="stylesheet" href="/assets/styles.css" />
+</head>
+<body>
+  <div class="wrap">
+    <nav id="siteNav"></nav>
+
+    <header class="review-head">
+      <div>
+        <h1>Szukaj w Archiwach</h1>
+        <p class="section-lede" style="margin:0">
+          Keyword-discover Polish archive photos, download JPEGs in parallel, score with CLIP
+          (rabbi / Orthodox dress cues). Hits land in Review as <code>swa_*</code>.
+        </p>
+      </div>
+    </header>
+  </div>
+
+  <main>
+    <section>
+      <div class="wrap">
+        <h2>1 · Discover photos</h2>
+        <p class="section-lede" style="margin-top:0">
+          Uses SWA autocomplete (photos/scans). Default keywords: rabin, synagoga, Żyd, chasyd…
+        </p>
+        <div class="add-source-form" style="align-items:flex-start; flex-direction:column; gap:0.75rem">
+          <label style="width:100%">
+            Keywords (comma-separated; leave blank for defaults)
+            <textarea id="swaKeywords" class="run-max-input" rows="3" style="width:100%; max-width:42rem; font:inherit"
+              placeholder="rabin, synagoga, Żyd, chasyd, jarmułka"></textarea>
+          </label>
+          <div style="display:flex; gap:0.5rem; flex-wrap:wrap; align-items:center">
+            <label class="run-max-label">
+              Max / keyword
+              <input id="swaMaxPer" class="run-max-input" type="number" min="1" max="500" value="40" />
+            </label>
+            <label class="run-max-label" id="swaMaxPagesWrap" hidden>
+              Pages / keyword
+              <input id="swaMaxPages" class="run-max-input" type="number" min="1" max="25" value="5" />
+            </label>
+            <label class="run-max-label" style="flex-direction:row; align-items:center; gap:0.35rem">
+              <input id="swaFullMode" type="checkbox" />
+              Deep full-text search (paginated; slower, many more results)
+            </label>
+            <button class="btn small" type="button" id="swaDiscoverBtn">Discover</button>
+            <button class="btn ghost small" type="button" id="swaClearBtn">Clear SWA queue</button>
+          </div>
+        </div>
+        <div id="swaDiscoverProgress" class="job-status" hidden>
+          <div class="job-bar"><span id="swaDiscoverBar" style="width:0%"></span></div>
+          <p id="swaDiscoverMsg"></p>
+        </div>
+        <p class="hint" id="swaDiscoverStatus">Idle.</p>
+
+        <div class="stats" id="swaStats" style="margin:1.5rem 0">
+          <div class="stat"><strong>—</strong><span>In queue</span></div>
+          <div class="stat"><strong>—</strong><span>Pending</span></div>
+          <div class="stat"><strong>—</strong><span>Active</span></div>
+          <div class="stat"><strong>—</strong><span>Done</span></div>
+          <div class="stat"><strong>—</strong><span>Errors</span></div>
+        </div>
+
+        <h2 style="margin-top:2rem">2 · Score images</h2>
+        <p class="section-lede" style="margin-top:0">
+          Local YOLO + CLIP on downloaded JPEGs (does not use RunPod — keeps EFG GPUs free).
+        </p>
+        <div class="add-source-form" style="align-items:center">
+          <label class="run-max-label">
+            Max images
+            <input id="swaScrapeMax" class="run-max-input" type="text" value="all" />
+          </label>
+          <label class="run-max-label">
+            Workers
+            <input id="swaWorkers" class="run-max-input" type="number" min="1" max="16" value="4" />
+          </label>
+          <button class="btn small" type="button" id="swaScrapeBtn">Start image scrape</button>
+          <button class="btn ghost small" type="button" id="swaStopBtn">Stop</button>
+        </div>
+        <div id="swaScrapeProgress" class="job-status" hidden>
+          <div class="job-bar"><span id="swaScrapeBar" style="width:0%"></span></div>
+          <pre id="swaScrapeMsg" class="job-log"></pre>
+        </div>
+        <p class="hint" id="swaScrapeStatus">Idle.</p>
+
+        <h2 style="margin-top:2rem">Queue</h2>
+        <div class="queue-table-wrap">
+          <table class="queue-table" aria-label="SWA queue">
+            <thead>
+              <tr>
+                <th>ID</th>
+                <th>Status</th>
+                <th>Title</th>
+                <th>Source</th>
+              </tr>
+            </thead>
+            <tbody id="swaQueueBody">
+              <tr><td colspan="4">Loading…</td></tr>
+            </tbody>
+          </table>
+        </div>
+        <p class="hint" id="swaQueueMeta"></p>
+      </div>
+    </section>
+  </main>
+
+  <script src="/assets/common.js"></script>
+  <script src="/assets/swa.js"></script>
+  <script>renderNav("swa");</script>
+</body>
+</html>

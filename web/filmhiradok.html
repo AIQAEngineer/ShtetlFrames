@@ -1,0 +1,145 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>Filmhíradók Online — ShtetlFrames</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link href="https://fonts.googleapis.com/css2?family=Figtree:wght@400;500;600&family=Fraunces:opsz,wght@9..144,500;9..144,560&display=swap" rel="stylesheet" />
+  <link rel="stylesheet" href="/assets/styles.css" />
+</head>
+<body>
+  <div class="wrap">
+    <nav id="siteNav"></nav>
+
+    <header class="review-head">
+      <div>
+        <h1>Filmhíradók Online</h1>
+        <p class="section-lede" style="margin:0">
+          Hungarian newsreels (1910s–1940s) — crawl the full
+          <a href="https://filmhiradokonline.hu/" target="_blank" rel="noopener">filmhiradokonline.hu</a>
+          catalog (~23k story segments), then scrape each segment's MP4 window.
+          Hits land in Review with the watch-page link.
+        </p>
+      </div>
+    </header>
+  </div>
+
+  <main>
+    <section>
+      <div class="wrap">
+        <h2>1 · Discover catalog</h2>
+        <p class="section-lede" style="margin-top:0">
+          Walks <code>search.php?q=…</code> (10 items/page, newest first). Blank query =
+          whole catalog (~2,308 pages, resumable — re-run skips duplicates).
+          Try a keyword like <em>zsidó</em> or <em>zsinagóga</em> for a targeted sweep.
+        </p>
+        <div class="add-source-form" style="align-items:center">
+          <label class="run-max-label" style="min-width:16rem">
+            Query (blank = full catalog)
+            <input id="fhoQuery" class="run-max-input" type="text" placeholder="zsidó, zsinagóga, Munkács…" />
+          </label>
+          <label class="run-max-label">
+            Max pages (0 = all)
+            <input id="fhoMaxPages" class="run-max-input" type="number" min="0" max="10000" value="0" />
+          </label>
+          <button class="btn small" type="button" id="fhoDiscoverBtn">Discover</button>
+          <button class="btn ghost small" type="button" id="fhoDiscoverStopBtn">Stop</button>
+          <button class="btn ghost small" type="button" id="fhoClearBtn">Clear FHO queue</button>
+        </div>
+        <div id="fhoDiscoverProgress" class="job-status" hidden>
+          <div class="job-bar"><span id="fhoDiscoverBar" style="width:0%"></span></div>
+          <p id="fhoDiscoverMsg"></p>
+        </div>
+        <p class="hint" id="fhoDiscoverStatus">Idle.</p>
+
+        <div class="stats" id="fhoStats" style="margin:1.5rem 0">
+          <div class="stat"><strong>—</strong><span>In queue</span></div>
+          <div class="stat"><strong>—</strong><span>Pending</span></div>
+          <div class="stat"><strong>—</strong><span>Active</span></div>
+          <div class="stat"><strong>—</strong><span>Done</span></div>
+          <div class="stat"><strong>—</strong><span>Errors</span></div>
+        </div>
+
+        <h2 style="margin-top:2rem">2 · Scrape segments</h2>
+        <p class="section-lede" style="margin-top:0">
+          Claims only <code>fho:*</code> queue rows. Backend follows Settings (<span id="fhoBackendLabel">—</span>).
+          Each watch page resolves just-in-time to its full-issue MP4; pods download only the
+          segment window (<code>--download-sections</code>) with the watch page as Referer.
+        </p>
+        <div class="add-source-form" style="align-items:center">
+          <label class="run-max-label">
+            Max videos
+            <input id="fhoScrapeMax" class="run-max-input" type="text" value="all" />
+          </label>
+          <label class="run-max-label">
+            Workers
+            <input id="fhoWorkers" class="run-max-input" type="number" min="1" max="32" value="8" />
+          </label>
+          <button class="btn small" type="button" id="fhoScrapeBtn">Start FHO scrape</button>
+          <button class="btn ghost small" type="button" id="fhoStopBtn">Stop</button>
+        </div>
+        <div id="fhoScrapeProgress" class="job-status" hidden>
+          <div class="job-bar"><span id="fhoScrapeBar" style="width:0%"></span></div>
+          <pre id="fhoScrapeMsg" class="job-log"></pre>
+        </div>
+        <p class="hint" id="fhoScrapeStatus">Idle.</p>
+
+        <h2 style="margin-top:2rem">Queue</h2>
+        <p class="section-lede" style="margin-top:0">
+          Full queue below; the <a href="/filmhiradok/processed">Processed view</a> lists every scraped
+          segment with a link to its source watch page.
+        </p>
+        <div class="queue-toolbar">
+          <input id="fhoQueueSearch" type="search" placeholder="Search title, URL, error…" autocomplete="off" />
+          <select id="fhoQueueStatus" aria-label="Filter status">
+            <option value="">All statuses</option>
+            <option value="pending">pending</option>
+            <option value="queued">queued</option>
+            <option value="scanning">scanning</option>
+            <option value="downloading">downloading</option>
+            <option value="done">done</option>
+            <option value="error">error</option>
+          </select>
+          <label class="run-max-label">Page
+            <select id="fhoPageSize">
+              <option value="50">50</option>
+              <option value="100" selected>100</option>
+              <option value="250">250</option>
+              <option value="500">500</option>
+            </select>
+          </label>
+          <span id="fhoQueueMeta" class="queue-meta">—</span>
+          <button type="button" class="btn ghost small" id="fhoPrev" disabled>Prev</button>
+          <button type="button" class="btn ghost small" id="fhoNext" disabled>Next</button>
+        </div>
+        <div class="queue-table-wrap">
+          <table class="queue-table" aria-label="Filmhíradók queue">
+            <thead>
+              <tr>
+                <th class="col-id">ID</th>
+                <th>Status</th>
+                <th>Title</th>
+                <th>Source</th>
+                <th>Year</th>
+                <th></th>
+              </tr>
+            </thead>
+            <tbody id="fhoQueueBody">
+              <tr><td colspan="6" class="empty-cell">Nothing discovered yet — run Discover above.</td></tr>
+            </tbody>
+          </table>
+        </div>
+      </div>
+    </section>
+  </main>
+
+  <footer class="site-footer">
+    <div class="wrap">ShtetlFrames · Filmhíradók Online workspace</div>
+  </footer>
+
+  <script src="/assets/common.js"></script>
+  <script src="/assets/filmhiradok.js"></script>
+</body>
+</html>

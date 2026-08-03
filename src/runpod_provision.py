@@ -37,8 +37,13 @@ _ensure_lock = threading.RLock()
 _bg_fill_lock = threading.Lock()
 _bg_fill_active = False
 # Names reserved by in-flight creates (GraphQL list lags → duplicate names otherwise).
-_claimed_names: set[str] = set()
+# name → claim time. Claims expire after 15 min: by then GraphQL reflects any
+# live pod, so a stale claim whose pod is gone must not block slot reuse forever
+# (pre-fix: successful creates leaked claims → slot exhaustion → "no free pod
+# slot" create failures with last_err=None after enough churn).
+_claimed_names: dict[str, float] = {}
 _claimed_names_lock = threading.Lock()
+_CLAIM_TTL_SEC = 900.0
 # Cross-process create lock — serve + heal scripts used to both create
 # shtetlframes-scan-3 in the same second (in-process RLock is not enough).
 _CREATE_LOCK_PATH = Path(__file__).resolve().parents[1] / "output" / ".pod_create.lock"
@@ -1084,6 +1089,10 @@ def ensure_pods(
                             if n:
                                 used_names.add(n)
                         with _claimed_names_lock:
+                            cutoff = time.time() - _CLAIM_TTL_SEC
+                            for _cn, _ct in list(_claimed_names.items()):
+                                if _ct < cutoff:
+                                    _claimed_names.pop(_cn, None)
                             used_names |= set(_claimed_names)
                         name = None
                         # Prefer slots 0..cap-1; if names are busy, keep going with
@@ -1104,7 +1113,7 @@ def ensure_pods(
                                 )
                             break
                         with _claimed_names_lock:
-                            _claimed_names.add(name)
+                            _claimed_names[name] = time.time()
 
                         tried_dead: set[str] = set()
                         created = False
@@ -1170,7 +1179,7 @@ def ensure_pods(
                         finally:
                             if not created:
                                 with _claimed_names_lock:
-                                    _claimed_names.discard(name)
+                                    _claimed_names.pop(name, None)
                         if not created:
                             break
                 finally:

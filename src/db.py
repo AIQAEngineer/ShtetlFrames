@@ -133,6 +133,9 @@ def init_db() -> None:
             "scrape",
             "pathe_discover",
             "pathe_scrape",
+            "swa_discover",
+            "swa_scrape",
+            "fho_discover",
             "train_seed",
             "clip_ft",
             "import",
@@ -167,6 +170,10 @@ def set_job(job_id: str, **kwargs: Any) -> dict:
     kwargs["updated_at"] = time.time()
     cols = ", ".join(f"{k}=?" for k in kwargs)
     with db(write=True) as conn:
+        conn.execute(
+            "INSERT OR IGNORE INTO jobs (id, status, phase, updated_at) VALUES (?, 'idle', 'idle', ?)",
+            (job_id, time.time()),
+        )
         conn.execute(f"UPDATE jobs SET {cols} WHERE id=?", (*kwargs.values(), job_id))
         row = conn.execute("SELECT * FROM jobs WHERE id=?", (job_id,)).fetchone()
     return dict(row) if row else {}
@@ -202,6 +209,10 @@ def _source_sql(source: str) -> str:
         return "source LIKE 'efg:%'"
     if s == "europeana":
         return "source LIKE 'europeana%'"
+    if s in ("swa", "szukajwarchiwach", "polish_archives"):
+        return "source LIKE 'swa:%'"
+    if s in ("fho", "filmhiradok", "filmhiradokonline", "hiradok"):
+        return "source LIKE 'fho:%'"
     return ""
 
 
@@ -250,7 +261,7 @@ def insert_queue_items(items: list[dict], hub_url: str = "") -> dict:
                 it.get("year") or "",
                 it.get("source") or "",
                 it.get("downloadable") or "yes",
-                hub_url,
+                (it.get("hub_url") or hub_url or "")[:500],
                 now,
             )
         )
@@ -344,7 +355,7 @@ def reset_stale_jobs() -> None:
     """Clear 'running' jobs left over after a server kill/crash. Call once at startup only."""
     now = time.time()
     with db(write=True) as conn:
-        for jid in ("discover", "scrape", "pathe_discover", "pathe_scrape"):
+        for jid in ("discover", "scrape", "pathe_discover", "pathe_scrape", "fho_discover"):
             row = conn.execute("SELECT status FROM jobs WHERE id=?", (jid,)).fetchone()
             if row and row["status"] == "running":
                 conn.execute(
@@ -752,13 +763,22 @@ def insert_candidates(rows: list[dict]) -> int:
 
     Rows may include ``still_b64`` / ``image_b64`` / ``_local_still``; those are
     saved under ``output/contact_sheets/cand_{id}.jpg`` (not kept in SQLite).
-    Missing stills are queued for background frame extract from source video.
+    Soft / tiny stills are dropped after save (second line of defense when pods
+    lag the blur gate). Missing stills are queued for background frame extract.
     """
+    from pathlib import Path
+
     from still_ensure import enqueue_ensure_still, kick_backfill_missing_stills
-    from still_store import save_candidate_still
+    from still_store import candidate_still_path, save_candidate_still
+
+    try:
+        from shtetl_core.blur import still_path_is_poor
+    except Exception:
+        still_path_is_poor = None  # type: ignore[assignment]
 
     now = time.time()
     need_ensure: list[dict] = []
+    inserted = 0
     with db(write=True) as conn:
         for r in rows:
             cur = conn.execute(
@@ -793,6 +813,22 @@ def insert_candidates(rows: list[dict]) -> int:
                     b64=r.get("still_b64") or r.get("image_b64"),
                     image_url=None,
                 )
+                if saved is not None and still_path_is_poor is not None:
+                    try:
+                        poor = bool(still_path_is_poor(saved))
+                    except Exception:
+                        poor = True
+                    if poor:
+                        conn.execute("DELETE FROM candidates WHERE id=?", (cid,))
+                        try:
+                            Path(str(saved)).unlink(missing_ok=True)
+                        except OSError:
+                            pass
+                        try:
+                            candidate_still_path(cid).unlink(missing_ok=True)
+                        except OSError:
+                            pass
+                        continue
                 if saved is None:
                     note = (r.get("notes") or "").strip()
                     if "no_still_bytes" not in note:
@@ -829,12 +865,13 @@ def insert_candidates(rows: list[dict]) -> int:
                         "image_url": r.get("image_url"),
                     }
                 )
+            inserted += 1
     # Outside the write lock — queue extracts + kick grouped video backfill.
     for row in need_ensure:
         enqueue_ensure_still(row)
     if need_ensure:
         kick_backfill_missing_stills(limit=max(200, len(need_ensure) * 4))
-    return len(rows)
+    return inserted
 
 
 def list_candidates(limit: int = 2000) -> list[dict]:

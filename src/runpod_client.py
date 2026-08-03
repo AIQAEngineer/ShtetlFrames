@@ -1795,6 +1795,14 @@ def process_video_remote(
     # EUScreen extractor is broken and IWM is Cloudflare-blocked on pods.
     payload_referer: str | None = None
     origin_url = url
+    # Sub-SD archival newsreels (filmhiradokonline.hu): pods skip the
+    # still-tuned blur/px gates — CLIP threshold does the quality gating.
+    lowres_relaxed = "filmhiradokonline.hu" in (url or "").lower()
+    if lowres_relaxed:
+        # Measured on real FHO footage: irrelevant person crops sit at 0.05,
+        # true Hasidic hits at 0.125+. 0.08 keeps the separation while giving
+        # borderline grainy crops margin vs the 0.10 default.
+        score_threshold = min(score_threshold, 0.08)
     try:
         from provider_resolvers import needs_resolve, resolve_media_url
 
@@ -1822,7 +1830,41 @@ def process_video_remote(
                 # NLS (and similar) HLS tickets — keep page as Referer.
                 if ".m3u8" in resolved.lower():
                     payload_referer = payload_referer or page_url
+                # Filmhíradók MP4s 403 without a same-site Referer.
+                if "filmhiradokonline.hu" in resolved.lower():
+                    payload_referer = payload_referer or page_url
                 url = resolved
+        # Bare Vimeo (and player embeds from resolvers): prefer progressive CDN
+        # MP4. yt-dlp --impersonate chrome often picks chrome-146:macos-26 → 403.
+        if "vimeo.com" in (url or "").lower() and ".mp4" not in (url or "").lower():
+            try:
+                from provider_html import resolve_vimeo_progressive
+
+                if on_status:
+                    on_status("Resolving Vimeo progressive MP4…")
+                prog = resolve_vimeo_progressive(url, referer=payload_referer)
+                if prog:
+                    # Keep player/page as Referer for CDN auth.
+                    if not payload_referer:
+                        import re as _re
+
+                        m = _re.search(r"vimeo\.com/(?:video/)?(\d+)", url, _re.I)
+                        if m:
+                            payload_referer = f"https://player.vimeo.com/video/{m.group(1)}"
+                    url = prog
+            except Exception:
+                pass
+        # Filmhíradók Online: queue rows are story segments inside a full-issue
+        # MP4 — hand the pod just this story's time window (cached resolve).
+        if "filmhiradokonline.hu" in (origin_url or "").lower() and not download_sections:
+            try:
+                from filmhiradok import resolve_segment
+
+                seg = resolve_segment(origin_url)
+                if seg and seg.get("start") is not None and seg.get("end"):
+                    download_sections = [f"*{int(seg['start'])}-{int(seg['end'])}"]
+            except Exception:
+                pass
     except RuntimeError:
         raise
     except Exception as e:
@@ -1871,10 +1913,14 @@ def process_video_remote(
     }
     if payload_referer:
         payload["referer"] = payload_referer
-    if "vimeo.com" in (url or "").lower():
-        payload["impersonate"] = "chrome"
+    # Prefer a pinned Windows/Android target — bare "chrome" → chrome-146:macos-26
+    # which Vimeo often 403s. Skip when we already have a progressive CDN URL.
+    if "vimeo.com" in (url or "").lower() and "vimeocdn.com" not in (url or "").lower():
+        payload["impersonate"] = "chrome-110:windows-10"
     if download_sections:
         payload["download_sections"] = list(download_sections)
+    if lowres_relaxed:
+        payload["lowres_relaxed"] = True
     # Match the pod's admission cap to client-side stacking — otherwise the Nth
     # concurrent submit per pod gets a 503 pod_saturated rejection.
     try:
@@ -2627,7 +2673,9 @@ def _candidate_row_still_is_poor(row: dict[str, Any]) -> bool:
             return True
     b64 = row.get("still_b64") or row.get("image_b64")
     if not b64:
-        return False
+        # Fail closed: missing stills used to skip the gate, then a soft
+        # postage-stamp JPEG was written by ensure/backfill into Review.
+        return True
     try:
         import base64
 

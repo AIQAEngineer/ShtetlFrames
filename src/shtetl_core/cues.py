@@ -110,6 +110,9 @@ YOLO_WEIGHTS = "yolov8s.pt"
 # Keep-safe: human Keeps often raw ~0.11–0.19; Pass rejects stay ≤~0.00 raw.
 # 0.12 + MAX_NEG 0.82 clamped almost all Keeps to thr-0.05 (0.07) via neg_ratio.
 DEFAULT_SCORE_THRESHOLD = 0.10
+# On sharp, large person crops only (see blur.is_high_quality_crop) — borderline
+# CLIP scores are more trustworthy than on soft EFG postage stamps.
+HQ_SCORE_THRESHOLD = 0.04
 MIN_POS_SCORE = 0.22
 MIN_HEADCOVER_SCORE = 0.19
 MIN_MALE_SCORE = 0.17
@@ -125,14 +128,15 @@ MIN_PERSON_AREA = 40 * 80
 # Person box must be taller than wide (rejects face-square / head-only boxes).
 MIN_PERSON_ASPECT = 1.15
 # Absolute min bbox height in px — tiny face crops fail even if area clears.
-MIN_PERSON_HEIGHT = 100
-# Reject far / soft EFG postage-stamp boxes (often 40–80px wide and unreadable).
-MIN_PERSON_WIDTH = 120
+MIN_PERSON_HEIGHT = 180
+# Reject far / soft EFG postage-stamp boxes (gallery stills under ~240px look
+# soft even when Laplacian is fooled by grain).
+MIN_PERSON_WIDTH = 220
 # Laplacian variance on a 256px-normalized crop (legacy raw gate). Soft EFG
 # stills often have high raw Lap from pixel noise — blur.py also uses denoise.
 MIN_SHARPNESS_LAPLACIAN = 150.0
 # After upper-body crop, short side must clear this (see blur.is_blurry_crop).
-MIN_CROP_SHORT_SIDE = 96
+MIN_CROP_SHORT_SIDE = 240
 YOLO_CONF = 0.32
 TOP_K_CUES = 1
 TOP_K_NEGS = 3

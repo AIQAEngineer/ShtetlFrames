@@ -617,10 +617,11 @@ def verify_still_http(payload: dict) -> dict:
         return {"ok": False, "error": "image_b64_required"}
 
     os.environ["SHTETL_POD"] = "1"
+    key = (inp.get("openai_api_key") or "").strip()
+    if not key:
+        return {"ok": False, "error": "openai_disabled", "skipped": True}
     os.environ["OPENAI_VERIFY"] = "1"
-    key = (inp.get("openai_api_key") or os.environ.get("OPENAI_API_KEY") or "").strip()
-    if key:
-        os.environ["OPENAI_API_KEY"] = key
+    os.environ["OPENAI_API_KEY"] = key
     oai_model = (inp.get("openai_model") or os.environ.get("OPENAI_MODEL") or "").strip()
     if oai_model:
         os.environ["OPENAI_MODEL"] = oai_model

@@ -28,9 +28,11 @@ class CandidateSegment:
 
 
 def _scale_to_height(img: np.ndarray, target_h: int = 320) -> np.ndarray:
-    """Resize preserving aspect ratio (no stretch) to a common collage height."""
+    """Downscale to a common collage height — never upscale (avoids soft pixelation)."""
     h, w = img.shape[:2]
     if h <= 0 or w <= 0 or h == target_h:
+        return img
+    if h < target_h:
         return img
     scale = target_h / float(h)
     nw = max(1, int(round(w * scale)))
@@ -53,10 +55,13 @@ def write_sheet_from_crops(
 ) -> Path | None:
     """Collage top-scoring person crops into a review still (no video seek).
 
-    Single-crop sheets keep native resolution. Multi-crop sheets scale to a
-    shared height while preserving aspect ratio — never stretch to a fixed
-    WxH (that warped profile kippot and caused OpenAI false drops).
+    Single-crop sheets keep native resolution. Multi-crop sheets scale down to a
+    shared height while preserving aspect ratio — never stretch to a fixed WxH
+    and never upscale tiny soft crops (that made EFG postage stamps look scored).
+    Soft / tiny crops are dropped before the sheet is written.
     """
+    from shtetl_core.blur import is_blurry_crop
+
     with_crops = [h for h in hits if h.crop_path and Path(h.crop_path).exists()]
     if not with_crops:
         return None
@@ -67,13 +72,17 @@ def write_sheet_from_crops(
         img = cv2.imread(str(hit.crop_path))
         if img is None:
             continue
+        if is_blurry_crop(img):
+            continue
         thumbs.append(img)
     if not thumbs:
         return None
     if len(thumbs) == 1:
         sheet = thumbs[0]
     else:
-        sheet = np.hstack([_scale_to_height(t, 320) for t in thumbs])
+        # Shared height = min(320, shortest thumb) so we never invent pixels.
+        common_h = min(320, min(t.shape[0] for t in thumbs))
+        sheet = np.hstack([_scale_to_height(t, common_h) for t in thumbs])
     out_path.parent.mkdir(parents=True, exist_ok=True)
     cv2.imwrite(str(out_path), sheet)
     return out_path

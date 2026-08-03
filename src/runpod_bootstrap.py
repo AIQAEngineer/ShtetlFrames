@@ -1,4 +1,4 @@
-﻿"""Bootstrap RunPod pods from a public CUDA image - no local Docker / Hub push.
+"""Bootstrap RunPod pods from a public CUDA image - no local Docker / Hub push.
 
 Worker files are pulled from the public GitHub repo so dockerArgs stay small
 (large inline base64 payloads get truncated by RunPod and break uvicorn).
@@ -26,7 +26,7 @@ DRIVER_RISKY_IMAGE_MARKERS = ("cu1290", "cu129-", "-cu129")
 # raw.githubusercontent serves new commits immediately; jsDelivr 500s on fresh
 # commits for many minutes, and the bootstrap's curl -f turns that into a
 # dead fleet (bootstrap exits before uvicorn starts).
-# Updated when blur gate landed ? older pins lacked shtetl_core/blur.py and
+# Updated when blur gate landed — older pins lacked shtetl_core/blur.py and
 # inserted soft EFG stills (handler ImportError was swallowed).
 WORKER_COMMIT = "7172634"
 _RAW = f"https://raw.githubusercontent.com/AIQAEngineer/ShtetlFrames/{WORKER_COMMIT}"

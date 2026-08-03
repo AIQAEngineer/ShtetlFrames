@@ -819,7 +819,9 @@ def download_video(
     ref = (referer or "").strip() or None
     imp = (impersonate or "").strip() or None
     if not imp and "vimeo.com" in (download_url or "").lower():
-        imp = "chrome"
+        # Pin a known-good target — bare "chrome" → chrome-146:macos-26 → 403.
+        # (chrome-131:windows-10 is NOT in yt-dlp's impersonate list.)
+        imp = "chrome-110:windows-10"
         if "player.vimeo.com" not in download_url.lower():
             import re as _re
 
@@ -828,7 +830,9 @@ def download_video(
                 download_url = f"https://player.vimeo.com/video/{m.group(1)}"
     is_vimeo = "vimeo.com" in (download_url or "").lower()
     # Digilab / CDN progressive files — yt-dlp says Unsupported URL.
-    if _is_direct_video_url(download_url):
+    # Segment jobs (Filmhíradók story windows) still need yt-dlp for
+    # --download-sections; http-direct would fetch the whole issue MP4.
+    if _is_direct_video_url(download_url) and not download_sections:
         return _download_http_direct(download_url, vid, referer=ref)
     # British Pathé preview HLS — no YouTube cookies / residential proxy.
     is_pathe = _is_pathe_download(source, m3u8_url, referer, url)
@@ -873,7 +877,7 @@ def download_video(
     # Only pull baked-in pod env proxy when the job explicitly wants proxy.
     proxy = _resolve_proxy_url(proxy_url, allow_env=bool(force_proxy))
     if is_vimeo and not imp:
-        imp = "chrome"
+        imp = "chrome-110:windows-10"
     label = (proxy_provider or "proxy").strip().lower() or "proxy"
     if label in ("none", "auto", ""):
         label = "proxy"
@@ -945,6 +949,10 @@ def download_video(
                         job_deadline=job_deadline,
                         max_download_mb=max_download_mb,
                         impersonate=imp,
+                        # Archive HLS/progressive: parallel fragments; YouTube stays
+                        # serial to avoid bot pressure.
+                        concurrent_fragments=0 if is_youtube else 3,
+                        sleep_requests="1" if is_youtube else "0",
                     )
                     mb = path.stat().st_size / (1024 * 1024)
                     set_progress(
@@ -967,9 +975,19 @@ def download_video(
                     if "oversize_skip" in last_err.lower():
                         # Cap is deterministic — proxy/client cycling won't shrink the file.
                         raise RuntimeError(last_err)
-                    # curl_cffi missing / wrong target — retry without, then chrome-131.
-                    if imp and "impersonate" in last_err.lower():
-                        for alt in (None, "chrome-131:android-14"):
+                    # curl_cffi missing / wrong target / Vimeo 403 on fingerprint —
+                    # cycle pinned targets before giving up.
+                    if imp and (
+                        "impersonate" in last_err.lower()
+                        or (is_vimeo and "403" in last_err)
+                    ):
+                        for alt in (
+                            "chrome-110:windows-10",
+                            "chrome-131:android-14",
+                            "edge-101:windows-10",
+                            "chrome-99:windows-10",
+                            None,
+                        ):
                             if alt == imp:
                                 continue
                             try:
@@ -1109,6 +1127,7 @@ def _scan_with_progress(
     sample_fps: float,
     score_threshold: float,
     save_crops_dir: Path,
+    lowres_relaxed: bool = False,
 ):
     yolo, scorer = _models()
     last_ui = {"t": 0.0}
@@ -1141,6 +1160,7 @@ def _scan_with_progress(
         score_threshold=score_threshold,
         save_crops_dir=save_crops_dir,
         on_progress=on_progress,
+        lowres_relaxed=lowres_relaxed,
     )
     set_progress(
         "scan",
@@ -1189,6 +1209,9 @@ def process_job(inp: dict) -> dict:
         return {"ok": False, "error": "url_required", "segments": []}
     sample_fps = float(inp.get("sample_fps") or DEFAULT_FPS)
     score_threshold = float(inp.get("score_threshold") or DEFAULT_SCORE_THRESHOLD)
+    # Low-res archival sources (filmhiradokonline.hu): skip the still-tuned
+    # blur/px gates in scan_video — CLIP threshold does the quality gating.
+    lowres_relaxed = bool(inp.get("lowres_relaxed"))
     source_url = inp.get("source_url") or url
     raw_sections = inp.get("download_sections") or []
     if isinstance(raw_sections, str):
@@ -1291,14 +1314,16 @@ def process_job(inp: dict) -> dict:
                 with _gpu_lock:
                     try:
                         hits = _scan_with_progress(
-                            path, video_id, sample_fps, score_threshold, crop_dir
+                            path, video_id, sample_fps, score_threshold, crop_dir,
+                            lowres_relaxed=lowres_relaxed,
                         )
                     except Exception as scan_err:
                         # Recover from broken torch/numpy bridge by reloading models.
                         if "numpy" in str(scan_err).lower():
                             reset_models()
                             hits = _scan_with_progress(
-                                path, video_id, sample_fps, score_threshold, crop_dir
+                                path, video_id, sample_fps, score_threshold, crop_dir,
+                                lowres_relaxed=lowres_relaxed,
                             )
                         else:
                             raise
@@ -1344,12 +1369,11 @@ def process_job(inp: dict) -> dict:
                             except OSError:
                                 pass
                             continue
-                        # Vision verify on the pod with the local JPEG (OpenAI only).
-                        os.environ.setdefault("OPENAI_VERIFY", "1")
-                        oai_key = (
-                            inp.get("openai_api_key") or os.environ.get("OPENAI_API_KEY") or ""
-                        ).strip()
+                        # Vision verify only when the PC explicitly sent a key
+                        # (OPENAI_VERIFY=0 → no openai_api_key in payload).
+                        oai_key = (inp.get("openai_api_key") or "").strip()
                         if oai_key:
+                            os.environ["OPENAI_VERIFY"] = "1"
                             os.environ["OPENAI_API_KEY"] = oai_key
                             oai_model = (
                                 inp.get("openai_model") or os.environ.get("OPENAI_MODEL") or ""

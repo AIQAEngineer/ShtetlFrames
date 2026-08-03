@@ -16,6 +16,7 @@ Hosts where yt-dlp is broken/blocked or a cheap local extract beats it:
 - cinearchives.org            -> cinearchives.py (Diaz oEmbed MP4)
 - cinestore.cinetecadibologna.it -> cinestore.py (progressive FLV)
 - movingimage.nls.uk            -> nls.py         (JWPlayer HLS via Scrapfly)
+- filmhiradokonline.hu          -> filmhiradok.py (full-issue MP4 + segment window)
 
 Used just-in-time by download_entry (local) and process_video_remote (RunPod),
 so queue rows keep their canonical item-page URLs and tickets never go stale.
@@ -40,6 +41,7 @@ _RESOLVER_LOADERS = (
     ("cinearchives", "is_cinearchives_url", "resolve_media_url"),
     ("cinestore", "is_cinestore_url", "resolve_media_url"),
     ("nls", "is_nls_url", "resolve_media_url"),
+    ("filmhiradok", "is_filmhiradok_url", "resolve_media_url"),
 )
 
 

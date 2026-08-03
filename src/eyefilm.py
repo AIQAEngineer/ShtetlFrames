@@ -18,7 +18,7 @@ def resolve_media_url(url: str) -> str | None:
     if not is_eyefilm_url(url):
         return None
     try:
-        html = fetch_html(url, scrapfly_fallback=False)
+        html = fetch_html(url, scrapfly_fallback=True)
     except Exception:
         return None
     yt = extract_youtube(html)
@@ -28,4 +28,9 @@ def resolve_media_url(url: str) -> str | None:
     if mp4s:
         return mp4s[0]
     m3u8s = extract_m3u8s(html)
-    return m3u8s[0] if m3u8s else None
+    if m3u8s:
+        return m3u8s[0]
+    # AudiencePlayer embeds are login/paywalled — not downloadable via yt-dlp.
+    if "audienceplayer.com" in (html or "").lower():
+        raise RuntimeError(f"eyefilm_no_stream: audienceplayer {url[:100]}")
+    return None

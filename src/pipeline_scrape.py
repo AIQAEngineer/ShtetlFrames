@@ -866,16 +866,47 @@ def _scrape_job(items: list[dict], workers: int, backend: str = "local") -> None
                                         "movingimage.nls.uk" in low_err
                                         and "405" in low_err
                                     )
+                                    or (
+                                        "vimeo" in low_err
+                                        and "401" in low_err
+                                        and (
+                                            "oauth" in low_err
+                                            or "unauthorized" in low_err
+                                        )
+                                    )
+                                    or (
+                                        "vimeo" in low_err
+                                        and "403" in low_err
+                                    )
+                                    or "vimeocdn.com" in low_err
+                                    or "eyefilm_no_stream" in low_err
                                 ):
                                     from db import db as _db
 
+                                    reason = (
+                                        "vimeo_401_oauth"
+                                        if "vimeo" in low_err and "401" in low_err
+                                        else (
+                                            "vimeo_403"
+                                            if (
+                                                "vimeo" in low_err
+                                                or "vimeocdn.com" in low_err
+                                            )
+                                            and "403" in low_err
+                                            else (
+                                                "eyefilm_no_stream"
+                                                if "eyefilm" in low_err
+                                                else "nls_no_stream"
+                                            )
+                                        )
+                                    )
                                     with _db(write=True) as _c:
                                         _c.execute(
                                             "UPDATE queue_items SET status='error', "
                                             "attempts=99, downloadable='no', error=?, detail=? "
                                             "WHERE id=?",
                                             (
-                                                f"parked: nls_no_stream — {err_txt[:160]}",
+                                                f"parked: {reason} — {err_txt[:160]}",
                                                 "no streamable media",
                                                 qid,
                                             ),
@@ -1003,6 +1034,8 @@ def _process_one_runpod(row: dict) -> int:
     """Send one video to the auto-provisioned GPU Pod; insert candidate segments.
 
     Always downloads and scans the full video (no sparse/dense section slicing).
+    Sample at 0.5 fps (same as Pathé) — 1.5 fps triples GPU lock time with little
+    recall gain under the CLIP + size/blur gates.
     """
     from runpod_client import process_video_remote, segments_to_candidate_rows
 
@@ -1035,7 +1068,7 @@ def _process_one_runpod(row: dict) -> int:
         url=url,
         title=title,
         queue_id=qid,
-        sample_fps=DEFAULT_FPS,
+        sample_fps=0.5,
         score_threshold=thr,
         source_url=source_url,
         on_status=on_status,

@@ -90,7 +90,7 @@ SETTING_DEFS: dict[str, dict[str, Any]] = {
         "min": -0.5,
         "max": 0.25,
         "step": 0.01,
-        "help": "CLIP gate before vision verify (default 0.10). Lower toward 0.04 only if recall is too thin.",
+        "help": "CLIP gate before vision verify (default 0.10). Sharp large crops already relax to 0.04; lower the base only if recall is still too thin.",
     },
     "YT_COOKIES_BROWSER": {
         "label": "YouTube cookies browser",

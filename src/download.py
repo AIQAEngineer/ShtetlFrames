@@ -284,7 +284,8 @@ def download_ytdlp(
     attempts = _youtube_attempts(with_cookies=True) if is_youtube else [(None, False)]
     # Vimeo requires TLS fingerprint impersonation (OAuth token endpoint 401 otherwise).
     # Private/embed clips also need the host page as Referer + player.vimeo.com URL.
-    impersonate = "chrome" if _is_vimeo_url(url) else None
+    # Pin chrome-110 — bare "chrome" often picks chrome-146:macos-26 → HTTP 403.
+    impersonate = "chrome-110:windows-10" if _is_vimeo_url(url) else None
     if _is_vimeo_url(url) and "player.vimeo.com" not in url.lower():
         m = re.search(r"vimeo\.com/(?:video/)?(\d+)", url, re.I)
         if m:
@@ -300,18 +301,30 @@ def download_ytdlp(
     )
     if path:
         return path
-    # Retry once with an explicit modern Chrome target if generic "chrome" failed.
-    if impersonate and "impersonate" in (last_err or "").lower():
-        path, last_err = _ytdlp_try_attempts(
-            url,
-            dest_dir,
-            out_name,
-            attempts=attempts,
-            impersonate="chrome-131:android-14",
-            referer=referer,
-        )
-        if path:
-            return path
+    # Cycle pinned fingerprints if the first target is blocked / unavailable.
+    if impersonate and (
+        "impersonate" in (last_err or "").lower() or "403" in (last_err or "")
+    ):
+        for alt in (
+            "chrome-131:android-14",
+            "edge-101:windows-10",
+            "chrome-99:windows-10",
+            None,
+        ):
+            path, last_err = _ytdlp_try_attempts(
+                url,
+                dest_dir,
+                out_name,
+                attempts=attempts,
+                impersonate=alt,
+                referer=referer,
+            )
+            if path:
+                return path
+            if "impersonate" not in (last_err or "").lower() and "403" not in (
+                last_err or ""
+            ):
+                break
 
     # Only use residential proxy when Google/YouTube actually blocked us.
     from yt_proxy import is_google_block_error, proxy_configured

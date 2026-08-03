@@ -33,7 +33,7 @@ from shtetl_core.segments import (
     aggregate_segments_dicts,
     write_sheet_from_crops,
 )
-from shtetl_core.scan import sample_frame_indices, scan_video
+from shtetl_core.scan import sample_frame_indices, scan_still, scan_video, score_person_crops
 from shtetl_core.textutil import slugify
 from shtetl_core.upload import upload_image
 
@@ -65,7 +65,9 @@ __all__ = [
     "clamp_weak_score",
     "clamp_without_headcover",
     "sample_frame_indices",
+    "scan_still",
     "scan_video",
+    "score_person_crops",
     "slugify",
     "upload_image",
     "write_sheet_from_crops",
