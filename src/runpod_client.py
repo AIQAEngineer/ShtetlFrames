@@ -1853,9 +1853,8 @@ def process_video_remote(
         or "vod.nls.uk" in (url or "").lower()
     ):
         force_proxy = True
-    # Bare Vimeo OAuth often 401s from datacenter; residential + chrome impersonate.
-    if proxy and "vimeo.com" in (url or "").lower():
-        force_proxy = True
+    # Bare Vimeo: chrome impersonate on the pod (curl_cffi). Forcing Scrapfly
+    # proxy often yields HTTP 407 Proxy Authentication from yt-dlp's TLS stack.
     # IWM Cloudflare — residential when resolve missed.
     if proxy and "iwm.org.uk" in origin_l:
         force_proxy = True
