@@ -24,7 +24,7 @@ def resolve_media_url(url: str) -> str | None:
         return None
     page = htmlmod.unescape(url or "")
     try:
-        html = fetch_html(page, scrapfly_fallback=False)
+        html = fetch_html(page, scrapfly_fallback=True)
     except Exception:
         return None
     m = _FLV_RE.search(html or "")

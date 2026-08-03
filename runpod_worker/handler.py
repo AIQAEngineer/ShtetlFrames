@@ -441,7 +441,17 @@ def _resolve_proxy_url(proxy_url: str | None, *, allow_env: bool = False) -> str
     return None
 
 
-_DIRECT_VIDEO_EXTS = {".mp4", ".webm", ".mkv", ".avi", ".mov", ".m4v", ".mpg", ".mpeg"}
+_DIRECT_VIDEO_EXTS = {
+    ".mp4",
+    ".webm",
+    ".mkv",
+    ".avi",
+    ".mov",
+    ".m4v",
+    ".mpg",
+    ".mpeg",
+    ".flv",
+}
 
 
 def _is_direct_video_url(url: str) -> bool:
@@ -752,7 +762,9 @@ def _download_once(
     candidates = [
         p
         for p in VIDEOS.glob(f"{vid}.*")
-        if p.suffix.lower() in {".mp4", ".webm", ".mkv", ".avi"} and p.stat().st_size > 0
+        if p.suffix.lower()
+        in {".mp4", ".webm", ".mkv", ".avi", ".flv", ".mov", ".m4v"}
+        and p.stat().st_size > 0
     ]
     if candidates:
         path = max(candidates, key=lambda p: p.stat().st_size)
