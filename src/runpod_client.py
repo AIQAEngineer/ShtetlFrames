@@ -1803,11 +1803,11 @@ def process_video_remote(
             page_url = url
             resolved = resolve_media_url(url)
             if not resolved:
-                # NLS: some catalogue pages have no JWPlayer file (clip-less /
-                # JS-only). Fall through to page+ASP proxy instead of hard-fail.
-                if "movingimage.nls.uk" in (url or "").lower():
+                # Soft-fail hosts where proxy / alternate path may still work.
+                soft = ("movingimage.nls.uk", "cinemateca.pt")
+                if any(h in (url or "").lower() for h in soft):
                     if on_status:
-                        on_status("NLS resolve miss — page via residential proxy…")
+                        on_status("resolve miss — trying page via residential proxy…")
                 else:
                     raise RuntimeError(f"provider_resolve_failed: {url[:120]}")
             else:

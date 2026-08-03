@@ -814,6 +814,7 @@ def download_video(
             m = _re.search(r"vimeo\.com/(?:video/)?(\d+)", download_url, _re.I)
             if m:
                 download_url = f"https://player.vimeo.com/video/{m.group(1)}"
+    is_vimeo = "vimeo.com" in (download_url or "").lower()
     # Digilab / CDN progressive files — yt-dlp says Unsupported URL.
     if _is_direct_video_url(download_url):
         return _download_http_direct(download_url, vid, referer=ref)
@@ -853,9 +854,14 @@ def download_video(
 
     is_youtube = "youtube.com" in url.lower() or "youtu.be" in url.lower()
     cookies_path = _write_cookies_file(cookies_text)
+    # YouTube cookie jars break Vimeo OAuth (macos token 401); never attach them.
+    if is_vimeo:
+        cookies_path = None
     has_cookies = cookies_path is not None
     # Only pull baked-in pod env proxy when the job explicitly wants proxy.
     proxy = _resolve_proxy_url(proxy_url, allow_env=bool(force_proxy))
+    if is_vimeo and not imp:
+        imp = "chrome"
     label = (proxy_provider or "proxy").strip().lower() or "proxy"
     if label in ("none", "auto", ""):
         label = "proxy"

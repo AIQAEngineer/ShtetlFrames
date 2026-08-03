@@ -17,7 +17,7 @@ def resolve_media_url(url: str) -> str | None:
     if not is_cinemateca_url(url):
         return None
     try:
-        html = fetch_html(url, scrapfly_fallback=False)
+        html = fetch_html(url, scrapfly_fallback=True)
     except Exception:
         return None
     return extract_vimeo(html)
