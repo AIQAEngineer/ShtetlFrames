@@ -859,7 +859,31 @@ def _scrape_job(items: list[dict], workers: int, backend: str = "local") -> None
                                             )
                                         infra_streak["n"] = 0
                             else:
-                                _safe_queue_status(qid, "error", error=err_txt, detail="")
+                                low_err = err_txt.lower()
+                                if (
+                                    "nls_no_stream" in low_err
+                                    or (
+                                        "movingimage.nls.uk" in low_err
+                                        and "405" in low_err
+                                    )
+                                ):
+                                    from db import db as _db
+
+                                    with _db(write=True) as _c:
+                                        _c.execute(
+                                            "UPDATE queue_items SET status='error', "
+                                            "attempts=99, downloadable='no', error=?, detail=? "
+                                            "WHERE id=?",
+                                            (
+                                                f"parked: nls_no_stream — {err_txt[:160]}",
+                                                "no streamable media",
+                                                qid,
+                                            ),
+                                        )
+                                else:
+                                    _safe_queue_status(
+                                        qid, "error", error=err_txt, detail=""
+                                    )
                                 set_job("scrape", error=err_txt)
                                 infra_streak["n"] = 0
                         except Exception:

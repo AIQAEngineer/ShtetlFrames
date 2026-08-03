@@ -1809,7 +1809,7 @@ def process_video_remote(
                 if "movingimage.nls.uk" in (url or "").lower():
                     raise RuntimeError(f"nls_no_stream: {url[:120]}")
                 # Soft-fail hosts where proxy / alternate path may still work.
-                soft = ("cinemateca.pt", "iwm.org.uk")
+                soft = ("cinemateca.pt",)
                 if any(h in (url or "").lower() for h in soft):
                     if on_status:
                         on_status("resolve miss — trying page via residential proxy…")

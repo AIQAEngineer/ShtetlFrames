@@ -19,7 +19,15 @@ from provider_html import (
 
 def is_filmportal_url(url: str) -> bool:
     u = (url or "").lower()
-    return "filmportal.de" in u
+    if "filmportal.de" not in u:
+        return False
+    # Already a progressive file — no page resolve needed.
+    path = u.split("?", 1)[0]
+    if path.endswith((".mp4", ".webm", ".m3u8", ".flv", ".mov")):
+        return False
+    if "/sites/default/files/" in u:
+        return False
+    return True
 
 
 def resolve_media_url(url: str) -> str | None:
