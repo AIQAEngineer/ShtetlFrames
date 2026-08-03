@@ -441,6 +441,81 @@ def _resolve_proxy_url(proxy_url: str | None, *, allow_env: bool = False) -> str
     return None
 
 
+_DIRECT_VIDEO_EXTS = {".mp4", ".webm", ".mkv", ".avi", ".mov", ".m4v", ".mpg", ".mpeg"}
+
+
+def _is_direct_video_url(url: str) -> bool:
+    try:
+        from urllib.parse import urlparse as _up
+
+        path = (_up(url or "").path or "").lower()
+    except Exception:
+        path = (url or "").lower().split("?", 1)[0]
+    return any(path.endswith(ext) for ext in _DIRECT_VIDEO_EXTS)
+
+
+def _download_http_direct(
+    url: str,
+    vid: str,
+    *,
+    referer: str | None = None,
+) -> Path:
+    """Plain progressive URL (e.g. NFA digilab .mp4) — yt-dlp rejects these as Unsupported URL."""
+    import requests as _req
+
+    from urllib.parse import urlparse as _up
+
+    ext = Path(_up(url).path).suffix.lower() or ".mp4"
+    if ext not in _DIRECT_VIDEO_EXTS:
+        ext = ".mp4"
+    dest = VIDEOS / f"{vid}{ext}"
+    if dest.is_file() and dest.stat().st_size > 100_000:
+        return dest
+    headers = {"User-Agent": "ShtetlFrames/1.0 (research; respectful archival use)"}
+    if referer:
+        headers["Referer"] = referer
+    tmp = dest.with_suffix(dest.suffix + ".part")
+    set_progress("download", "HTTP direct…", pct=0, detail=url[:120])
+
+    def _write(resp) -> None:
+        total = 0
+        with tmp.open("wb") as f:
+            for chunk in resp.iter_content(1024 * 256):
+                if not chunk:
+                    continue
+                f.write(chunk)
+                total += len(chunk)
+                if total and total % (8 * 1024 * 1024) < 256 * 1024:
+                    set_progress(
+                        "download",
+                        "HTTP direct…",
+                        pct=None,
+                        detail=f"{total / (1024 * 1024):.1f} MB",
+                    )
+
+    # Vimeo CDN often needs Chrome TLS; NFA digilab is plain HTTPS.
+    if "vimeocdn.com" in url.lower() or "vimeo.com" in url.lower():
+        try:
+            from curl_cffi import requests as creq
+
+            r = creq.get(url, impersonate="chrome", headers=headers, stream=True, timeout=180)
+            r.raise_for_status()
+            _write(r)
+            tmp.replace(dest)
+            return dest
+        except Exception:
+            pass
+    r = _req.get(url, stream=True, timeout=180, headers=headers)
+    r.raise_for_status()
+    _write(r)
+    tmp.replace(dest)
+    if not dest.is_file() or dest.stat().st_size < 10_000:
+        raise RuntimeError(f"http_direct_empty: {url[:120]}")
+    mb = dest.stat().st_size / (1024 * 1024)
+    set_progress("download", "download complete", pct=100, detail=f"{mb:.1f} MB · {dest.name} · http")
+    return dest
+
+
 def _download_once(
     url: str,
     vid: str,
@@ -715,6 +790,9 @@ def download_video(
             m = _re.search(r"vimeo\.com/(?:video/)?(\d+)", download_url, _re.I)
             if m:
                 download_url = f"https://player.vimeo.com/video/{m.group(1)}"
+    # Digilab / CDN progressive files — yt-dlp says Unsupported URL.
+    if _is_direct_video_url(download_url):
+        return _download_http_direct(download_url, vid, referer=ref)
     # British Pathé preview HLS — no YouTube cookies / residential proxy.
     is_pathe = _is_pathe_download(source, m3u8_url, referer, url)
     if is_pathe:
@@ -813,7 +891,7 @@ def download_video(
                             except OSError:
                                 pass
                     path = _download_once(
-                        url,
+                        download_url,
                         vid,
                         player_client=client,
                         download_sections=download_sections,
@@ -847,6 +925,41 @@ def download_video(
                     if "oversize_skip" in last_err.lower():
                         # Cap is deterministic — proxy/client cycling won't shrink the file.
                         raise RuntimeError(last_err)
+                    # curl_cffi missing / wrong target — retry without, then chrome-131.
+                    if imp and "impersonate" in last_err.lower():
+                        for alt in (None, "chrome-131:android-14"):
+                            if alt == imp:
+                                continue
+                            try:
+                                path = _download_once(
+                                    download_url,
+                                    vid,
+                                    player_client=client,
+                                    download_sections=download_sections,
+                                    cookies_path=cookies_path if use_cookie_jar else None,
+                                    proxy_url=phase_proxy,
+                                    proxy_label=label if phase_proxy else "proxy",
+                                    proxy_insecure=bool(proxy_insecure and phase_proxy),
+                                    referer=ref,
+                                    job_deadline=job_deadline,
+                                    max_download_mb=max_download_mb,
+                                    impersonate=alt,
+                                )
+                                mb = path.stat().st_size / (1024 * 1024)
+                                set_progress(
+                                    "download",
+                                    "download complete",
+                                    pct=100,
+                                    detail=f"{mb:.1f} MB · {path.name} · {phase_name}",
+                                )
+                                return path
+                            except Exception as e2:
+                                last_err = str(e2)
+                                if "impersonate" not in last_err.lower():
+                                    break
+                        # Don't keep cycling yt clients on a missing curl_cffi install.
+                        if "impersonate" in last_err.lower() and "not available" in last_err.lower():
+                            break
                     if _is_permanent_ytdlp_error(last_err):
                         break
                     # Scrapfly / 429: fail FAST so the PC client can switch to ScrapingDog.
