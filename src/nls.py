@@ -41,12 +41,19 @@ def resolve_media_url(url: str) -> str | None:
 
         html = scrapfly_fetch_html(page, render_js=False, country="gb")
     except Exception:
+        html = ""
+    if not html or "Human Verification" in html[:1200] or not (
+        _JW_FILE_RE.search(html) or _M3U8_RE.search(html)
+    ):
         try:
             from britishpathe import scrapfly_fetch_html
 
-            html = scrapfly_fetch_html(page, render_js=True, rendering_wait=4000, country="gb")
+            html = scrapfly_fetch_html(
+                page, render_js=True, rendering_wait=5000, country="gb"
+            )
         except Exception:
-            return None
+            if not html:
+                return None
     if not html or "Human Verification" in html[:1200]:
         return None
     m = _JW_FILE_RE.search(html)

@@ -1803,14 +1803,21 @@ def process_video_remote(
             page_url = url
             resolved = resolve_media_url(url)
             if not resolved:
-                raise RuntimeError(f"provider_resolve_failed: {url[:120]}")
-            # Private Vimeo embeds need the host page as Referer on the pod.
-            if "vimeo.com" in resolved.lower():
-                payload_referer = page_url
-            # NLS (and similar) HLS tickets — keep page as Referer; pass m3u8 explicitly.
-            if ".m3u8" in resolved.lower():
-                payload_referer = payload_referer or page_url
-            url = resolved
+                # NLS: some catalogue pages have no JWPlayer file (clip-less /
+                # JS-only). Fall through to page+ASP proxy instead of hard-fail.
+                if "movingimage.nls.uk" in (url or "").lower():
+                    if on_status:
+                        on_status("NLS resolve miss — page via residential proxy…")
+                else:
+                    raise RuntimeError(f"provider_resolve_failed: {url[:120]}")
+            else:
+                # Private Vimeo embeds need the host page as Referer on the pod.
+                if "vimeo.com" in resolved.lower():
+                    payload_referer = page_url
+                # NLS (and similar) HLS tickets — keep page as Referer.
+                if ".m3u8" in resolved.lower():
+                    payload_referer = payload_referer or page_url
+                url = resolved
     except RuntimeError:
         raise
     except Exception as e:
@@ -1836,6 +1843,9 @@ def process_video_remote(
     # NLS Moving Image is behind AWS WAF (HTTP 405 Human Verification) from
     # datacenter IPs — always send through Scrapfly ASP when available.
     if proxy and "movingimage.nls.uk" in (url or "").lower():
+        force_proxy = True
+    # Bare Vimeo OAuth often 401s from datacenter; residential + chrome impersonate.
+    if proxy and "vimeo.com" in (url or "").lower():
         force_proxy = True
     payload: dict[str, Any] = {
         "url": url,
