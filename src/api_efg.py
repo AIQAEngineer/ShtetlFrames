@@ -94,8 +94,6 @@ def park_dead_efg_hosts() -> dict:
         ("%fn.org.pl%", "fn.org.pl down"),
         # Digilab download URLs return a login HTML page (200 text/html), not MP4.
         ("%portal.digilab.nfa.cz%", "digilab.nfa.cz login wall"),
-        # Cinemateca Ficha pages with no embed / Unsupported URL for yt-dlp.
-        ("%cinemateca.pt/Cinemateca-Digital/Ficha.aspx%", "cinemateca.pt no media embed"),
     )
     parked = 0
     with db(write=True) as c:
