@@ -1794,6 +1794,7 @@ def process_video_remote(
     # prepare_pathe_job) so the pod gets a plain downloadable URL; yt-dlp's
     # EUScreen extractor is broken and IWM is Cloudflare-blocked on pods.
     payload_referer: str | None = None
+    origin_url = url
     try:
         from provider_resolvers import needs_resolve, resolve_media_url
 
@@ -1801,10 +1802,14 @@ def process_video_remote(
             if on_status:
                 on_status("Resolving provider media URL…")
             page_url = url
+            origin_url = page_url
             resolved = resolve_media_url(url)
             if not resolved:
+                # NLS page+yt-dlp always hits AWS WAF 405 — never fall through.
+                if "movingimage.nls.uk" in (url or "").lower():
+                    raise RuntimeError(f"nls_no_stream: {url[:120]}")
                 # Soft-fail hosts where proxy / alternate path may still work.
-                soft = ("movingimage.nls.uk", "cinemateca.pt")
+                soft = ("cinemateca.pt", "iwm.org.uk")
                 if any(h in (url or "").lower() for h in soft):
                     if on_status:
                         on_status("resolve miss — trying page via residential proxy…")
@@ -1842,10 +1847,17 @@ def process_video_remote(
     force_proxy = bool(proxy and not cookies)
     # NLS Moving Image is behind AWS WAF (HTTP 405 Human Verification) from
     # datacenter IPs — always send through Scrapfly ASP when available.
-    if proxy and "movingimage.nls.uk" in (url or "").lower():
+    origin_l = (origin_url or url or "").lower()
+    if proxy and (
+        "movingimage.nls.uk" in origin_l
+        or "vod.nls.uk" in (url or "").lower()
+    ):
         force_proxy = True
     # Bare Vimeo OAuth often 401s from datacenter; residential + chrome impersonate.
     if proxy and "vimeo.com" in (url or "").lower():
+        force_proxy = True
+    # IWM Cloudflare — residential when resolve missed.
+    if proxy and "iwm.org.uk" in origin_l:
         force_proxy = True
     payload: dict[str, Any] = {
         "url": url,
