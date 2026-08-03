@@ -317,17 +317,22 @@ def scrapfly_fetch_html(
     render_js: bool = True,
     rendering_wait: int | None = None,
     auto_scroll: bool = False,
+    country: str | None = None,
 ) -> str:
     """Fetch HTML through Scrapfly ASP (Cloudflare bypass). Raises on failure."""
     key = _scrapfly_api_key()
     if not key:
         raise RuntimeError("SCRAPFLY_API_KEY required for British Pathé pages")
     _wait_scrapfly_cooldown()
+    cc = (country or os.environ.get("SCRAPFLY_COUNTRY") or "us").strip().lower() or "us"
+    # NLS Moving Image WAF passes with a GB exit; US often 422/challenge.
+    if not country and "movingimage.nls.uk" in (url or "").lower():
+        cc = "gb"
     params: dict[str, str] = {
         "key": key,
         "url": url,
         "asp": "true",
-        "country": (os.environ.get("SCRAPFLY_COUNTRY") or "us").strip() or "us",
+        "country": cc,
         "render_js": "true" if render_js else "false",
     }
     if render_js:

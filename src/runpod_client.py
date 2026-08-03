@@ -1807,6 +1807,9 @@ def process_video_remote(
             # Private Vimeo embeds need the host page as Referer on the pod.
             if "vimeo.com" in resolved.lower():
                 payload_referer = page_url
+            # NLS (and similar) HLS tickets — keep page as Referer; pass m3u8 explicitly.
+            if ".m3u8" in resolved.lower():
+                payload_referer = payload_referer or page_url
             url = resolved
     except RuntimeError:
         raise
@@ -1830,6 +1833,10 @@ def process_video_remote(
     provider = proxy_provider_name()
     # Without cookies, residential proxy is the only reliable path — skip doomed guest tries.
     force_proxy = bool(proxy and not cookies)
+    # NLS Moving Image is behind AWS WAF (HTTP 405 Human Verification) from
+    # datacenter IPs — always send through Scrapfly ASP when available.
+    if proxy and "movingimage.nls.uk" in (url or "").lower():
+        force_proxy = True
     payload: dict[str, Any] = {
         "url": url,
         "title": title or url,

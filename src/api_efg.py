@@ -92,6 +92,8 @@ def park_dead_efg_hosts() -> dict:
         ("%bytewise.it%", "bytewise.it dead CDN"),
         ("%repozytorium.fn.org.pl%", "fn.org.pl down"),
         ("%fn.org.pl%", "fn.org.pl down"),
+        # Digilab download URLs return a login HTML page (200 text/html), not MP4.
+        ("%portal.digilab.nfa.cz%", "digilab.nfa.cz login wall"),
     )
     parked = 0
     with db(write=True) as c:

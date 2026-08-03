@@ -507,7 +507,31 @@ def _download_http_direct(
             pass
     r = _req.get(url, stream=True, timeout=180, headers=headers)
     r.raise_for_status()
-    _write(r)
+    ctype = (r.headers.get("content-type") or "").lower()
+    # Digilab (and similar) often return a login HTML page with HTTP 200.
+    if "text/html" in ctype or "text/plain" in ctype:
+        raise RuntimeError(f"http_direct_not_video content-type={ctype or '?'}: {url[:120]}")
+    first = b""
+    total = 0
+    with tmp.open("wb") as f:
+        for chunk in r.iter_content(1024 * 256):
+            if not chunk:
+                continue
+            if not first:
+                first = chunk[:64]
+                # HTML / XML masquerading as MP4
+                head = first.lstrip().lower()
+                if head.startswith(b"<!doctype") or head.startswith(b"<html") or head.startswith(b"<?xml"):
+                    raise RuntimeError(f"http_direct_html_body: {url[:120]}")
+            f.write(chunk)
+            total += len(chunk)
+            if total and total % (8 * 1024 * 1024) < 256 * 1024:
+                set_progress(
+                    "download",
+                    "HTTP direct…",
+                    pct=None,
+                    detail=f"{total / (1024 * 1024):.1f} MB",
+                )
     tmp.replace(dest)
     if not dest.is_file() or dest.stat().st_size < 10_000:
         raise RuntimeError(f"http_direct_empty: {url[:120]}")

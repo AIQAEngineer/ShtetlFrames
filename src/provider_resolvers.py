@@ -15,6 +15,7 @@ Hosts where yt-dlp is broken/blocked or a cheap local extract beats it:
 - kinoteka / filmoteca / WDR / aamod -> vimeo_pages.py (Vimeo embed)
 - cinearchives.org            -> cinearchives.py (Diaz oEmbed MP4)
 - cinestore.cinetecadibologna.it -> cinestore.py (progressive FLV)
+- movingimage.nls.uk            -> nls.py         (JWPlayer HLS via Scrapfly)
 
 Used just-in-time by download_entry (local) and process_video_remote (RunPod),
 so queue rows keep their canonical item-page URLs and tickets never go stale.
@@ -38,6 +39,7 @@ _RESOLVER_LOADERS = (
     ("vimeo_pages", "is_vimeo_page_url", "resolve_media_url"),
     ("cinearchives", "is_cinearchives_url", "resolve_media_url"),
     ("cinestore", "is_cinestore_url", "resolve_media_url"),
+    ("nls", "is_nls_url", "resolve_media_url"),
 )
 
 
@@ -73,7 +75,7 @@ def resolvable_host(host_or_url: str) -> bool:
 # Hosts where queuing the item page and letting yt-dlp handle it is enough
 # (no custom resolver). Used by discovery_import for EFG linked_out.
 YTDLP_NATIVE_HOSTS = (
-    "movingimage.nls.uk",
+    # movingimage.nls.uk → nls.py (WAF blocks plain yt-dlp)
     "vimeo.com",
     "player.vimeo.com",
     "dailymotion.com",
