@@ -105,6 +105,27 @@ def _job_key(queue_id: Any) -> str:
     return str(queue_id) if queue_id is not None else "_default"
 
 
+def _frame_still(video_path: Path, time_sec: float, out: Path) -> Path | None:
+    """Full frame at time_sec as the Review still (sub-SD archival sources —
+    person-crop collages are too tight to judge scene context)."""
+    try:
+        import cv2
+
+        cap = cv2.VideoCapture(str(video_path))
+        if not cap.isOpened():
+            return None
+        try:
+            cap.set(cv2.CAP_PROP_POS_MSEC, max(0.0, float(time_sec)) * 1000.0)
+            ok, frame = cap.read()
+        finally:
+            cap.release()
+        if not ok or frame is None:
+            return None
+        return out if cv2.imwrite(str(out), frame) else None
+    except Exception:
+        return None
+
+
 def set_progress(
     phase: str,
     message: str,
@@ -1351,7 +1372,14 @@ def process_job(inp: dict) -> dict:
                     still_flags: list[str] = []
                     with tempfile.NamedTemporaryFile(suffix=".jpg", delete=False) as tmp:
                         tmp_path = Path(tmp.name)
-                    wrote = write_sheet_from_crops(group, tmp_path, relaxed=lowres_relaxed)
+                    wrote = None
+                    if lowres_relaxed and group:
+                        # Full frame at the best hit — crop collages are too
+                        # tight on sub-SD newsreels to judge scene context.
+                        best_t = max(group, key=lambda h: h.score).time_sec
+                        wrote = _frame_still(path, best_t, tmp_path)
+                    if not wrote:
+                        wrote = write_sheet_from_crops(group, tmp_path, relaxed=lowres_relaxed)
                     if wrote:
                         # Second line of defense: soft/tiny stills (pod may lag
                         # scan.py sync; grain fools raw Laplacian on EFG crops).
