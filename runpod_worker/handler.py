@@ -1357,8 +1357,34 @@ def process_job(inp: dict) -> dict:
                 raw_segs = aggregate_segments_dicts(hits, video_id)
                 segments = []
                 n_segs = len(raw_segs)
+                # Frame dims once per job — normalize best-hit boxes for the
+                # Review bounding-box overlay.
+                fw = fh = 0
+                try:
+                    import cv2
+
+                    _cap = cv2.VideoCapture(str(path))
+                    if _cap.isOpened():
+                        fw = int(_cap.get(cv2.CAP_PROP_FRAME_WIDTH) or 0)
+                        fh = int(_cap.get(cv2.CAP_PROP_FRAME_HEIGHT) or 0)
+                    _cap.release()
+                except Exception:
+                    fw = fh = 0
                 for i, seg in enumerate(raw_segs, 1):
                     group = seg.pop("_hits")
+                    if group and fw > 0 and fh > 0:
+                        try:
+                            _best = max(group, key=lambda h: h.score)
+                            seg["best_time"] = float(_best.time_sec)
+                            x1, y1, x2, y2 = (float(v) for v in _best.bbox)
+                            seg["bbox"] = [
+                                round(max(0.0, min(1.0, x1 / fw)), 4),
+                                round(max(0.0, min(1.0, y1 / fh)), 4),
+                                round(max(0.0, min(1.0, x2 / fw)), 4),
+                                round(max(0.0, min(1.0, y2 / fh)), 4),
+                            ]
+                        except Exception:
+                            pass
                     set_progress(
                         "upload",
                         f"saving stills {i}/{n_segs}" if n_segs else "no segments",

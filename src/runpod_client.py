@@ -2713,6 +2713,10 @@ def segments_to_candidate_rows(out: dict[str, Any], source_url: str = "") -> lis
             "image_url": img,
             "notes": s.get("notes") or "",
         }
+        if s.get("bbox"):
+            row["bbox"] = s.get("bbox")
+        if s.get("best_time") is not None:
+            row["best_time"] = s.get("best_time")
         # Inline still — saved to contact_sheets/ on insert.
         b64 = s.get("still_b64") or s.get("image_b64")
         if b64:

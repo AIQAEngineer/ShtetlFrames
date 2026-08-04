@@ -194,9 +194,31 @@ const Gallery = (() => {
     const srcLink = src
       ? ` · <a href="${escapeAttr(src)}" target="_blank" rel="noopener">source ↗</a>`
       : "";
-    const media = img
+    const imgTag = img
       ? `<img class="gview-img" src="${escapeAttr(img)}" alt="" referrerpolicy="no-referrer" />`
       : `<div class="gallery-thumb-empty gview-empty">No still</div>`;
+    let boxHtml = "";
+    try {
+      const bb = typeof c.bbox === "string" ? JSON.parse(c.bbox || "null") : c.bbox;
+      if (Array.isArray(bb) && bb.length === 4) {
+        const [x1, y1, x2, y2] = bb.map(Number);
+        if (x2 > x1 && y2 > y1 && x1 >= 0 && y1 >= 0 && x2 <= 1 && y2 <= 1) {
+          boxHtml =
+            `<i class="gview-box" style="left:${(x1 * 100).toFixed(2)}%;` +
+            `top:${(y1 * 100).toFixed(2)}%;width:${((x2 - x1) * 100).toFixed(2)}%;` +
+            `height:${((y2 - y1) * 100).toFixed(2)}%"></i>`;
+        }
+      }
+    } catch (e) {
+      boxHtml = "";
+    }
+    const framed = img
+      ? `<span class="gview-imgwrap">${imgTag}${boxHtml}</span>`
+      : imgTag;
+    const media =
+      img && src
+        ? `<a class="gview-srclink" href="${escapeAttr(src)}" target="_blank" rel="noopener" title="Open source page">${framed}</a>`
+        : framed;
     return `<div class="gview${decCls}" data-key="${escapeAttr(key)}">
       <div class="gview-stage" id="gviewStage">
         ${media}

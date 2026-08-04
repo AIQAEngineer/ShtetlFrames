@@ -187,6 +187,7 @@ def ensure_candidate_still(
     video_id: str = "",
     start_sec: float = 0.0,
     end_sec: float | None = None,
+    best_time: float | None = None,
     image_url: str | None = None,
     download_video: bool = True,
 ) -> Path | None:
@@ -215,6 +216,8 @@ def ensure_candidate_still(
     t0 = float(start_sec or 0.0)
     t1 = float(end_sec if end_sec is not None else t0)
     mid = t0 if t1 <= t0 else (t0 + t1) / 2.0
+    # Exact hit moment when known — keeps the Review bbox on the person.
+    t_hit = float(best_time) if best_time is not None else mid
 
     # Pathé: seek one HLS frame — much faster than yt-dlp full download.
     if "britishpathe.com" in src.lower():
@@ -237,7 +240,7 @@ def ensure_candidate_still(
         except Exception:
             seg = None
         if seg and seg.get("mp4"):
-            t_abs = float(seg.get("start") or 0.0) + mid
+            t_abs = float(seg.get("start") or 0.0) + t_hit
             with tempfile.TemporaryDirectory(prefix=f"still_{cid}_") as td:
                 tmp = Path(td) / f"{cid}.jpg"
                 if extract_frame_from_url(
@@ -263,8 +266,8 @@ def ensure_candidate_still(
     try:
         with tempfile.TemporaryDirectory(prefix=f"still_{cid}_") as td:
             tmp = Path(td) / f"{cid}.jpg"
-            if not extract_frame(video, mid, tmp):
-                print(f"[still-ensure] #{cid} extract failed @{mid:.2f}s", flush=True)
+            if not extract_frame(video, t_hit, tmp):
+                print(f"[still-ensure] #{cid} extract failed @{t_hit:.2f}s", flush=True)
                 return None
             saved = save_candidate_still(cid, path=tmp)
             if saved:
@@ -317,6 +320,7 @@ def enqueue_ensure_still(row: dict[str, Any]) -> None:
             "video_id": (row.get("video_id") or "").strip(),
             "start_sec": row.get("start_sec") or 0,
             "end_sec": row.get("end_sec"),
+            "best_time": row.get("best_time"),
             "image_url": row.get("image_url"),
         }
     )
@@ -335,6 +339,7 @@ def _ensure_worker() -> None:
                 video_id=str(row.get("video_id") or ""),
                 start_sec=float(row.get("start_sec") or 0),
                 end_sec=row.get("end_sec"),
+                best_time=row.get("best_time"),
                 image_url=row.get("image_url"),
                 download_video=True,
             )
@@ -357,7 +362,7 @@ def missing_still_rows(*, limit: int = 5000) -> list[dict[str, Any]]:
     with db() as conn:
         rows = conn.execute(
             """
-            SELECT id, video_id, start_sec, end_sec, source_url, image_url, notes
+            SELECT id, video_id, start_sec, end_sec, best_time, source_url, image_url, notes
             FROM candidates
             ORDER BY id DESC
             LIMIT ?

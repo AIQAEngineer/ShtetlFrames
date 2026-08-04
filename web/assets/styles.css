@@ -1309,6 +1309,27 @@ button.run-btn:disabled {
   display: block;
 }
 
+.gview-srclink {
+  display: block;
+  cursor: pointer;
+}
+
+.gview-imgwrap {
+  position: relative;
+  display: inline-block;
+  line-height: 0;
+}
+
+.gview-box {
+  position: absolute;
+  border: 2px solid rgba(232, 176, 88, 0.95);
+  box-shadow:
+    0 0 0 1px rgba(0, 0, 0, 0.65),
+    inset 0 0 0 1px rgba(0, 0, 0, 0.35);
+  border-radius: 2px;
+  pointer-events: none;
+}
+
 .gview-stage:fullscreen {
   min-height: 100vh;
 }

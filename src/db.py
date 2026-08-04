@@ -2,6 +2,7 @@
 
 from __future__ import annotations
 
+import json
 import re
 import sqlite3
 import threading
@@ -63,7 +64,9 @@ CREATE TABLE IF NOT EXISTS candidates (
   decision TEXT DEFAULT '',
   notes TEXT DEFAULT '',
   label TEXT DEFAULT 'orthodox_dress_candidate_not_identity',
-  created_at REAL
+  created_at REAL,
+  bbox TEXT DEFAULT '',
+  best_time REAL
 );
 
 CREATE INDEX IF NOT EXISTS idx_cand_rank ON candidates(rank_score DESC);
@@ -128,6 +131,11 @@ def init_db() -> None:
             conn.execute(
                 "ALTER TABLE queue_items ADD COLUMN attempts INTEGER NOT NULL DEFAULT 0"
             )
+        cand_cols = {r[1] for r in conn.execute("PRAGMA table_info(candidates)").fetchall()}
+        if "bbox" not in cand_cols:
+            conn.execute("ALTER TABLE candidates ADD COLUMN bbox TEXT DEFAULT ''")
+        if "best_time" not in cand_cols:
+            conn.execute("ALTER TABLE candidates ADD COLUMN best_time REAL")
         for jid in (
             "discover",
             "scrape",
@@ -784,8 +792,9 @@ def insert_candidates(rows: list[dict]) -> int:
             cur = conn.execute(
                 """INSERT INTO candidates
                    (video_id, start_sec, end_sec, peak_score, mean_score, rank_score,
-                    hit_count, best_cue, source_url, image_url, decision, notes, label, created_at)
-                   VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, '', ?, ?, ?)""",
+                    hit_count, best_cue, source_url, image_url, decision, notes, label, created_at,
+                    bbox, best_time)
+                   VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, '', ?, ?, ?, ?, ?)""",
                 (
                     r.get("video_id"),
                     r.get("start_sec"),
@@ -800,6 +809,8 @@ def insert_candidates(rows: list[dict]) -> int:
                     (r.get("notes") or "")[:1000],
                     r.get("label") or "orthodox_dress_candidate_not_identity",
                     now,
+                    json.dumps(r["bbox"]) if r.get("bbox") else "",
+                    r.get("best_time"),
                 ),
             )
             cid = int(cur.lastrowid)
@@ -851,6 +862,7 @@ def insert_candidates(rows: list[dict]) -> int:
                             "video_id": r.get("video_id"),
                             "start_sec": r.get("start_sec"),
                             "end_sec": r.get("end_sec"),
+                            "best_time": r.get("best_time"),
                             "image_url": r.get("image_url"),
                         }
                     )
@@ -870,6 +882,7 @@ def insert_candidates(rows: list[dict]) -> int:
                         "video_id": r.get("video_id"),
                         "start_sec": r.get("start_sec"),
                         "end_sec": r.get("end_sec"),
+                        "best_time": r.get("best_time"),
                         "image_url": r.get("image_url"),
                     }
                 )
