@@ -26,8 +26,12 @@ _ensure_q: queue.Queue[dict[str, Any]] = queue.Queue()
 _ensure_seen: set[int] = set()
 _ensure_lock = threading.Lock()
 _worker_started = False
+_rearm_started = False
 _backfill_lock = threading.Lock()
 _backfill_active = False
+
+# How often the server re-arms the in-memory ensure queue from the DB.
+REARM_INTERVAL_SEC = 120.0
 
 
 def _ffmpeg_exe() -> str:
@@ -131,10 +135,17 @@ def extract_frame_from_url(
         r = subprocess.run(cmd, capture_output=True, timeout=max(15.0, float(timeout_sec)))
         if r.returncode == 0 and out.is_file() and out.stat().st_size > 200:
             return True
-    except (FileNotFoundError, subprocess.TimeoutExpired):
-        pass
+        # ffmpeg ran and failed (403/429/seek miss) — retry comes from the
+        # ensure re-arm cycle, not from an unbounded OpenCV network open.
+        return False
+    except subprocess.TimeoutExpired:
+        return False
+    except FileNotFoundError:
+        pass  # No ffmpeg binary at all — OpenCV below is the last resort.
 
-    # OpenCV fallback (common on Windows when ffmpeg isn't on PATH).
+    # OpenCV fallback (only when no ffmpeg binary exists). Never reached after
+    # an ffmpeg failure: cv2.VideoCapture on a network URL has no timeout and
+    # a stalled read can wedge an ensure-pool thread indefinitely.
     try:
         import cv2
 
@@ -286,8 +297,12 @@ def start_ensure_worker() -> None:
 
     Pool of 8: FHO frame seeks are HTTP-bound (~10s each) and a single worker
     fell behind the hit rate during scrapes, leaving Review images missing.
+    Also starts the re-arm loop — the queue is per-process, so without it a
+    serve restart (or Review sessions that only page the top-N candidates)
+    strands the missing-still backlog until someone GETs /api/candidates with
+    a large limit.
     """
-    global _worker_started
+    global _worker_started, _rearm_started
     with _ensure_lock:
         if _worker_started:
             return
@@ -296,6 +311,32 @@ def start_ensure_worker() -> None:
             threading.Thread(
                 target=_ensure_worker, daemon=True, name=f"still-ensure-{i}"
             ).start()
+        if not _rearm_started:
+            _rearm_started = True
+            threading.Thread(
+                target=_rearm_loop, daemon=True, name="still-ensure-rearm"
+            ).start()
+
+
+def _rearm_loop() -> None:
+    """Keep the ensure queue fed from the DB, independent of Review traffic.
+
+    Missing-still rows far down the rank order are never seen by the Review
+    UI's default /api/candidates limit, and failed extractions leave no still
+    behind — both cases are retried here every REARM_INTERVAL_SEC. Repeats are
+    cheap: local_still_url skips finished rows, _ensure_seen dedupes in-flight
+    ones, and filmhiradok.resolve_segment caches page fetches for 10 min.
+    """
+    while True:
+        try:
+            rows = missing_still_rows(limit=5000)
+            for row in rows:
+                enqueue_ensure_still(row)
+            if rows:
+                print(f"[still-ensure] rearm: {len(rows)} still(s) missing", flush=True)
+        except Exception as e:
+            print(f"[still-ensure] rearm error: {e}"[:200], flush=True)
+        time.sleep(REARM_INTERVAL_SEC)
 
 
 def enqueue_ensure_still(row: dict[str, Any]) -> None:
@@ -400,16 +441,30 @@ def backfill_missing_stills(
         return {"ok": True, "missing": 0, "saved": 0, "failed": 0}
 
     by_key: dict[tuple[str, str], list[dict[str, Any]]] = defaultdict(list)
+    fho_routed = 0
     for r in rows:
-        vid = (r.get("video_id") or "unknown").strip() or "unknown"
         url = (r.get("source_url") or "").strip()
+        if "filmhiradokonline.hu" in url.lower():
+            # FHO rows are singleton groups (one watch URL per candidate), so
+            # the full-issue download below is ~100x slower than the ensure
+            # pool's single-frame seek. Hand them to the pool instead.
+            enqueue_ensure_still(r)
+            fho_routed += 1
+            continue
+        vid = (r.get("video_id") or "unknown").strip() or "unknown"
         by_key[(vid, url)].append(r)
 
     if on_status:
-        on_status(f"Backfilling {len(rows)} still(s) across {len(by_key)} video(s)…")
+        on_status(
+            f"Backfilling {len(rows)} still(s) across {len(by_key)} video(s)"
+            + (f" (+{fho_routed} FHO routed to ensure pool)" if fho_routed else "")
+            + "…"
+        )
     else:
         print(
-            f"[still-backfill] {len(rows)} still(s) across {len(by_key)} video(s)…",
+            f"[still-backfill] {len(rows)} still(s) across {len(by_key)} video(s)"
+            + (f" (+{fho_routed} fho->pool)" if fho_routed else "")
+            + "…",
             flush=True,
         )
 
