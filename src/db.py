@@ -766,6 +766,28 @@ def bump_queue_attempt(item_id: int) -> int:
     return int(row["attempts"]) if row else 0
 
 
+def _fho_still_is_collage(b64: str) -> bool:
+    """True when a pod still is a wide person-crop collage, not a full frame.
+
+    Full newsreel frames are ~4:3 (w/h ~1.33); write_sheet_from_crops collages
+    stack crops side by side (w/h typically 2.5+). On any decode doubt, treat
+    as collage so the local full-frame extractor handles it.
+    """
+    try:
+        import base64
+        import io
+
+        from PIL import Image
+
+        with Image.open(io.BytesIO(base64.b64decode(b64))) as im:
+            w, h = im.size
+        if w <= 0 or h <= 0:
+            return True
+        return (w / h) > 1.9
+    except Exception:
+        return True
+
+
 def insert_candidates(rows: list[dict]) -> int:
     """Insert candidates and persist stills locally for Review.
 
@@ -815,15 +837,25 @@ def insert_candidates(rows: list[dict]) -> int:
             )
             cid = int(cur.lastrowid)
             try:
-                # FHO: never keep the pod still — pre-full-frame pods send tiny
-                # person-crop collages ("slices"). The local ensure worker
-                # extracts the full frame instead (enqueued via saved=None below).
                 _is_fho = "filmhiradokonline.hu" in str(r.get("source_url") or "").lower()
-                # ONLY local bytes/paths inside the write lock. Never download Pathé/YouTube
-                # here — ensure_candidate_still(download_video=True) held this lock for
-                # minutes and froze the entire scrape (queue status + job counters stuck).
-                saved = None
-                if not _is_fho:
+                # FHO: keep the pod still only if it is a real full frame.
+                # Old-code pods send wide person-crop collages ("slices",
+                # w/h > 1.9) — those are discarded and the local ensure worker
+                # extracts the full frame instead (enqueued via saved=None).
+                if _is_fho:
+                    _b64 = r.get("still_b64") or r.get("image_b64")
+                    if _b64 and not _fho_still_is_collage(_b64):
+                        saved = save_candidate_still(cid, b64=_b64, image_url=None)
+                    elif not _b64 and (r.get("_local_still") or r.get("local_still")):
+                        saved = save_candidate_still(
+                            cid, path=r.get("_local_still") or r.get("local_still")
+                        )
+                    else:
+                        saved = None
+                else:
+                    # ONLY local bytes/paths inside the write lock. Never download
+                    # Pathé/YouTube here — ensure_candidate_still(download_video=True)
+                    # held this lock for minutes and froze the entire scrape.
                     saved = save_candidate_still(
                         cid,
                         path=r.get("_local_still") or r.get("local_still"),
