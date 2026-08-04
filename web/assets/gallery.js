@@ -11,6 +11,7 @@ const Gallery = (() => {
   let visibleCount = 48;
   let pageSize = 48;
   let sentinelObs = null;
+  let viewMode = "full";
 
   function prettyTitle(videoId) {
     return String(videoId || "Untitled")
@@ -167,10 +168,110 @@ const Gallery = (() => {
     sentinelObs.observe(el);
   }
 
+  function viewerHtml(c, idx, total) {
+    const key = String(c.key);
+    const decision = (c.decision || "").trim();
+    const ai = aiTag(c.notes);
+    const img = stillUrl(c);
+    const title = prettyTitle(c.video_id);
+    const decCls =
+      decision === "accept" ? " is-accept" : decision === "reject" ? " is-reject" : "";
+    const aiBadge =
+      ai === "keep"
+        ? `<span class="badge ai-keep">AI pass</span>`
+        : ai === "drop"
+          ? `<span class="badge ai-drop">AI fail</span>`
+          : ai === "uncertain"
+            ? `<span class="badge ai-none">AI ?</span>`
+            : `<span class="badge ai-none">No AI</span>`;
+    const humBadge =
+      decision === "accept"
+        ? `<span class="badge accept">Kept</span>`
+        : decision === "reject"
+          ? `<span class="badge reject">Passed</span>`
+          : `<span class="badge pending">Check</span>`;
+    const src = (c.source_url || "").trim();
+    const srcLink = src
+      ? ` · <a href="${escapeAttr(src)}" target="_blank" rel="noopener">source ↗</a>`
+      : "";
+    const media = img
+      ? `<img class="gview-img" src="${escapeAttr(img)}" alt="" referrerpolicy="no-referrer" />`
+      : `<div class="gallery-thumb-empty gview-empty">No still</div>`;
+    return `<div class="gview${decCls}" data-key="${escapeAttr(key)}">
+      <div class="gview-stage" id="gviewStage">
+        ${media}
+        <div class="gview-badges">${aiBadge}${humBadge}</div>
+        <div class="gview-num">${idx + 1} / ${total}</div>
+        <button type="button" class="gview-nav gview-prev" data-gnav="-1" aria-label="Previous (↑)">‹</button>
+        <button type="button" class="gview-nav gview-next" data-gnav="1" aria-label="Next (↓)">›</button>
+      </div>
+      <div class="gview-bar">
+        <div class="gview-meta">
+          <strong title="${escapeAttr(title)}">${escapeHtml(title)}</strong>
+          · ${fmtTime(c.start_sec)} · ${Number(c.rank_score || 0).toFixed(3)}${srcLink}
+        </div>
+        <div class="gview-actions">
+          <button type="button" class="btn ok" data-act="accept" data-key="${escapeAttr(key)}">Keep (A)</button>
+          <button type="button" class="btn danger" data-act="reject" data-key="${escapeAttr(key)}">Pass (R)</button>
+          <button type="button" class="btn ghost" data-act="clear" data-key="${escapeAttr(key)}">Undo (U)</button>
+          <button type="button" class="btn ghost" data-gfs="1">⛶ Fullscreen (F)</button>
+        </div>
+      </div>
+    </div>`;
+  }
+
+  function toggleFullscreen() {
+    const el = $("gviewStage");
+    if (!el) return;
+    if (document.fullscreenElement) {
+      document.exitFullscreen().catch(() => {});
+    } else if (el.requestFullscreen) {
+      el.requestFullscreen().catch(() => {});
+    }
+  }
+
+  function renderFull() {
+    const grid = $("galleryGrid");
+    const summary = $("gallerySummary");
+    if (!grid || !summary) return;
+    const list = filteredRows();
+    const pager = $("galleryPager");
+    if (pager) pager.hidden = true;
+    const nKeep = list.filter((r) => r.decision === "accept").length;
+    const nPass = list.filter((r) => r.decision === "reject").length;
+    const nPend = list.length - nKeep - nPass;
+    summary.textContent =
+      `${list.length} stills · kept ${nKeep} · passed ${nPass} · to check ${nPend}`;
+    if (!list.length) {
+      grid.innerHTML = `<div class="sheet placeholder" style="grid-column:1/-1">No stills for this filter.</div>`;
+      return;
+    }
+    if (!selectedKey || !list.some((r) => String(r.key) === String(selectedKey))) {
+      selectedKey = String(list[0].key);
+    }
+    const idx = Math.max(0, list.findIndex((r) => String(r.key) === String(selectedKey)));
+    grid.innerHTML = viewerHtml(list[idx], idx, list.length);
+    // Preload neighbors so arrow navigation is instant.
+    for (const j of [idx - 1, idx + 1, idx + 2]) {
+      if (j < 0 || j >= list.length) continue;
+      const u = stillUrl(list[j]);
+      if (u) {
+        const im = new Image();
+        im.src = u;
+      }
+    }
+  }
+
   function render(opts = {}) {
     const grid = $("galleryGrid");
     const summary = $("gallerySummary");
     if (!grid || !summary) return;
+    if (viewMode === "full") {
+      renderFull();
+      return;
+    }
+    const pager = $("galleryPager");
+    if (pager) pager.hidden = false;
     const list = filteredRows();
     visibleCount = Math.min(Math.max(pageSize, visibleCount), list.length || pageSize);
     const slice = list.slice(0, visibleCount);
@@ -287,6 +388,20 @@ const Gallery = (() => {
   }
 
   function onGridClick(e) {
+    const navBtn = e.target.closest("[data-gnav]");
+    if (navBtn) {
+      e.preventDefault();
+      e.stopPropagation();
+      step(Number(navBtn.dataset.gnav) || 1);
+      return;
+    }
+    const fsBtn = e.target.closest("[data-gfs]");
+    if (fsBtn) {
+      e.preventDefault();
+      e.stopPropagation();
+      toggleFullscreen();
+      return;
+    }
     const actBtn = e.target.closest("[data-act]");
     if (actBtn) {
       e.preventDefault();
@@ -325,7 +440,22 @@ const Gallery = (() => {
     } else if (e.key === "u" || e.key === "U") {
       e.preventDefault();
       mark(selectedKey, "clear");
+    } else if (e.key === "f" || e.key === "F") {
+      if (viewMode === "full") {
+        e.preventDefault();
+        toggleFullscreen();
+      }
+    } else if (e.key === "t" || e.key === "T") {
+      e.preventDefault();
+      toggleViewMode();
     }
+  }
+
+  function toggleViewMode() {
+    viewMode = viewMode === "full" ? "tiles" : "full";
+    const b = $("galleryViewToggle");
+    if (b) b.textContent = viewMode === "full" ? "▦ Tiles" : "⛶ Full view";
+    render();
   }
 
   function wire() {
@@ -335,6 +465,7 @@ const Gallery = (() => {
       filter = btn.dataset.gfilter || "all";
       document.querySelectorAll("#galleryChips .chip").forEach((c) => c.classList.remove("active"));
       btn.classList.add("active");
+      selectedKey = "";
       await fetchRows();
     });
     $("gallerySearch")?.addEventListener(
@@ -342,6 +473,7 @@ const Gallery = (() => {
       debounce((e) => {
         query = e.target.value.trim();
         visibleCount = pageSize;
+        selectedKey = "";
         render();
       }, 160)
     );
@@ -350,6 +482,7 @@ const Gallery = (() => {
       sortKey = parts[0] === "scored" ? "scored" : "score";
       sortDir = parts[1] === "asc" ? "asc" : "desc";
       visibleCount = pageSize;
+      selectedKey = "";
       render();
     });
     $("galleryPageSize")?.addEventListener("change", (e) => {
@@ -362,6 +495,7 @@ const Gallery = (() => {
     });
     $("galleryNext")?.addEventListener("click", () => revealMore());
     $("galleryRefresh")?.addEventListener("click", () => fetchRows());
+    $("galleryViewToggle")?.addEventListener("click", () => toggleViewMode());
     $("galleryGrid")?.addEventListener("click", onGridClick);
     document.addEventListener("keydown", onKey);
   }

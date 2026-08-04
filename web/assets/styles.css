@@ -1276,6 +1276,140 @@ button.run-btn:disabled {
   min-height: 0;
 }
 
+/* Full-screen single-image viewer (default gallery mode) */
+.gview {
+  grid-column: 1 / -1;
+  display: flex;
+  flex-direction: column;
+  gap: 0.5rem;
+}
+
+.gview-stage {
+  position: relative;
+  display: grid;
+  place-items: center;
+  background: #000;
+  border: 1px solid var(--line);
+  min-height: 62vh;
+  overflow: hidden;
+}
+
+.gview.is-accept .gview-stage {
+  border-color: rgba(110, 180, 120, 0.55);
+}
+
+.gview.is-reject .gview-stage {
+  border-color: rgba(200, 110, 100, 0.5);
+}
+
+.gview-img {
+  max-width: 100%;
+  max-height: 78vh;
+  object-fit: contain;
+  display: block;
+}
+
+.gview-stage:fullscreen {
+  min-height: 100vh;
+}
+
+.gview-stage:fullscreen .gview-img {
+  max-height: 100vh;
+}
+
+.gview-empty {
+  min-height: 40vh;
+  width: 100%;
+}
+
+.gview-badges {
+  position: absolute;
+  top: 0.5rem;
+  left: 0.5rem;
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.25rem;
+  pointer-events: none;
+}
+
+.gview-badges .badge {
+  font-size: 0.72rem;
+  padding: 0.16rem 0.45rem;
+  background: rgba(10, 9, 8, 0.85);
+}
+
+.gview-num {
+  position: absolute;
+  top: 0.5rem;
+  right: 0.5rem;
+  padding: 0.16rem 0.5rem;
+  border-radius: 0.2rem;
+  background: rgba(10, 9, 8, 0.88);
+  color: var(--bone);
+  font-size: 0.8rem;
+  font-weight: 600;
+  font-variant-numeric: tabular-nums;
+  pointer-events: none;
+}
+
+.gview-nav {
+  position: absolute;
+  top: 50%;
+  transform: translateY(-50%);
+  z-index: 2;
+  width: 3rem;
+  height: 5rem;
+  border: 1px solid var(--line);
+  background: rgba(10, 9, 8, 0.72);
+  color: var(--bone);
+  font-size: 1.8rem;
+  line-height: 1;
+  cursor: pointer;
+  opacity: 0.55;
+  transition: opacity 0.15s ease, border-color 0.15s ease;
+}
+
+.gview-nav:hover {
+  opacity: 1;
+  border-color: rgba(232, 176, 88, 0.5);
+}
+
+.gview-prev {
+  left: 0.5rem;
+}
+
+.gview-next {
+  right: 0.5rem;
+}
+
+.gview-bar {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: space-between;
+  gap: 0.5rem 1rem;
+}
+
+.gview-meta {
+  font-size: 0.9rem;
+  color: var(--bone-dim);
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.gview-meta strong {
+  color: var(--bone);
+  font-weight: 500;
+}
+
+.gview-actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.4rem;
+}
+
 .crops-list {
   display: flex;
   flex-direction: column;

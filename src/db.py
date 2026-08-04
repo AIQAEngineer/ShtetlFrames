@@ -804,19 +804,24 @@ def insert_candidates(rows: list[dict]) -> int:
             )
             cid = int(cur.lastrowid)
             try:
+                # FHO: never keep the pod still — pre-full-frame pods send tiny
+                # person-crop collages ("slices"). The local ensure worker
+                # extracts the full frame instead (enqueued via saved=None below).
+                _is_fho = "filmhiradokonline.hu" in str(r.get("source_url") or "").lower()
                 # ONLY local bytes/paths inside the write lock. Never download Pathé/YouTube
                 # here — ensure_candidate_still(download_video=True) held this lock for
                 # minutes and froze the entire scrape (queue status + job counters stuck).
-                saved = save_candidate_still(
-                    cid,
-                    path=r.get("_local_still") or r.get("local_still"),
-                    b64=r.get("still_b64") or r.get("image_b64"),
-                    image_url=None,
-                )
+                saved = None
+                if not _is_fho:
+                    saved = save_candidate_still(
+                        cid,
+                        path=r.get("_local_still") or r.get("local_still"),
+                        b64=r.get("still_b64") or r.get("image_b64"),
+                        image_url=None,
+                    )
                 if saved is not None and still_path_is_poor is not None:
                     # FHO sub-SD newsreel stills can never pass the still-tuned
                     # blur/px gates — CLIP already gated them pod-side (0.08).
-                    _is_fho = "filmhiradokonline.hu" in str(r.get("source_url") or "").lower()
                     try:
                         poor = bool(still_path_is_poor(saved)) if not _is_fho else False
                     except Exception:
